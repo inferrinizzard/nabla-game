@@ -1,0 +1,21 @@
+{
+	"name": "nabla-game",
+	"version": "0.1.0",
+	"description": "Online version of Nabla Operator Game (https://nablagame.com/) - made with Rust/WASM",
+	"main": "index.js",
+	"author": "inferrinizzard",
+	"license": "MIT",
+	"scripts": {
+		"build": "rimraf dist pkg && webpack",
+		"start": "rimraf dist pkg && webpack-dev-server --open -d",
+		"test": "cargo test && wasm-pack test --headless"
+	},
+	"devDependencies": {
+		"@wasm-tool/wasm-pack-plugin": "^1.1.0",
+		"copy-webpack-plugin": "^5.0.3",
+		"webpack": "^4.42.0",
+		"webpack-cli": "^3.3.3",
+		"webpack-dev-server": "^3.7.1",
+		"rimraf": "^3.0.0"
+	}
+}
