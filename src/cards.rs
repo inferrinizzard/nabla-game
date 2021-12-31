@@ -2,21 +2,21 @@ use super::basis::BasisCard;
 use super::structs::EnumStr;
 
 // type union of basis cards or operator cards
-#[derive(Debug)]
+#[derive(Copy, Clone, Debug)]
 pub enum Card {
     BasisCard(BasisCard),
     OperatorCard(OperatorCard),
 }
 
 // type union for all non-basis cards
-#[derive(Debug)]
+#[derive(Copy, Clone, Debug)]
 pub enum OperatorCard {
     LimitCard(LimitCard),
     DerivativeCard(DerivativeCard),
     AlgebraicCard(AlgebraicCard),
 }
 
-#[derive(Debug)]
+#[derive(Copy, Clone, Debug)]
 pub enum LimitCard {
     LimPosInf,
     LimNegInf,
@@ -48,7 +48,7 @@ impl EnumStr<LimitCard> for LimitCard {
     }
 }
 
-#[derive(Debug)]
+#[derive(Copy, Clone, Debug)]
 pub enum DerivativeCard {
     Derivative,
     Nabla,
@@ -77,7 +77,7 @@ impl EnumStr<DerivativeCard> for DerivativeCard {
     }
 }
 
-#[derive(Debug)]
+#[derive(Copy, Clone, Debug)]
 pub enum AlgebraicCard {
     Div,
     Mult,
