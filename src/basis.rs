@@ -1,12 +1,14 @@
 use super::structs::EnumStr;
 
 // type union of the starter basis or complex basis
+#[derive(Debug)]
 pub enum Basis {
-    BasisNode,
-    BasisCard,
+    BasisNode(BasisNode),
+    BasisCard(BasisCard),
 }
 
 // used for complex bases derived from the starter cards
+#[derive(Debug)]
 pub struct BasisNode {
     pub operator: BasisOperator,
     // Vec heap allocates, prevents recursive struct reference
@@ -15,7 +17,7 @@ pub struct BasisNode {
     // 2 items only for pow, div (use [Basis; 2] ?)
     // mult, add could be arbitrary num (usually 2, maybe 3)
 }
-
+#[derive(Debug)]
 pub enum BasisCard {
     Zero,
     One,
@@ -53,6 +55,7 @@ impl EnumStr<BasisCard> for BasisCard {
     }
 }
 
+#[derive(Debug)]
 pub enum BasisOperator {
     Mult,
     Add,

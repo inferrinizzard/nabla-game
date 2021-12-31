@@ -4,6 +4,7 @@ use super::basis;
 use super::cards;
 
 // #[wasm_bindgen]
+#[derive(Debug)]
 pub struct Game {
     pub turn_number: i32, // turn counter
     pub player_1: Player,
@@ -11,6 +12,7 @@ pub struct Game {
     pub deck: Vec<cards::Card>,
 }
 
+#[derive(Debug)]
 pub struct Player {
     pub board: [basis::Basis; 3], // 3 cards on the field, may want to move up to Game level
     pub hand: Vec<cards::Card>,   // up to 7 cards in hand (<7 if deck running low)

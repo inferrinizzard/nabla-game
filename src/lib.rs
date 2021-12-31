@@ -4,6 +4,7 @@ use web_sys::console;
 mod basis;
 mod cards;
 mod structs;
+use structs::*;
 
 // When the `wee_alloc` feature is enabled, this uses `wee_alloc` as the global
 // allocator.
@@ -23,6 +24,29 @@ pub fn main_js() -> Result<(), JsValue> {
 
     // Your code goes here!
     console::log_1(&JsValue::from_str("Hello world!"));
+
+    let game = Game {
+        turn_number: 0,
+        player_1: Player {
+            board: [
+                basis::Basis::BasisCard(basis::BasisCard::Zero),
+                basis::Basis::BasisCard(basis::BasisCard::Zero),
+                basis::Basis::BasisCard(basis::BasisCard::Zero),
+            ],
+            hand: vec![],
+        },
+        player_2: Player {
+            board: [
+                basis::Basis::BasisCard(basis::BasisCard::One),
+                basis::Basis::BasisCard(basis::BasisCard::One),
+                basis::Basis::BasisCard(basis::BasisCard::One),
+            ],
+            hand: vec![],
+        },
+        deck: vec![],
+    };
+
+    console::log_1(&JsValue::from_str(&format!("{:?}", &game)));
 
     Ok(())
 }
