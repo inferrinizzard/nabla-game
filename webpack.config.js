@@ -21,6 +21,11 @@ module.exports = {
 			},
 		],
 	},
+	// temp, see: https://github.com/rust-random/getrandom/issues/224
+	ignoreWarnings: [
+		warning =>
+			warning.message === 'Critical dependency: the request of a dependency is an expression',
+	],
 	experiments: {
 		syncWebAssembly: true,
 	},
