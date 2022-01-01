@@ -1,6 +1,10 @@
 use super::basis::BasisCard;
 use super::game::EnumStr;
 
+pub trait CardType {
+    fn card_type(&self) -> &'static str;
+}
+
 // type union of basis cards or operator cards
 #[derive(Copy, Clone, Debug)]
 pub enum Card {
@@ -8,6 +12,17 @@ pub enum Card {
     LimitCard(LimitCard),
     DerivativeCard(DerivativeCard),
     AlgebraicCard(AlgebraicCard),
+}
+
+impl CardType for Card {
+    fn card_type(&self) -> &'static str {
+        match self {
+            Card::BasisCard(_) => "BASIS_CARD",
+            Card::LimitCard(_) => "LIMIT_CARD",
+            Card::AlgebraicCard(_) => "ALGEBRAIC_CARD",
+            Card::DerivativeCard(_) => "DERIVATIVE_CARD",
+        }
+    }
 }
 
 #[derive(Copy, Clone, Debug)]

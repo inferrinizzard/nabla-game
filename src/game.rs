@@ -33,35 +33,54 @@ fn get_new_deck() -> Vec<Card> {
     return deck;
 }
 
+fn create_players(deck: &mut Vec<Card>) -> (Player, Player) {
+    // deal initial hands
+    let mut hand_1 = deck.split_off(deck.len() - 7);
+    let mut hand_2 = deck.split_off(deck.len() - 7);
+
+    // check for edge case where a player receives all basis cards
+    while hand_1.iter().all(|card| card.card_type() == "BASIS_CARD")
+        && hand_2.iter().all(|card| card.card_type() == "BASIS_CARD")
+    {
+        // mulligan and re shuffle
+        deck.append(&mut hand_1);
+        deck.append(&mut hand_2);
+        deck.shuffle(&mut thread_rng());
+        hand_1 = deck.split_off(deck.len() - 7);
+        hand_2 = deck.split_off(deck.len() - 7);
+    }
+
+    (
+        // Player 1
+        Player {
+            board: [
+                Basis::BasisCard(BasisCard::One),
+                Basis::BasisCard(BasisCard::X),
+                Basis::BasisCard(BasisCard::X2),
+            ],
+            hand: hand_1,
+        },
+        // Player 2
+        Player {
+            board: [
+                Basis::BasisCard(BasisCard::One),
+                Basis::BasisCard(BasisCard::X),
+                Basis::BasisCard(BasisCard::X2),
+            ],
+            hand: hand_2,
+        },
+    )
+}
+
 pub fn build_game() -> Game {
     let mut deck = get_new_deck();
     deck.shuffle(&mut thread_rng());
 
-    // deal hands
-    // while hand is not valid, shuffle and redeal hands
-    // need to perform validation of hand to ensure player does not receive 7 BasisCards, if so - mulligan and re draw
-    // hand = deck.split_off(deck.len() - 7)
-    // if hand.all(|card| card is BasisCard) = invalid & redraw
-    //     deck.chain(hand) // add hand(s) back to deck and reshuffle
-
+    let players = create_players(&mut deck);
     let game = Game {
         turn_number: 0,
-        player_1: Player {
-            board: [
-                Basis::BasisCard(BasisCard::One),
-                Basis::BasisCard(BasisCard::X),
-                Basis::BasisCard(BasisCard::X2),
-            ],
-            hand: deck.split_off(deck.len() - 7), // deal last 7 cards of deck
-        },
-        player_2: Player {
-            board: [
-                Basis::BasisCard(BasisCard::One),
-                Basis::BasisCard(BasisCard::X),
-                Basis::BasisCard(BasisCard::X2),
-            ],
-            hand: deck.split_off(deck.len() - 7), // deal last 7 cards of deck
-        },
+        player_1: players.0,
+        player_2: players.1,
         deck: deck,
     };
 
