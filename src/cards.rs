@@ -1,5 +1,5 @@
 use super::basis::BasisCard;
-use super::structs::EnumStr;
+use super::game::EnumStr;
 
 // type union of basis cards or operator cards
 #[derive(Copy, Clone, Debug)]

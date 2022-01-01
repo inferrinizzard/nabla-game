@@ -1,4 +1,4 @@
-use super::structs::EnumStr;
+use super::game::EnumStr;
 
 // type union of the starter basis or complex basis
 #[derive(Debug)]
