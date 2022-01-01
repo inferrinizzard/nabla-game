@@ -2,6 +2,7 @@ use wasm_bindgen::prelude::*;
 use web_sys::console;
 
 mod basis;
+use basis::*;
 mod cards;
 use cards::*;
 mod structs;
@@ -27,113 +28,43 @@ pub fn main_js() -> Result<(), JsValue> {
     console::log_1(&JsValue::from_str("Hello world!"));
 
     let mut raw_deck = vec![];
-    raw_deck.extend(vec![Card::BasisCard(basis::BasisCard::Zero); 2]);
-    raw_deck.extend(vec![Card::BasisCard(basis::BasisCard::One); 4 - 2]); // subtract 2 for starting board
-    raw_deck.extend(vec![Card::BasisCard(basis::BasisCard::X); 7 - 2]); // subtract 2 for starting board
-    raw_deck.extend(vec![Card::BasisCard(basis::BasisCard::X2); 3 - 2]); // subtract 2 for starting board
-    raw_deck.extend(vec![Card::BasisCard(basis::BasisCard::Cos); 4]);
-    raw_deck.extend(vec![Card::BasisCard(basis::BasisCard::Sin); 4]);
-    raw_deck.extend(vec![Card::BasisCard(basis::BasisCard::E); 4]);
-    raw_deck.extend(vec![
-        Card::OperatorCard(OperatorCard::AlgebraicCard(
-            AlgebraicCard::Div
-        ));
-        5
-    ]);
-    raw_deck.extend(vec![
-        Card::OperatorCard(OperatorCard::AlgebraicCard(
-            AlgebraicCard::Mult
-        ));
-        5
-    ]);
-    raw_deck.extend(vec![
-        Card::OperatorCard(OperatorCard::AlgebraicCard(
-            AlgebraicCard::Sqrt
-        ));
-        5
-    ]);
-    raw_deck.extend(vec![
-        Card::OperatorCard(OperatorCard::AlgebraicCard(
-            AlgebraicCard::Inverse
-        ));
-        5
-    ]);
-    raw_deck.extend(vec![
-        Card::OperatorCard(OperatorCard::AlgebraicCard(
-            AlgebraicCard::Log
-        ));
-        5
-    ]);
-    raw_deck.extend(vec![
-        Card::OperatorCard(OperatorCard::DerivativeCard(
-            DerivativeCard::Derivative
-        ));
-        8
-    ]);
-    raw_deck.extend(vec![
-        Card::OperatorCard(OperatorCard::DerivativeCard(
-            DerivativeCard::Integral
-        ));
-        8
-    ]);
-    raw_deck.extend(vec![
-        Card::OperatorCard(OperatorCard::DerivativeCard(
-            DerivativeCard::Nabla
-        ));
-        10
-    ]);
-    raw_deck.extend(vec![
-        Card::OperatorCard(OperatorCard::DerivativeCard(
-            DerivativeCard::Laplacian
-        ));
-        2
-    ]);
-    raw_deck.extend(vec![
-        Card::OperatorCard(OperatorCard::LimitCard(
-            LimitCard::LimPosInf
-        ));
-        2
-    ]);
-    raw_deck.extend(vec![
-        Card::OperatorCard(OperatorCard::LimitCard(
-            LimitCard::LimNegInf
-        ));
-        2
-    ]);
-    raw_deck.extend(vec![
-        Card::OperatorCard(OperatorCard::LimitCard(
-            LimitCard::Lim0
-        ));
-        2
-    ]);
-    raw_deck.extend(vec![
-        Card::OperatorCard(OperatorCard::LimitCard(
-            LimitCard::Liminf
-        ));
-        1
-    ]);
-    raw_deck.extend(vec![
-        Card::OperatorCard(OperatorCard::LimitCard(
-            LimitCard::Limsup
-        ));
-        1
-    ]);
+    raw_deck.extend(vec![Card::BasisCard(BasisCard::Zero); 2]);
+    raw_deck.extend(vec![Card::BasisCard(BasisCard::One); 4 - 2]); // subtract 2 for starting board
+    raw_deck.extend(vec![Card::BasisCard(BasisCard::X); 7 - 2]); // subtract 2 for starting board
+    raw_deck.extend(vec![Card::BasisCard(BasisCard::X2); 3 - 2]); // subtract 2 for starting board
+    raw_deck.extend(vec![Card::BasisCard(BasisCard::Cos); 4]);
+    raw_deck.extend(vec![Card::BasisCard(BasisCard::Sin); 4]);
+    raw_deck.extend(vec![Card::BasisCard(BasisCard::E); 4]);
+    raw_deck.extend(vec![Card::AlgebraicCard(AlgebraicCard::Div); 5]);
+    raw_deck.extend(vec![Card::AlgebraicCard(AlgebraicCard::Mult); 5]);
+    raw_deck.extend(vec![Card::AlgebraicCard(AlgebraicCard::Sqrt); 5]);
+    raw_deck.extend(vec![Card::AlgebraicCard(AlgebraicCard::Inverse); 5]);
+    raw_deck.extend(vec![Card::AlgebraicCard(AlgebraicCard::Log); 5]);
+    raw_deck.extend(vec![Card::DerivativeCard(DerivativeCard::Derivative); 8]);
+    raw_deck.extend(vec![Card::DerivativeCard(DerivativeCard::Integral); 8]);
+    raw_deck.extend(vec![Card::DerivativeCard(DerivativeCard::Nabla); 10]);
+    raw_deck.extend(vec![Card::DerivativeCard(DerivativeCard::Laplacian); 2]);
+    raw_deck.extend(vec![Card::LimitCard(LimitCard::LimPosInf); 2]);
+    raw_deck.extend(vec![Card::LimitCard(LimitCard::LimNegInf); 2]);
+    raw_deck.extend(vec![Card::LimitCard(LimitCard::Lim0); 2]);
+    raw_deck.extend(vec![Card::LimitCard(LimitCard::Liminf); 1]);
+    raw_deck.extend(vec![Card::LimitCard(LimitCard::Limsup); 1]);
 
     let game = Game {
         turn_number: 0,
         player_1: Player {
             board: [
-                basis::Basis::BasisCard(basis::BasisCard::One),
-                basis::Basis::BasisCard(basis::BasisCard::X),
-                basis::Basis::BasisCard(basis::BasisCard::X2),
+                Basis::BasisCard(BasisCard::One),
+                Basis::BasisCard(BasisCard::X),
+                Basis::BasisCard(BasisCard::X2),
             ],
             hand: vec![],
         },
         player_2: Player {
             board: [
-                basis::Basis::BasisCard(basis::BasisCard::One),
-                basis::Basis::BasisCard(basis::BasisCard::X),
-                basis::Basis::BasisCard(basis::BasisCard::X2),
+                Basis::BasisCard(BasisCard::One),
+                Basis::BasisCard(BasisCard::X),
+                Basis::BasisCard(BasisCard::X2),
             ],
             hand: vec![],
         },

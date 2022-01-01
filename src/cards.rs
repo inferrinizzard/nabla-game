@@ -5,12 +5,6 @@ use super::structs::EnumStr;
 #[derive(Copy, Clone, Debug)]
 pub enum Card {
     BasisCard(BasisCard),
-    OperatorCard(OperatorCard),
-}
-
-// type union for all non-basis cards
-#[derive(Copy, Clone, Debug)]
-pub enum OperatorCard {
     LimitCard(LimitCard),
     DerivativeCard(DerivativeCard),
     AlgebraicCard(AlgebraicCard),
