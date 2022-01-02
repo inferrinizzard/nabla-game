@@ -24,15 +24,72 @@ pub fn derivative(basis: &Basis) -> Basis {
     } else if let Basis::BasisNode(basis_node) = basis {
         // is complex basis
 
+        // check here if operand passed in is actually a BasisCard
+        let mut derived_basis: Option<BasisNode> = None;
+
         match basis_node.operator {
-            BasisOperator::Add => {}
-            BasisOperator::Div => {}
-            BasisOperator::Mult => {}
-            BasisOperator::Pow(_) => {}
+            BasisOperator::Add => {
+                derived_basis = Some(BasisNode {
+                    operator: BasisOperator::Add,
+                    left_operand: Box::new(derivative(&basis_node.left_operand)),
+                    right_operand: Some(Box::new(derivative(&basis_node.right_operand.unwrap()))),
+                });
+            }
+            BasisOperator::Div => {
+                // quotient rule here
+                derived_basis = Some(BasisNode {
+                    operator: BasisOperator::Div, // (vdu - udv) / uu
+                    left_operand: Box::new(Basis::BasisNode(BasisNode {
+                        operator: BasisOperator::Minus, // vdu - udv
+                        left_operand: Box::new(Basis::BasisNode(BasisNode {
+                            operator: BasisOperator::Mult,
+                            left_operand: basis_node.right_operand.unwrap(), // v
+                            right_operand: Some(Box::new(derivative(&basis_node.left_operand))), // du
+                        })),
+                        right_operand: Some(Box::new(Basis::BasisNode(BasisNode {
+                            operator: BasisOperator::Mult,
+                            left_operand: basis_node.left_operand, // u
+                            right_operand: Some(Box::new(derivative(
+                                &basis_node.right_operand.unwrap(),
+                            ))), // dv
+                        }))),
+                    })),
+                    right_operand: Some(Box::new(Basis::BasisNode(BasisNode {
+                        operator: BasisOperator::Mult,                // uu
+                        left_operand: basis_node.left_operand,        // u
+                        right_operand: Some(basis_node.left_operand), // u
+                    }))),
+                });
+            }
+            BasisOperator::Mult => {
+                // product rule
+                derived_basis = Some(BasisNode {
+                    operator: BasisOperator::Add, // udv + vdu
+                    left_operand: Box::new(Basis::BasisNode(BasisNode {
+                        operator: BasisOperator::Mult,
+                        left_operand: basis_node.left_operand, // u
+                        right_operand: Some(Box::new(derivative(
+                            &basis_node.right_operand.unwrap(),
+                        ))), // dv
+                    })),
+                    right_operand: Some(Box::new(Basis::BasisNode(BasisNode {
+                        operator: BasisOperator::Mult,
+                        left_operand: basis_node.right_operand.unwrap(), // v
+                        right_operand: Some(Box::new(derivative(&basis_node.left_operand))), // du
+                    }))),
+                });
+            }
+            BasisOperator::Pow(n) => {
+                // power rule
+                derived_basis = Some(BasisNode {
+                    operator: BasisOperator::Pow(n - 1), // n * x^(n-1), preceding n is discarded
+                    left_operand: basis_node.left_operand,
+                    right_operand: None,
+                });
+            }
         }
 
-        // fallback
-        return Basis::BasisNode(*basis_node);
+        return Basis::BasisNode(derived_basis.unwrap());
     } else {
         // should never be called
         Basis::BasisCard(BasisCard::Zero)

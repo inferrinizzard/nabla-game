@@ -13,11 +13,9 @@ pub enum Basis {
 #[derive(Clone, Debug)]
 pub struct BasisNode {
     pub operator: BasisOperator,
-    // Vec heap allocates, prevents recursive struct reference
-    pub operands: Vec<Basis>,
-    // nested bases for complex bases
-    // 2 items only for pow, div (use [Basis; 2] ?)
-    // mult, add could be arbitrary num (usually 2, maybe 3)
+    // Box heap allocates, prevents recursive struct reference
+    pub left_operand: Box<Basis>,
+    pub right_operand: Option<Box<Basis>>,
 }
 
 #[derive(Hash, Eq, PartialEq, Copy, Clone, Debug)]
@@ -60,20 +58,22 @@ impl EnumStr<BasisCard> for BasisCard {
 
 #[derive(Copy, Clone, Debug)]
 pub enum BasisOperator {
-    Mult,
     Add,
-    Pow(i32),
+    Minus,
+    Pow(i32), // represent sqrt with negative integers, ie. ^1/2 = Pow(-1), use Div for actual reciprocals
+    Mult,
     Div,
 }
 
 impl EnumStr<BasisOperator> for BasisOperator {
     fn from_str(s: &str) -> Option<BasisOperator> {
         match s {
-            "*" => Some(BasisOperator::Mult),
             "+" => Some(BasisOperator::Add),
+            "-" => Some(BasisOperator::Minus),
             s if s.matches("[^]-?\\d+").count() > 0 => {
                 Some(BasisOperator::Pow(s[1..].parse::<i32>().unwrap()))
             } // convert ^n to Pow(n)
+            "*" => Some(BasisOperator::Mult),
             "/" => Some(BasisOperator::Div),
             _ => None,
         }
@@ -81,9 +81,10 @@ impl EnumStr<BasisOperator> for BasisOperator {
 
     fn to_str(&self) -> &'static str {
         match self {
-            BasisOperator::Mult => "*",
             BasisOperator::Add => "+",
+            BasisOperator::Minus => "-",
             BasisOperator::Pow(i) => format!("^{}", i),
+            BasisOperator::Mult => "*",
             BasisOperator::Div => "/",
         }
     }
