@@ -1,1 +1,1 @@
-mod derivative;
+pub mod derivative;
