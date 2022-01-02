@@ -1,6 +1,6 @@
-use super::game::EnumStr;
-
 use std::collections::HashMap;
+
+use super::game::EnumStr;
 
 pub trait BasisType {
     fn basis_type(&self) -> &'static str;
@@ -9,7 +9,7 @@ pub trait BasisType {
 }
 
 // type union of the starter basis or complex basis
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub enum Basis {
     BasisNode(BasisNode),
     BasisCard(BasisCard),
@@ -40,7 +40,7 @@ impl BasisType for Basis {
 }
 
 // used for complex bases derived from the starter cards
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct BasisNode {
     pub operator: BasisOperator,
     // Vec heap allocates, prevents recursive struct reference
@@ -49,6 +49,7 @@ pub struct BasisNode {
     // 2 items only for pow, div (use [Basis; 2] ?)
     // mult, add could be arbitrary num (usually 2, maybe 3)
 }
+
 #[derive(Hash, Eq, PartialEq, Copy, Clone, Debug)]
 pub enum BasisCard {
     Zero,
@@ -87,11 +88,11 @@ impl EnumStr<BasisCard> for BasisCard {
     }
 }
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub enum BasisOperator {
     Mult,
     Add,
-    Pow,
+    Pow(i32),
     Div,
 }
 
@@ -100,7 +101,9 @@ impl EnumStr<BasisOperator> for BasisOperator {
         match s {
             "*" => Some(BasisOperator::Mult),
             "+" => Some(BasisOperator::Add),
-            "^" => Some(BasisOperator::Pow),
+            s if s.matches("[^]-?\\d+").count() > 0 => {
+                Some(BasisOperator::Pow(s[1..].parse::<i32>().unwrap()))
+            } // convert ^n to Pow(n)
             "/" => Some(BasisOperator::Div),
             _ => None,
         }
@@ -110,7 +113,7 @@ impl EnumStr<BasisOperator> for BasisOperator {
         match self {
             BasisOperator::Mult => "*",
             BasisOperator::Add => "+",
-            BasisOperator::Pow => "^",
+            BasisOperator::Pow(i) => format!("^{}", i),
             BasisOperator::Div => "/",
         }
     }

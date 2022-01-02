@@ -6,6 +6,7 @@ mod cards;
 mod game;
 
 mod math;
+mod util;
 
 // When the `wee_alloc` feature is enabled, this uses `wee_alloc` as the global
 // allocator.
