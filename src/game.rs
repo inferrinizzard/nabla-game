@@ -33,7 +33,7 @@ fn get_new_deck() -> Vec<Card> {
     return deck;
 }
 
-fn create_players(deck: &mut Vec<Card>) -> (Player, Player) {
+fn create_players(deck: &mut Vec<Card>) -> (Vec<Card>, Vec<Card>) {
     // deal initial hands
     let mut hand_1 = deck.split_off(deck.len() - 7);
     let mut hand_2 = deck.split_off(deck.len() - 7);
@@ -50,26 +50,7 @@ fn create_players(deck: &mut Vec<Card>) -> (Player, Player) {
         hand_2 = deck.split_off(deck.len() - 7);
     }
 
-    (
-        // Player 1
-        Player {
-            board: [
-                Basis::BasisCard(BasisCard::One),
-                Basis::BasisCard(BasisCard::X),
-                Basis::BasisCard(BasisCard::X2),
-            ],
-            hand: hand_1,
-        },
-        // Player 2
-        Player {
-            board: [
-                Basis::BasisCard(BasisCard::One),
-                Basis::BasisCard(BasisCard::X),
-                Basis::BasisCard(BasisCard::X2),
-            ],
-            hand: hand_2,
-        },
-    )
+    (hand_1, hand_2)
 }
 
 pub fn build_game() -> Game {
@@ -79,6 +60,14 @@ pub fn build_game() -> Game {
     let players = create_players(&mut deck);
     let game = Game {
         turn_number: 0,
+        field: [
+            Some(Basis::BasisCard(BasisCard::One)),
+            Some(Basis::BasisCard(BasisCard::X)),
+            Some(Basis::BasisCard(BasisCard::X2)),
+            Some(Basis::BasisCard(BasisCard::One)),
+            Some(Basis::BasisCard(BasisCard::X)),
+            Some(Basis::BasisCard(BasisCard::X2)),
+        ],
         player_1: players.0,
         player_2: players.1,
         deck: deck,
@@ -90,16 +79,11 @@ pub fn build_game() -> Game {
 // #[wasm_bindgen]
 #[derive(Debug)]
 pub struct Game {
-    pub turn_number: i32, // turn counter
-    pub player_1: Player,
-    pub player_2: Player,
+    pub turn_number: i32,          // turn counter
+    pub field: [Option<Basis>; 6], // [0-2] for player_1, [3-5] for player_2
+    pub player_1: Vec<Card>,       // up to 7 cards in hand (<7 if deck running low)
+    pub player_2: Vec<Card>,
     pub deck: Vec<Card>,
-}
-
-#[derive(Debug)]
-pub struct Player {
-    pub board: [Basis; 3], // 3 cards on the field, may want to move up to Game level
-    pub hand: Vec<Card>,   // up to 7 cards in hand (<7 if deck running low)
 }
 
 // TODO: move this to util file
