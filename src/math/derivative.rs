@@ -33,6 +33,13 @@ pub fn derivative(basis: &Basis) -> Basis {
                     right_operand: Box::new(derivative(&basis_node.right_operand)),
                 });
             }
+            BasisOperator::Minus => {
+                derived_basis = Some(BasisNode {
+                    operator: BasisOperator::Minus,
+                    left_operand: Box::new(derivative(&basis_node.left_operand)),
+                    right_operand: Box::new(derivative(&basis_node.right_operand)),
+                });
+            }
             BasisOperator::Div => {
                 // quotient rule here
                 derived_basis = Some(BasisNode {
