@@ -83,7 +83,7 @@ impl EnumStr<BasisOperator> for BasisOperator {
         match self {
             BasisOperator::Add => "+",
             BasisOperator::Minus => "-",
-            BasisOperator::Pow(i) => format!("^{}", i),
+            BasisOperator::Pow(i) => Box::leak(format!("^{}", i).into_boxed_str()), // TODO: remove box leak
             BasisOperator::Mult => "*",
             BasisOperator::Div => "/",
         }

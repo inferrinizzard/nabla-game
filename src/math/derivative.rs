@@ -48,19 +48,19 @@ pub fn derivative(basis: &Basis) -> Basis {
                         operator: BasisOperator::Minus, // vdu - udv
                         left_operand: Box::new(Basis::BasisNode(BasisNode {
                             operator: BasisOperator::Mult,
-                            left_operand: basis_node.right_operand, // v
+                            left_operand: basis_node.right_operand.clone(), // v
                             right_operand: Box::new(derivative(&basis_node.left_operand)), // du
                         })),
                         right_operand: Box::new(Basis::BasisNode(BasisNode {
                             operator: BasisOperator::Mult,
-                            left_operand: basis_node.left_operand, // u
+                            left_operand: basis_node.left_operand.clone(), // u
                             right_operand: Box::new(derivative(&basis_node.right_operand)), // dv
                         })),
                     })),
                     right_operand: Box::new(Basis::BasisNode(BasisNode {
-                        operator: BasisOperator::Mult,          // uu
-                        left_operand: basis_node.left_operand,  // u
-                        right_operand: basis_node.left_operand, // u
+                        operator: BasisOperator::Mult,                  // uu
+                        left_operand: basis_node.left_operand.clone(),  // u
+                        right_operand: basis_node.left_operand.clone(), // u
                     })),
                 });
             }
@@ -70,12 +70,12 @@ pub fn derivative(basis: &Basis) -> Basis {
                     operator: BasisOperator::Add, // udv + vdu
                     left_operand: Box::new(Basis::BasisNode(BasisNode {
                         operator: BasisOperator::Mult,
-                        left_operand: basis_node.left_operand, // u
+                        left_operand: basis_node.left_operand.clone(), // u
                         right_operand: Box::new(derivative(&basis_node.right_operand)), // dv
                     })),
                     right_operand: Box::new(Basis::BasisNode(BasisNode {
                         operator: BasisOperator::Mult,
-                        left_operand: basis_node.right_operand, // v
+                        left_operand: basis_node.right_operand.clone(), // v
                         right_operand: Box::new(derivative(&basis_node.left_operand)), // du
                     })),
                 });
@@ -84,7 +84,7 @@ pub fn derivative(basis: &Basis) -> Basis {
                 // power rule
                 derived_basis = Some(BasisNode {
                     operator: BasisOperator::Pow(n - 1), // n * x^(n-1), preceding n is discarded
-                    left_operand: basis_node.left_operand,
+                    left_operand: basis_node.left_operand.clone(),
                     right_operand: Box::new(Basis::BasisCard(BasisCard::Zero)), // dummy, unused
                 });
             }

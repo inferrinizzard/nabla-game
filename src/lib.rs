@@ -1,11 +1,11 @@
 use wasm_bindgen::prelude::*;
 use web_sys::console;
 
-mod basis;
-mod cards;
+pub mod basis;
+pub mod cards;
 mod game;
 
-mod math;
+pub mod math;
 mod util;
 
 // When the `wee_alloc` feature is enabled, this uses `wee_alloc` as the global
