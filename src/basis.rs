@@ -1,10 +1,42 @@
 use super::game::EnumStr;
 
+use std::collections::HashMap;
+
+pub trait BasisType {
+    fn basis_type(&self) -> &'static str;
+    fn as_basis_card(&self) -> BasisCard;
+    fn as_basis_node(self) -> BasisNode;
+}
+
 // type union of the starter basis or complex basis
 #[derive(Debug)]
 pub enum Basis {
     BasisNode(BasisNode),
     BasisCard(BasisCard),
+}
+
+impl BasisType for Basis {
+    fn basis_type(&self) -> &'static str {
+        match self {
+            Basis::BasisCard(_) => "BASIS_CARD",
+            Basis::BasisNode(_) => "BASIS_NODE",
+        }
+    }
+    fn as_basis_card(&self) -> BasisCard {
+        if let Basis::BasisCard(basis_card) = self {
+            *basis_card
+        } else {
+            panic!("Not a BasisCard")
+        }
+    }
+
+    fn as_basis_node(self) -> BasisNode {
+        if let Basis::BasisNode(basis_node) = self {
+            basis_node
+        } else {
+            panic!("Not a BasisNode")
+        }
+    }
 }
 
 // used for complex bases derived from the starter cards
@@ -17,7 +49,7 @@ pub struct BasisNode {
     // 2 items only for pow, div (use [Basis; 2] ?)
     // mult, add could be arbitrary num (usually 2, maybe 3)
 }
-#[derive(Copy, Clone, Debug)]
+#[derive(Hash, Eq, PartialEq, Copy, Clone, Debug)]
 pub enum BasisCard {
     Zero,
     One,

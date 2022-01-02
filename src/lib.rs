@@ -5,6 +5,8 @@ mod basis;
 mod cards;
 mod game;
 
+mod math;
+
 // When the `wee_alloc` feature is enabled, this uses `wee_alloc` as the global
 // allocator.
 //
