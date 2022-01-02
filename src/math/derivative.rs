@@ -2,8 +2,6 @@ use std::collections::HashMap;
 
 use super::super::basis::*;
 
-use super::super::util::*;
-
 fn atomic_derivative(basis: &BasisCard) -> BasisCard {
     let derivative_lookup = HashMap::from([
         (BasisCard::Cos, BasisCard::Sin),
@@ -32,7 +30,7 @@ pub fn derivative(basis: &Basis) -> Basis {
                 derived_basis = Some(BasisNode {
                     operator: BasisOperator::Add,
                     left_operand: Box::new(derivative(&basis_node.left_operand)),
-                    right_operand: Some(Box::new(derivative(&basis_node.right_operand.unwrap()))),
+                    right_operand: Box::new(derivative(&basis_node.right_operand)),
                 });
             }
             BasisOperator::Div => {
@@ -43,22 +41,20 @@ pub fn derivative(basis: &Basis) -> Basis {
                         operator: BasisOperator::Minus, // vdu - udv
                         left_operand: Box::new(Basis::BasisNode(BasisNode {
                             operator: BasisOperator::Mult,
-                            left_operand: basis_node.right_operand.unwrap(), // v
-                            right_operand: Some(Box::new(derivative(&basis_node.left_operand))), // du
+                            left_operand: basis_node.right_operand, // v
+                            right_operand: Box::new(derivative(&basis_node.left_operand)), // du
                         })),
-                        right_operand: Some(Box::new(Basis::BasisNode(BasisNode {
+                        right_operand: Box::new(Basis::BasisNode(BasisNode {
                             operator: BasisOperator::Mult,
                             left_operand: basis_node.left_operand, // u
-                            right_operand: Some(Box::new(derivative(
-                                &basis_node.right_operand.unwrap(),
-                            ))), // dv
-                        }))),
+                            right_operand: Box::new(derivative(&basis_node.right_operand)), // dv
+                        })),
                     })),
-                    right_operand: Some(Box::new(Basis::BasisNode(BasisNode {
-                        operator: BasisOperator::Mult,                // uu
-                        left_operand: basis_node.left_operand,        // u
-                        right_operand: Some(basis_node.left_operand), // u
-                    }))),
+                    right_operand: Box::new(Basis::BasisNode(BasisNode {
+                        operator: BasisOperator::Mult,          // uu
+                        left_operand: basis_node.left_operand,  // u
+                        right_operand: basis_node.left_operand, // u
+                    })),
                 });
             }
             BasisOperator::Mult => {
@@ -68,15 +64,13 @@ pub fn derivative(basis: &Basis) -> Basis {
                     left_operand: Box::new(Basis::BasisNode(BasisNode {
                         operator: BasisOperator::Mult,
                         left_operand: basis_node.left_operand, // u
-                        right_operand: Some(Box::new(derivative(
-                            &basis_node.right_operand.unwrap(),
-                        ))), // dv
+                        right_operand: Box::new(derivative(&basis_node.right_operand)), // dv
                     })),
-                    right_operand: Some(Box::new(Basis::BasisNode(BasisNode {
+                    right_operand: Box::new(Basis::BasisNode(BasisNode {
                         operator: BasisOperator::Mult,
-                        left_operand: basis_node.right_operand.unwrap(), // v
-                        right_operand: Some(Box::new(derivative(&basis_node.left_operand))), // du
-                    }))),
+                        left_operand: basis_node.right_operand, // v
+                        right_operand: Box::new(derivative(&basis_node.left_operand)), // du
+                    })),
                 });
             }
             BasisOperator::Pow(n) => {
@@ -84,7 +78,7 @@ pub fn derivative(basis: &Basis) -> Basis {
                 derived_basis = Some(BasisNode {
                     operator: BasisOperator::Pow(n - 1), // n * x^(n-1), preceding n is discarded
                     left_operand: basis_node.left_operand,
-                    right_operand: None,
+                    right_operand: Box::new(Basis::BasisCard(BasisCard::Zero)), // dummy, unused
                 });
             }
         }

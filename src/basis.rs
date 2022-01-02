@@ -15,7 +15,7 @@ pub struct BasisNode {
     pub operator: BasisOperator,
     // Box heap allocates, prevents recursive struct reference
     pub left_operand: Box<Basis>,
-    pub right_operand: Option<Box<Basis>>,
+    pub right_operand: Box<Basis>,
 }
 
 #[derive(Hash, Eq, PartialEq, Copy, Clone, Debug)]
