@@ -1,16 +1,14 @@
-use std::collections::HashMap;
-
 use super::game::EnumStr;
 
 // type union of the starter basis or complex basis
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub enum Basis {
     BasisCard(BasisCard),
     BasisNode(BasisNode),
 }
 
 // used for complex bases derived from the starter cards
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub struct BasisNode {
     pub operator: BasisOperator,
     // Box heap allocates, prevents recursive struct reference
@@ -18,7 +16,7 @@ pub struct BasisNode {
     pub right_operand: Box<Basis>,
 }
 
-#[derive(Hash, Eq, PartialEq, Copy, Clone, Debug)]
+#[derive(Hash, Copy, Clone, Debug, Eq, PartialEq)]
 pub enum BasisCard {
     Zero,
     One,
@@ -56,7 +54,7 @@ impl EnumStr<BasisCard> for BasisCard {
     }
 }
 
-#[derive(Copy, Clone, Debug)]
+#[derive(Copy, Clone, Debug, Eq, PartialEq)]
 pub enum BasisOperator {
     Add,
     Minus,

@@ -13,7 +13,10 @@
 		"build": "rimraf dist pkg && webpack",
 		"start": "rimraf dist pkg && webpack serve --live-reload --watch-files=src --open --hot",
 		"watch": "rimraf dist pkg && webpack --watch",
-		"test": "cargo test && wasm-pack test --headless --chrome"
+		"test:print": "cargo test -- --no-capture",
+		"test:cargo": "cargo test",
+		"test:wasm": "wasm-pack test --headless --chrome",
+		"test": "yarn test:cargo && yarn test:wasm"
 	},
 	"devDependencies": {
 		"@wasm-tool/wasm-pack-plugin": "^1.6.0",

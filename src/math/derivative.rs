@@ -23,26 +23,27 @@ pub fn derivative(basis: &Basis) -> Basis {
         // is complex basis
 
         // check here if operand passed in is actually a BasisCard
-        let mut derived_basis: Option<BasisNode> = None;
+
+        let derived_basis: BasisNode;
 
         match basis_node.operator {
             BasisOperator::Add => {
-                derived_basis = Some(BasisNode {
+                derived_basis = BasisNode {
                     operator: BasisOperator::Add,
                     left_operand: Box::new(derivative(&basis_node.left_operand)),
                     right_operand: Box::new(derivative(&basis_node.right_operand)),
-                });
+                };
             }
             BasisOperator::Minus => {
-                derived_basis = Some(BasisNode {
+                derived_basis = BasisNode {
                     operator: BasisOperator::Minus,
                     left_operand: Box::new(derivative(&basis_node.left_operand)),
                     right_operand: Box::new(derivative(&basis_node.right_operand)),
-                });
+                };
             }
             BasisOperator::Div => {
                 // quotient rule here
-                derived_basis = Some(BasisNode {
+                derived_basis = BasisNode {
                     operator: BasisOperator::Div, // (vdu - udv) / uu
                     left_operand: Box::new(Basis::BasisNode(BasisNode {
                         operator: BasisOperator::Minus, // vdu - udv
@@ -62,11 +63,11 @@ pub fn derivative(basis: &Basis) -> Basis {
                         left_operand: basis_node.left_operand.clone(),  // u
                         right_operand: basis_node.left_operand.clone(), // u
                     })),
-                });
+                };
             }
             BasisOperator::Mult => {
                 // product rule
-                derived_basis = Some(BasisNode {
+                derived_basis = BasisNode {
                     operator: BasisOperator::Add, // udv + vdu
                     left_operand: Box::new(Basis::BasisNode(BasisNode {
                         operator: BasisOperator::Mult,
@@ -78,19 +79,19 @@ pub fn derivative(basis: &Basis) -> Basis {
                         left_operand: basis_node.right_operand.clone(), // v
                         right_operand: Box::new(derivative(&basis_node.left_operand)), // du
                     })),
-                });
+                };
             }
             BasisOperator::Pow(n) => {
                 // power rule
-                derived_basis = Some(BasisNode {
+                derived_basis = BasisNode {
                     operator: BasisOperator::Pow(n - 1), // n * x^(n-1), preceding n is discarded
                     left_operand: basis_node.left_operand.clone(),
                     right_operand: Box::new(Basis::BasisCard(BasisCard::Zero)), // dummy, unused
-                });
+                };
             }
         }
 
-        return Basis::BasisNode(derived_basis.unwrap());
+        return Basis::BasisNode(derived_basis);
     } else {
         // should never be called
         Basis::BasisCard(BasisCard::Zero)
