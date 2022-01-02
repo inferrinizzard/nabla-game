@@ -18,11 +18,23 @@ fn atomic_derivative(basis: &BasisCard) -> BasisCard {
 }
 
 pub fn derivative(basis: &Basis) -> Basis {
-    if basis.basis_type() == "BASIS_CARD" {
-        return Basis::BasisCard(atomic_derivative(&enum_cast!(basis, Basis::BasisCard)));
-    } else {
+    if let Basis::BasisCard(basis_card) = basis {
+        // is standard basis
+        return Basis::BasisCard(atomic_derivative(&basis_card));
+    } else if let Basis::BasisNode(basis_node) = basis {
         // is complex basis
-        // let complex_basis = basis.as_basis_node();
-        return Basis::BasisCard(BasisCard::Zero);
+
+        match basis_node.operator {
+            BasisOperator::Add => {}
+            BasisOperator::Div => {}
+            BasisOperator::Mult => {}
+            BasisOperator::Pow(_) => {}
+        }
+
+        // fallback
+        return Basis::BasisNode(*basis_node);
+    } else {
+        // should never be called
+        Basis::BasisCard(BasisCard::Zero)
     }
 }
