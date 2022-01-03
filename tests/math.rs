@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use nabla_game;
 
 use nabla_game::basis::*;
@@ -6,34 +8,22 @@ use nabla_game::math::*;
 // test all atomic derivatives
 #[test]
 fn test_atomic_derivatives() {
-    assert_eq!(
-        derivative::derivative(&Basis::BasisCard(BasisCard::Cos)),
-        Basis::BasisCard(BasisCard::Sin),
-    );
-    assert_eq!(
-        derivative::derivative(&Basis::BasisCard(BasisCard::Sin)),
-        Basis::BasisCard(BasisCard::Cos),
-    );
-    assert_eq!(
-        derivative::derivative(&Basis::BasisCard(BasisCard::E)),
-        Basis::BasisCard(BasisCard::E),
-    );
-    assert_eq!(
-        derivative::derivative(&Basis::BasisCard(BasisCard::Zero)),
-        Basis::BasisCard(BasisCard::Zero),
-    );
-    assert_eq!(
-        derivative::derivative(&Basis::BasisCard(BasisCard::One)),
-        Basis::BasisCard(BasisCard::Zero),
-    );
-    assert_eq!(
-        derivative::derivative(&Basis::BasisCard(BasisCard::X)),
-        Basis::BasisCard(BasisCard::One),
-    );
-    assert_eq!(
-        derivative::derivative(&Basis::BasisCard(BasisCard::X2)),
-        Basis::BasisCard(BasisCard::X),
-    );
+    let derivative_lookup = HashMap::from([
+        (BasisCard::Cos, BasisCard::Sin),
+        (BasisCard::Sin, BasisCard::Cos),
+        (BasisCard::E, BasisCard::E),
+        (BasisCard::Zero, BasisCard::Zero),
+        (BasisCard::One, BasisCard::Zero),
+        (BasisCard::X, BasisCard::One),
+        (BasisCard::X2, BasisCard::X),
+    ]);
+
+    for (key, value) in derivative_lookup.into_iter() {
+        assert_eq!(
+            derivative::derivative(&Basis::BasisCard(key)),
+            Basis::BasisCard(value),
+        );
+    }
 }
 
 #[test]
@@ -41,56 +31,48 @@ fn test_add_derivative() {
     // test first derivative
     assert_eq!(
         // dx(x + e^x)
-        derivative::derivative(&Basis::BasisNode(BasisNode {
-            operator: BasisOperator::Add,
-            left_operand: Box::new(Basis::BasisCard(BasisCard::X)),
-            right_operand: Box::new(Basis::BasisCard(BasisCard::E)),
-        })),
+        derivative::derivative(&AddBasisNode(
+            &Basis::BasisCard(BasisCard::X),
+            &Basis::BasisCard(BasisCard::E),
+        )),
         // 1 + e^x
-        Basis::BasisNode(BasisNode {
-            operator: BasisOperator::Add,
-            left_operand: Box::new(Basis::BasisCard(BasisCard::One)),
-            right_operand: Box::new(Basis::BasisCard(BasisCard::E)),
-        })
+        AddBasisNode(
+            &Basis::BasisCard(BasisCard::One),
+            &Basis::BasisCard(BasisCard::E),
+        )
     );
 
     // test second derivative
     assert_eq!(
         // dx(dx(cos(x) + x^2))
-        derivative::derivative(&derivative::derivative(&Basis::BasisNode(BasisNode {
-            operator: BasisOperator::Add,
-            left_operand: Box::new(Basis::BasisCard(BasisCard::Cos)),
-            right_operand: Box::new(Basis::BasisCard(BasisCard::X2)),
-        }))),
+        derivative::derivative(&derivative::derivative(&AddBasisNode(
+            &Basis::BasisCard(BasisCard::Cos),
+            &Basis::BasisCard(BasisCard::X2),
+        ))),
         // cos(x) + 1
-        Basis::BasisNode(BasisNode {
-            operator: BasisOperator::Add,
-            left_operand: Box::new(Basis::BasisCard(BasisCard::Cos)),
-            right_operand: Box::new(Basis::BasisCard(BasisCard::One)),
-        })
+        AddBasisNode(
+            &Basis::BasisCard(BasisCard::Cos),
+            &Basis::BasisCard(BasisCard::One),
+        )
     );
 
     // test trinomial (nested BasisNode)
     assert_eq!(
         // dx(sin(x) + x^2 + x)
-        derivative::derivative(&Basis::BasisNode(BasisNode {
-            operator: BasisOperator::Add,
-            left_operand: Box::new(Basis::BasisNode(BasisNode {
-                operator: BasisOperator::Add,
-                left_operand: Box::new(Basis::BasisCard(BasisCard::Sin)),
-                right_operand: Box::new(Basis::BasisCard(BasisCard::X2)),
-            })),
-            right_operand: Box::new(Basis::BasisCard(BasisCard::X)),
-        })),
+        derivative::derivative(&AddBasisNode(
+            &AddBasisNode(
+                &Basis::BasisCard(BasisCard::Sin),
+                &Basis::BasisCard(BasisCard::X2),
+            ),
+            &Basis::BasisCard(BasisCard::X)
+        )),
         // cos(x) + x + 1
-        Basis::BasisNode(BasisNode {
-            operator: BasisOperator::Add,
-            left_operand: Box::new(Basis::BasisNode(BasisNode {
-                operator: BasisOperator::Add,
-                left_operand: Box::new(Basis::BasisCard(BasisCard::Cos)),
-                right_operand: Box::new(Basis::BasisCard(BasisCard::X)),
-            })),
-            right_operand: Box::new(Basis::BasisCard(BasisCard::One)),
-        })
+        AddBasisNode(
+            &AddBasisNode(
+                &Basis::BasisCard(BasisCard::Cos),
+                &Basis::BasisCard(BasisCard::X),
+            ),
+            &Basis::BasisCard(BasisCard::One)
+        )
     );
 }
