@@ -89,6 +89,14 @@ pub fn derivative(basis: &Basis) -> Basis {
                     right_operand: Box::new(Basis::BasisCard(BasisCard::Zero)), // dummy, unused
                 };
             }
+            BasisOperator::Sqrt(n) => {
+                // power rule
+                derived_basis = BasisNode {
+                    operator: BasisOperator::Sqrt(n - 1), // n * x^(n-1), preceding n is discarded
+                    left_operand: basis_node.left_operand.clone(),
+                    right_operand: Box::new(Basis::BasisCard(BasisCard::Zero)), // dummy, unused
+                };
+            }
         }
 
         return Basis::BasisNode(derived_basis);

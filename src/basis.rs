@@ -58,7 +58,8 @@ impl EnumStr<BasisCard> for BasisCard {
 pub enum BasisOperator {
     Add,
     Minus,
-    Pow(i32), // represent sqrt with negative integers, ie. ^1/2 = Pow(-1), use Div for actual reciprocals
+    Pow(i32),
+    Sqrt(i32), // Sqrt(n) = n-1/2, ie. 0 = -1/2, 1 = 1/2, 2 = 3/2
     Mult,
     Div,
 }
@@ -68,9 +69,12 @@ impl EnumStr<BasisOperator> for BasisOperator {
         match s {
             "+" => Some(BasisOperator::Add),
             "-" => Some(BasisOperator::Minus),
-            s if s.matches("[^]-?\\d+").count() > 0 => {
+            s if s.matches("[^]-?\\d+(?!=[/]2)").count() > 0 => {
                 Some(BasisOperator::Pow(s[1..].parse::<i32>().unwrap()))
             } // convert ^n to Pow(n)
+            s if s.matches("[^]-?\\d+(?=[/]2)").count() > 0 => Some(BasisOperator::Sqrt(
+                (s[4..(s.len() - 2)].parse::<i32>().unwrap() + 1) / 2,
+            )), // convert ^n/2 to Sqrt((n + 1)/2), -1/2 → 0, 1/2 → 1, 3/2 → 2
             "*" => Some(BasisOperator::Mult),
             "/" => Some(BasisOperator::Div),
             _ => None,
@@ -82,6 +86,7 @@ impl EnumStr<BasisOperator> for BasisOperator {
             BasisOperator::Add => "+",
             BasisOperator::Minus => "-",
             BasisOperator::Pow(i) => Box::leak(format!("^{}", i).into_boxed_str()), // TODO: remove box leak
+            BasisOperator::Sqrt(i) => Box::leak(format!("^{}/2", i * 2 - 1).into_boxed_str()), // TODO: remove box leak
             BasisOperator::Mult => "*",
             BasisOperator::Div => "/",
         }
