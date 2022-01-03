@@ -92,3 +92,82 @@ impl EnumStr<BasisOperator> for BasisOperator {
         }
     }
 }
+
+#[allow(non_snake_case)]
+pub fn AddBasisNode(left_operand: &Basis, right_operand: &Basis) -> Basis {
+    if let Basis::BasisCard(BasisCard::Zero) = left_operand {
+        return right_operand.clone();
+    } else if let Basis::BasisCard(BasisCard::Zero) = right_operand {
+        return left_operand.clone();
+    } else if left_operand == right_operand {
+        // verify equality check
+        return left_operand.clone();
+    }
+
+    Basis::BasisNode(BasisNode {
+        operator: BasisOperator::Add,
+        left_operand: Box::new(left_operand.clone()),
+        right_operand: Box::new(right_operand.clone()),
+    })
+}
+
+#[allow(non_snake_case)]
+pub fn MinusBasisNode(left_operand: &Basis, right_operand: &Basis) -> Basis {
+    if let Basis::BasisCard(BasisCard::Zero) = right_operand {
+        return left_operand.clone();
+    } else if left_operand == right_operand {
+        // verify equality check
+        return Basis::BasisCard(BasisCard::Zero);
+    }
+
+    Basis::BasisNode(BasisNode {
+        operator: BasisOperator::Minus,
+        left_operand: Box::new(left_operand.clone()),
+        right_operand: Box::new(right_operand.clone()),
+    })
+}
+
+#[allow(non_snake_case)]
+pub fn MultBasisNode(left_operand: &Basis, right_operand: &Basis) -> Basis {
+    if matches!(left_operand, Basis::BasisCard(BasisCard::One)) {
+        return right_operand.clone();
+    } else if matches!(right_operand, Basis::BasisCard(BasisCard::One)) {
+        return left_operand.clone();
+    }
+    return Basis::BasisNode(BasisNode {
+        operator: BasisOperator::Mult,
+        left_operand: Box::new(left_operand.clone()),
+        right_operand: Box::new(right_operand.clone()),
+    });
+}
+
+#[allow(non_snake_case)]
+pub fn DivBasisNode(left_operand: &Basis, right_operand: &Basis) -> Basis {
+    return Basis::BasisNode(BasisNode {
+        operator: BasisOperator::Div,
+        left_operand: Box::new(left_operand.clone()),
+        right_operand: Box::new(right_operand.clone()),
+    });
+}
+
+#[allow(non_snake_case)]
+pub fn PowBasisNode(n: i32, left_operand: &Basis) -> Basis {
+    if matches!(left_operand, Basis::BasisCard(BasisCard::X)) && n == 2 {
+        return Basis::BasisCard(BasisCard::X2);
+    }
+
+    Basis::BasisNode(BasisNode {
+        operator: BasisOperator::Pow(n),
+        left_operand: Box::new(left_operand.clone()),
+        right_operand: Box::new(Basis::BasisCard(BasisCard::Zero)), // dummy, unused
+    })
+}
+
+#[allow(non_snake_case)]
+pub fn SqrtBasisNode(n: i32, left_operand: &Basis) -> Basis {
+    Basis::BasisNode(BasisNode {
+        operator: BasisOperator::Sqrt(n),
+        left_operand: Box::new(left_operand.clone()),
+        right_operand: Box::new(Basis::BasisCard(BasisCard::Zero)), // dummy, unused
+    })
+}

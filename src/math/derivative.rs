@@ -22,86 +22,62 @@ pub fn derivative(basis: &Basis) -> Basis {
     } else if let Basis::BasisNode(basis_node) = basis {
         // is complex basis
 
-        // check here if operand passed in is actually a BasisCard
-
-        let derived_basis: BasisNode;
-
         match basis_node.operator {
             BasisOperator::Add => {
-                derived_basis = BasisNode {
-                    operator: BasisOperator::Add,
-                    left_operand: Box::new(derivative(&basis_node.left_operand)),
-                    right_operand: Box::new(derivative(&basis_node.right_operand)),
-                };
+                return AddBasisNode(
+                    &derivative(&*basis_node.left_operand),
+                    &derivative(&*basis_node.right_operand),
+                );
             }
             BasisOperator::Minus => {
-                derived_basis = BasisNode {
-                    operator: BasisOperator::Minus,
-                    left_operand: Box::new(derivative(&basis_node.left_operand)),
-                    right_operand: Box::new(derivative(&basis_node.right_operand)),
-                };
+                return MinusBasisNode(
+                    &derivative(&*basis_node.left_operand),
+                    &derivative(&*basis_node.right_operand),
+                );
             }
             BasisOperator::Div => {
-                // quotient rule here
-                derived_basis = BasisNode {
-                    operator: BasisOperator::Div, // (vdu - udv) / uu
-                    left_operand: Box::new(Basis::BasisNode(BasisNode {
-                        operator: BasisOperator::Minus, // vdu - udv
-                        left_operand: Box::new(Basis::BasisNode(BasisNode {
-                            operator: BasisOperator::Mult,
-                            left_operand: basis_node.right_operand.clone(), // v
-                            right_operand: Box::new(derivative(&basis_node.left_operand)), // du
-                        })),
-                        right_operand: Box::new(Basis::BasisNode(BasisNode {
-                            operator: BasisOperator::Mult,
-                            left_operand: basis_node.left_operand.clone(), // u
-                            right_operand: Box::new(derivative(&basis_node.right_operand)), // dv
-                        })),
-                    })),
-                    right_operand: Box::new(Basis::BasisNode(BasisNode {
-                        operator: BasisOperator::Mult,                  // uu
-                        left_operand: basis_node.left_operand.clone(),  // u
-                        right_operand: basis_node.left_operand.clone(), // u
-                    })),
-                };
+                // quotient rule, (vdu - udv) / uu
+                return DivBasisNode(
+                    // vdu - udv
+                    &MinusBasisNode(
+                        &MultBasisNode(
+                            &basis_node.right_operand,             // v
+                            &derivative(&basis_node.left_operand), // du
+                        ),
+                        &MultBasisNode(
+                            &basis_node.left_operand,               // u
+                            &derivative(&basis_node.right_operand), // dv
+                        ),
+                    ),
+                    // uu
+                    &MultBasisNode(
+                        &basis_node.left_operand, // u
+                        &basis_node.left_operand, // u
+                    ),
+                );
             }
             BasisOperator::Mult => {
-                // product rule
-                derived_basis = BasisNode {
-                    operator: BasisOperator::Add, // udv + vdu
-                    left_operand: Box::new(Basis::BasisNode(BasisNode {
-                        operator: BasisOperator::Mult,
-                        left_operand: basis_node.left_operand.clone(), // u
-                        right_operand: Box::new(derivative(&basis_node.right_operand)), // dv
-                    })),
-                    right_operand: Box::new(Basis::BasisNode(BasisNode {
-                        operator: BasisOperator::Mult,
-                        left_operand: basis_node.right_operand.clone(), // v
-                        right_operand: Box::new(derivative(&basis_node.left_operand)), // du
-                    })),
-                };
+                // product rule, udv + vdu
+                return AddBasisNode(
+                    &MultBasisNode(
+                        &basis_node.left_operand,               // u
+                        &derivative(&basis_node.right_operand), // dv
+                    ),
+                    &MultBasisNode(
+                        &basis_node.right_operand,             // v
+                        &derivative(&basis_node.left_operand), // du
+                    ),
+                );
             }
             BasisOperator::Pow(n) => {
-                // power rule
-                derived_basis = BasisNode {
-                    operator: BasisOperator::Pow(n - 1), // n * x^(n-1), preceding n is discarded
-                    left_operand: basis_node.left_operand.clone(),
-                    right_operand: Box::new(Basis::BasisCard(BasisCard::Zero)), // dummy, unused
-                };
+                // power rule, n * x^(n-1) : preceding n is discarded
+                return PowBasisNode(n - 1, &*basis_node.left_operand);
             }
             BasisOperator::Sqrt(n) => {
-                // power rule
-                derived_basis = BasisNode {
-                    operator: BasisOperator::Sqrt(n - 1), // n * x^(n-1), preceding n is discarded
-                    left_operand: basis_node.left_operand.clone(),
-                    right_operand: Box::new(Basis::BasisCard(BasisCard::Zero)), // dummy, unused
-                };
+                // power rule, n * x^(n-1) : preceding n is discarded
+                return SqrtBasisNode(n - 1, &*basis_node.left_operand);
             }
         }
-
-        return Basis::BasisNode(derived_basis);
-    } else {
-        // should never be called
-        Basis::BasisCard(BasisCard::Zero)
     }
+    panic!("Passed Object {:?} is not a Basis!", basis);
 }
