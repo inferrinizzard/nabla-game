@@ -13,7 +13,7 @@
 		"build": "rimraf dist pkg && webpack",
 		"start": "rimraf dist pkg && webpack serve --live-reload --watch-files=src --open --hot",
 		"watch": "rimraf dist pkg && webpack --watch",
-		"test:print": "cargo test -- --no-capture",
+		"test:print": "cargo test -- --nocapture",
 		"test:cargo": "cargo test",
 		"test:wasm": "wasm-pack test --headless --chrome",
 		"test": "yarn test:cargo && yarn test:wasm"

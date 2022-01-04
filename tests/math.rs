@@ -148,10 +148,7 @@ fn test_mult_derivatives() {
                     &Basis::BasisCard(BasisCard::E),
                 )
             ),
-            &MultBasisNode(
-                &Basis::BasisCard(BasisCard::Cos),
-                &Basis::BasisCard(BasisCard::Cos),
-            ),
+            &PowBasisNode(2, &Basis::BasisCard(BasisCard::Cos),),
         )
     );
 }
