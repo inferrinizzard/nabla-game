@@ -1,3 +1,5 @@
+use std::fmt;
+
 use super::game::EnumStr;
 
 // type union of the starter basis or complex basis
@@ -7,6 +9,15 @@ pub enum Basis {
     BasisNode(BasisNode),
 }
 
+impl fmt::Display for Basis {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Basis::BasisCard(basis_card) => write!(f, "{}", basis_card),
+            Basis::BasisNode(basis_node) => write!(f, "{}", basis_node),
+        }
+    }
+}
+
 // used for complex bases derived from the starter cards
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct BasisNode {
@@ -14,6 +25,21 @@ pub struct BasisNode {
     // Box heap allocates, prevents recursive struct reference
     pub left_operand: Box<Basis>,
     pub right_operand: Box<Basis>,
+}
+
+impl fmt::Display for BasisNode {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self.operator {
+            BasisOperator::Pow(n) => write!(f, "{}^{}", self.left_operand, n),
+            BasisOperator::Sqrt(n) => write!(f, "{}^({}/2)", self.left_operand, n),
+            BasisOperator::Div => write!(f, "({})/({})", self.left_operand, self.right_operand),
+            _ => write!(
+                f,
+                "{} {} {}",
+                self.left_operand, self.operator, self.right_operand
+            ),
+        }
+    }
 }
 
 #[derive(Hash, Copy, Clone, Debug, Eq, PartialEq)]
@@ -54,6 +80,16 @@ impl EnumStr<BasisCard> for BasisCard {
     }
 }
 
+impl fmt::Display for BasisCard {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            BasisCard::Cos => write!(f, "{}", "cos(x)"),
+            BasisCard::Sin => write!(f, "{}", "sin(x)"),
+            _ => write!(f, "{}", self.to_str()),
+        }
+    }
+}
+
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
 pub enum BasisOperator {
     Add,
@@ -90,6 +126,12 @@ impl EnumStr<BasisOperator> for BasisOperator {
             BasisOperator::Mult => "*",
             BasisOperator::Div => "/",
         }
+    }
+}
+
+impl fmt::Display for BasisOperator {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self.to_str())
     }
 }
 
