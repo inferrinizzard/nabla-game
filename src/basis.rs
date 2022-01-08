@@ -1,6 +1,9 @@
+use wasm_bindgen::prelude::*;
+
 use super::game::EnumStr;
 
 // type union of the starter basis or complex basis
+// #[wasm_bindgen]
 #[derive(Debug)]
 pub enum Basis {
     BasisNode(BasisNode),
@@ -17,6 +20,8 @@ pub struct BasisNode {
     // 2 items only for pow, div (use [Basis; 2] ?)
     // mult, add could be arbitrary num (usually 2, maybe 3)
 }
+
+#[wasm_bindgen]
 #[derive(Copy, Clone, Debug)]
 pub enum BasisCard {
     Zero,

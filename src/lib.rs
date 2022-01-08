@@ -24,7 +24,7 @@ pub fn main_js() -> Result<(), JsValue> {
     // Your code goes here!
     console::log_1(&JsValue::from_str("Hello world!"));
 
-    let game = game::build_game();
+    let game = game::Game::new();
 
     console::log_1(&JsValue::from_str(&format!("{:?}", &game)));
 
