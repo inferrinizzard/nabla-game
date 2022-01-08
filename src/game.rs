@@ -1,4 +1,4 @@
-use wasm_bindgen::prelude::*;
+// use wasm_bindgen::prelude::*;
 
 use rand::seq::SliceRandom;
 use rand::thread_rng;
@@ -53,30 +53,6 @@ fn create_players(deck: &mut Vec<Card>) -> (Vec<Card>, Vec<Card>) {
     (hand_1, hand_2)
 }
 
-pub fn build_game() -> Game {
-    let mut deck = get_new_deck();
-    deck.shuffle(&mut thread_rng());
-
-    let players = create_players(&mut deck);
-    let game = Game {
-        turn_number: 0,
-        field: [
-            Some(Basis::BasisCard(BasisCard::One)),
-            Some(Basis::BasisCard(BasisCard::X)),
-            Some(Basis::BasisCard(BasisCard::X2)),
-            Some(Basis::BasisCard(BasisCard::One)),
-            Some(Basis::BasisCard(BasisCard::X)),
-            Some(Basis::BasisCard(BasisCard::X2)),
-        ],
-        player_1: players.0,
-        player_2: players.1,
-        deck: deck,
-    };
-
-    return game;
-}
-
-// #[wasm_bindgen]
 #[derive(Debug)]
 pub struct Game {
     pub turn_number: i32,          // turn counter
@@ -84,6 +60,29 @@ pub struct Game {
     pub player_1: Vec<Card>,       // up to 7 cards in hand (<7 if deck running low)
     pub player_2: Vec<Card>,
     pub deck: Vec<Card>,
+}
+
+impl Game {
+    pub fn new() -> Game {
+        let mut deck = get_new_deck();
+        deck.shuffle(&mut thread_rng());
+
+        let (player_1, player_2) = create_players(&mut deck);
+        return Game {
+            turn_number: 0,
+            field: [
+                Some(Basis::BasisCard(BasisCard::One)),
+                Some(Basis::BasisCard(BasisCard::X)),
+                Some(Basis::BasisCard(BasisCard::X2)),
+                Some(Basis::BasisCard(BasisCard::One)),
+                Some(Basis::BasisCard(BasisCard::X)),
+                Some(Basis::BasisCard(BasisCard::X2)),
+            ],
+            player_1: player_1,
+            player_2: player_2,
+            deck: deck,
+        };
+    }
 }
 
 // TODO: move this to util file
