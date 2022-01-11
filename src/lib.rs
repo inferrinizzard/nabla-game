@@ -20,13 +20,5 @@ pub fn main_js() -> Result<(), JsValue> {
     // It's disabled in release mode so it doesn't bloat up the file size.
     #[cfg(debug_assertions)]
     console_error_panic_hook::set_once();
-
-    // Your code goes here!
-    // console::log_1(&JsValue::from_str("Hello world!"));
-
-    // let game = game::Game::new();
-
-    // console::log_1(&JsValue::from_str(&format!("{:?}", &game)));
-
     Ok(())
 }

@@ -1,10 +1,11 @@
+use serde::{Deserialize, Serialize};
 use wasm_bindgen::prelude::*;
 
 use super::game::EnumStr;
 
 // type union of the starter basis or complex basis
 // #[wasm_bindgen]
-#[derive(Debug)]
+#[derive(Debug, Serialize, Deserialize)]
 pub enum Basis {
     BasisNode(BasisNode),
     BasisCard(BasisCard),
@@ -12,7 +13,7 @@ pub enum Basis {
 
 // used for complex bases derived from the starter cards
 // #[wasm_bindgen]
-#[derive(Debug)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct BasisNode {
     pub operator: BasisOperator,
     // Vec heap allocates, prevents recursive struct reference
@@ -23,7 +24,7 @@ pub struct BasisNode {
 }
 
 #[wasm_bindgen]
-#[derive(Copy, Clone, Debug)]
+#[derive(Copy, Clone, Debug, Serialize, Deserialize)]
 pub enum BasisCard {
     Zero,
     One,
@@ -62,7 +63,7 @@ impl EnumStr<BasisCard> for BasisCard {
 }
 
 #[wasm_bindgen]
-#[derive(Copy, Clone, Debug)]
+#[derive(Copy, Clone, Debug, Serialize, Deserialize)]
 pub enum BasisOperator {
     Mult,
     Add,

@@ -1,4 +1,5 @@
-use wasm_bindgen::prelude::*;
+use serde::{Deserialize, Serialize};
+// use wasm_bindgen::prelude::*;
 
 use super::basis::BasisCard;
 use super::game::EnumStr;
@@ -9,7 +10,7 @@ pub trait CardType {
 
 // type union of basis cards or operator cards
 // #[wasm_bindgen]
-#[derive(Copy, Clone, Debug)]
+#[derive(Copy, Clone, Debug, Serialize, Deserialize)]
 pub enum Card {
     BasisCard(BasisCard),
     LimitCard(LimitCard),
@@ -28,7 +29,7 @@ impl CardType for Card {
     }
 }
 
-#[derive(Copy, Clone, Debug)]
+#[derive(Copy, Clone, Debug, Serialize, Deserialize)]
 pub enum LimitCard {
     LimPosInf,
     LimNegInf,
@@ -60,7 +61,7 @@ impl EnumStr<LimitCard> for LimitCard {
     }
 }
 
-#[derive(Copy, Clone, Debug)]
+#[derive(Copy, Clone, Debug, Serialize, Deserialize)]
 pub enum DerivativeCard {
     Derivative,
     Nabla,
@@ -89,7 +90,7 @@ impl EnumStr<DerivativeCard> for DerivativeCard {
     }
 }
 
-#[derive(Copy, Clone, Debug)]
+#[derive(Copy, Clone, Debug, Serialize, Deserialize)]
 pub enum AlgebraicCard {
     Div,
     Mult,

@@ -1,8 +1,8 @@
+use serde::{Deserialize, Serialize};
 use serde_wasm_bindgen;
 use wasm_bindgen::prelude::*;
 
-use rand::seq::SliceRandom;
-use rand::thread_rng;
+use rand::{seq::SliceRandom, thread_rng};
 
 use super::basis::*;
 use super::cards::*;
@@ -41,7 +41,7 @@ fn create_players(deck: &mut Vec<Card>) -> (Vec<Card>, Vec<Card>) {
 
     // check for edge case where a player receives all basis cards
     while hand_1.iter().all(|card| card.card_type() == "BASIS_CARD")
-        && hand_2.iter().all(|card| card.card_type() == "BASIS_CARD")
+        || hand_2.iter().all(|card| card.card_type() == "BASIS_CARD")
     {
         // mulligan and re shuffle
         deck.append(&mut hand_1);
@@ -55,7 +55,7 @@ fn create_players(deck: &mut Vec<Card>) -> (Vec<Card>, Vec<Card>) {
 }
 
 // #[wasm_bindgen]
-#[derive(Debug)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct Game {
     pub turn_number: i32,          // turn counter
     pub field: [Option<Basis>; 6], // [0-2] for player_1, [3-5] for player_2
@@ -66,34 +66,30 @@ pub struct Game {
 
 #[wasm_bindgen]
 impl Game {
-    // #[wasm_bindgen(constructor)]
-    // pub fn new() -> Game {
-    //     let mut deck = get_new_deck();
-    //     deck.shuffle(&mut thread_rng());
-
-    //     let (player_1, player_2) = create_players(&mut deck);
-    //     return Game {
-    //         turn_number: 0,
-    //         field: [
-    //             Some(Basis::BasisCard(BasisCard::One)),
-    //             Some(Basis::BasisCard(BasisCard::X)),
-    //             Some(Basis::BasisCard(BasisCard::X2)),
-    //             Some(Basis::BasisCard(BasisCard::One)),
-    //             Some(Basis::BasisCard(BasisCard::X)),
-    //             Some(Basis::BasisCard(BasisCard::X2)),
-    //         ],
-    //         player_1: player_1,
-    //         player_2: player_2,
-    //         deck: deck,
-    //     };
-    // }
-
     #[wasm_bindgen(constructor)]
-    pub fn test_new() -> Result<JsValue, JsValue> {
-        let some_supported_rust_value = ("Hello, world!", 42);
-        let js_value = serde_wasm_bindgen::to_value(&some_supported_rust_value)?;
-        // ...
-        Ok(js_value)
+    pub fn new() -> Result<JsValue, JsValue> {
+        let mut deck = get_new_deck();
+        deck.shuffle(&mut thread_rng());
+
+        let (player_1, player_2) = create_players(&mut deck);
+        let game = Game {
+            turn_number: 0,
+            field: [
+                Some(Basis::BasisCard(BasisCard::One)),
+                Some(Basis::BasisCard(BasisCard::X)),
+                Some(Basis::BasisCard(BasisCard::X2)),
+                Some(Basis::BasisCard(BasisCard::One)),
+                Some(Basis::BasisCard(BasisCard::X)),
+                Some(Basis::BasisCard(BasisCard::X2)),
+            ],
+            player_1: player_1,
+            player_2: player_2,
+            deck: deck,
+        };
+
+        let js_game = serde_wasm_bindgen::to_value(&game)?;
+
+        Ok(js_game)
     }
 }
 
