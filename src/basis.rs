@@ -11,6 +11,7 @@ pub enum Basis {
 }
 
 // used for complex bases derived from the starter cards
+// #[wasm_bindgen]
 #[derive(Debug)]
 pub struct BasisNode {
     pub operator: BasisOperator,
@@ -60,7 +61,8 @@ impl EnumStr<BasisCard> for BasisCard {
     }
 }
 
-#[derive(Debug)]
+#[wasm_bindgen]
+#[derive(Copy, Clone, Debug)]
 pub enum BasisOperator {
     Mult,
     Add,

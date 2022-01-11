@@ -1,3 +1,4 @@
+use serde_wasm_bindgen;
 use wasm_bindgen::prelude::*;
 
 use rand::seq::SliceRandom;
@@ -63,28 +64,36 @@ pub struct Game {
     pub deck: Vec<Card>,
 }
 
-// #[wasm_bindgen]
+#[wasm_bindgen]
 impl Game {
     // #[wasm_bindgen(constructor)]
-    pub fn new() -> Game {
-        let mut deck = get_new_deck();
-        deck.shuffle(&mut thread_rng());
+    // pub fn new() -> Game {
+    //     let mut deck = get_new_deck();
+    //     deck.shuffle(&mut thread_rng());
 
-        let (player_1, player_2) = create_players(&mut deck);
-        return Game {
-            turn_number: 0,
-            field: [
-                Some(Basis::BasisCard(BasisCard::One)),
-                Some(Basis::BasisCard(BasisCard::X)),
-                Some(Basis::BasisCard(BasisCard::X2)),
-                Some(Basis::BasisCard(BasisCard::One)),
-                Some(Basis::BasisCard(BasisCard::X)),
-                Some(Basis::BasisCard(BasisCard::X2)),
-            ],
-            player_1: player_1,
-            player_2: player_2,
-            deck: deck,
-        };
+    //     let (player_1, player_2) = create_players(&mut deck);
+    //     return Game {
+    //         turn_number: 0,
+    //         field: [
+    //             Some(Basis::BasisCard(BasisCard::One)),
+    //             Some(Basis::BasisCard(BasisCard::X)),
+    //             Some(Basis::BasisCard(BasisCard::X2)),
+    //             Some(Basis::BasisCard(BasisCard::One)),
+    //             Some(Basis::BasisCard(BasisCard::X)),
+    //             Some(Basis::BasisCard(BasisCard::X2)),
+    //         ],
+    //         player_1: player_1,
+    //         player_2: player_2,
+    //         deck: deck,
+    //     };
+    // }
+
+    #[wasm_bindgen(constructor)]
+    pub fn test_new() -> Result<JsValue, JsValue> {
+        let some_supported_rust_value = ("Hello, world!", 42);
+        let js_value = serde_wasm_bindgen::to_value(&some_supported_rust_value)?;
+        // ...
+        Ok(js_value)
     }
 }
 
