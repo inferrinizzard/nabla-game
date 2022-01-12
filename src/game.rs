@@ -64,6 +64,23 @@ pub struct Game {
     pub deck: Vec<Card>,
 }
 
+#[wasm_bindgen(typescript_custom_section)]
+const IGAME: &'static str = r#"
+export interface Game {
+    turn_number: number;
+    field: number[];
+    player_1: Card[];
+    player_2: Card[];
+    deck: Card[];
+}
+"#;
+
+#[wasm_bindgen]
+extern "C" {
+    #[wasm_bindgen(typescript_type = "IGame")]
+    pub type IGame;
+}
+
 #[wasm_bindgen]
 impl Game {
     #[wasm_bindgen(constructor)]

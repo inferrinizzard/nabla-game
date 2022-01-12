@@ -11,6 +11,17 @@ pub enum Basis {
     BasisCard(BasisCard),
 }
 
+#[wasm_bindgen(typescript_custom_section)]
+const IBASIS: &'static str = r#"
+export type Basis = BasisNode | BasisCard;
+"#;
+
+#[wasm_bindgen]
+extern "C" {
+    #[wasm_bindgen(typescript_type = "IBasis")]
+    pub type IBasis;
+}
+
 // used for complex bases derived from the starter cards
 // #[wasm_bindgen]
 #[derive(Debug, Serialize, Deserialize)]
@@ -21,6 +32,20 @@ pub struct BasisNode {
     // nested bases for complex bases
     // 2 items only for pow, div (use [Basis; 2] ?)
     // mult, add could be arbitrary num (usually 2, maybe 3)
+}
+
+#[wasm_bindgen(typescript_custom_section)]
+const IBASIS_NODE: &'static str = r#"
+export interface BasisNode {
+    operator: BasisOperator;
+    operands: Basis[];
+}
+"#;
+
+#[wasm_bindgen]
+extern "C" {
+    #[wasm_bindgen(typescript_type = "IBasisNode")]
+    pub type IBasisNode;
 }
 
 #[wasm_bindgen]

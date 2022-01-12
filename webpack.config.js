@@ -7,7 +7,7 @@ const dist = path.resolve(__dirname, 'dist');
 module.exports = {
 	mode: 'production',
 	entry: {
-		index: './js/index.js',
+		index: './js/index.ts',
 	},
 	output: {
 		path: dist,
@@ -21,10 +21,12 @@ module.exports = {
 			},
 		],
 	},
-	// temp, see: https://github.com/rust-random/getrandom/issues/224
 	ignoreWarnings: [
+		// temp, see: https://github.com/rust-random/getrandom/issues/224
 		warning =>
 			warning.message === 'Critical dependency: the request of a dependency is an expression',
+		// warning message caused by wasm-bindgen + webpack
+		warning => /__wbg.+free/.test(warning.message),
 	],
 	experiments: {
 		syncWebAssembly: true,

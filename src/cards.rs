@@ -1,5 +1,5 @@
 use serde::{Deserialize, Serialize};
-// use wasm_bindgen::prelude::*;
+use wasm_bindgen::prelude::*;
 
 use super::basis::BasisCard;
 use super::game::EnumStr;
@@ -18,6 +18,17 @@ pub enum Card {
     AlgebraicCard(AlgebraicCard),
 }
 
+#[wasm_bindgen(typescript_custom_section)]
+const ICARD: &'static str = r#"
+export type Card = BasisCard | LimitCard | DerivativeCard | AlgebraicCard;
+"#;
+
+#[wasm_bindgen]
+extern "C" {
+    #[wasm_bindgen(typescript_type = "ICard")]
+    pub type ICard;
+}
+
 impl CardType for Card {
     fn card_type(&self) -> &'static str {
         match self {
@@ -29,6 +40,7 @@ impl CardType for Card {
     }
 }
 
+#[wasm_bindgen]
 #[derive(Copy, Clone, Debug, Serialize, Deserialize)]
 pub enum LimitCard {
     LimPosInf,
@@ -61,6 +73,7 @@ impl EnumStr<LimitCard> for LimitCard {
     }
 }
 
+#[wasm_bindgen]
 #[derive(Copy, Clone, Debug, Serialize, Deserialize)]
 pub enum DerivativeCard {
     Derivative,
@@ -90,6 +103,7 @@ impl EnumStr<DerivativeCard> for DerivativeCard {
     }
 }
 
+#[wasm_bindgen]
 #[derive(Copy, Clone, Debug, Serialize, Deserialize)]
 pub enum AlgebraicCard {
     Div,
