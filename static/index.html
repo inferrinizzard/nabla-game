@@ -1,10 +1,22 @@
 <!DOCTYPE html>
 <html>
-  <head>
-    <meta charset="UTF-8">
-    <title>My Rust + Webpack project!</title>
-  </head>
-  <body>
-    <script src="index.js"></script>
-  </body>
+	<head>
+		<meta charset="UTF-8" />
+		<title>Nabla Game</title>
+		<link rel="stylesheet" href="index.css" />
+	</head>
+	<body>
+		<canvas id="canvas"></canvas>
+		<script src="index.js"></script>
+		<script>
+			canvas.width = window.innerWidth;
+			canvas.height = window.innerHeight;
+			window.addEventListener('resize', () => {
+				let canvas = document.getElementById('canvas');
+				canvas.width = window.innerWidth;
+				canvas.height = window.innerHeight;
+				// call redraw
+			});
+		</script>
+	</body>
 </html>
