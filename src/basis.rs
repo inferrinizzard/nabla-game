@@ -1,4 +1,5 @@
 use std::fmt;
+use std::string::ToString;
 
 use super::game::EnumStr;
 
