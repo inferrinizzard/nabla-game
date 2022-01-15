@@ -1,6 +1,10 @@
+use gloo::events::EventListener;
 use js_sys::Array;
 use wasm_bindgen::{prelude::*, JsCast};
 use web_sys::*;
+
+use rand::Rng;
+use std::collections::HashMap;
 
 pub mod basis;
 pub mod cards;
@@ -28,6 +32,7 @@ pub struct Canvas {
     context: CanvasRenderingContext2d,
     hit_context: CanvasRenderingContext2d,
     hit_region_map: HashMap<String, String>,
+    mousedown_listener: Option<EventListener>,
 }
 
 impl Canvas {
@@ -64,6 +69,7 @@ impl Canvas {
             context,
             hit_context,
             hit_region_map,
+            mousedown_listener: None,
         }
     }
 }
@@ -93,6 +99,36 @@ pub fn main_js() -> Result<(), JsValue> {
         x: bounds.x / 2.0,
         y: bounds.y / 2.0,
     };
+
+    canvas.mousedown_listener = Some(EventListener::new(
+        &canvas.canvas_element,
+        "mousedown",
+        |e: &Event| {
+            let e = e.dyn_ref::<web_sys::MouseEvent>().unwrap_throw();
+            let canvas = unsafe { CANVAS.as_mut().unwrap() };
+            let pixel = canvas // get pixel colour on hit canvas at this mouse location
+                .hit_context
+                .get_image_data(e.client_x().into(), e.client_y().into(), 1.0, 1.0)
+                .unwrap()
+                .data();
+            let hit_colour = format!(
+                // convert [r,g,b,a] int array into #RRGGBB hex string
+                "#{}",
+                pixel[0..3]
+                    .iter()
+                    .map(|p| format!("{:x}", p))
+                    .collect::<Vec<String>>()
+                    .join(""),
+            );
+
+            console::log_1(&JsValue::from(
+                canvas
+                    .hit_region_map
+                    .get(&hit_colour)
+                    .unwrap_or(&String::new()),
+            ));
+        },
+    ));
 
     let game = game::Game::new();
     draw_field(&center, &game.field);

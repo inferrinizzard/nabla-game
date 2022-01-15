@@ -28,6 +28,8 @@ wasm-bindgen = "0.2.45"
 getrandom = { version = "0.2.3", features = ["js"] }
 rand = "0.8.4"
 
+gloo = "0.6.0"
+
 js-sys = "0.3.22"
 
 # `wee_alloc` is a tiny allocator for wasm that is only ~1K in code size
@@ -50,7 +52,9 @@ features = [
   "Element",
   "HtmlCanvasElement",
 	"CanvasRenderingContext2d",
-  # "KeyboardEvent",
+  "MouseEvent",
+  "ImageData",
+  "EventListener",
   "Node",
   # "WebGlBuffer",
   # "WebGlRenderingContext",
