@@ -1,5 +1,7 @@
 // use wasm_bindgen::prelude::*;
 
+use std::fmt::{Display, Formatter, Result};
+
 use super::basis::BasisCard;
 use super::game::EnumStr;
 
@@ -24,6 +26,17 @@ impl CardType for Card {
             Card::LimitCard(_) => "LIMIT_CARD",
             Card::AlgebraicCard(_) => "ALGEBRAIC_CARD",
             Card::DerivativeCard(_) => "DERIVATIVE_CARD",
+        }
+    }
+}
+
+impl Display for Card {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result {
+        match self {
+            Card::BasisCard(basis_card) => write!(f, "{}", basis_card),
+            Card::LimitCard(limit_card) => write!(f, "{}", limit_card),
+            Card::AlgebraicCard(algebraic_card) => write!(f, "{}", algebraic_card),
+            Card::DerivativeCard(derivative_card) => write!(f, "{}", derivative_card),
         }
     }
 }
@@ -60,6 +73,12 @@ impl EnumStr<LimitCard> for LimitCard {
     }
 }
 
+impl Display for LimitCard {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result {
+        write!(f, "{}", self.to_str())
+    }
+}
+
 #[derive(Copy, Clone, Debug)]
 pub enum DerivativeCard {
     Derivative,
@@ -86,6 +105,12 @@ impl EnumStr<DerivativeCard> for DerivativeCard {
             DerivativeCard::Laplacian => "delta",
             DerivativeCard::Integral => "int",
         }
+    }
+}
+
+impl Display for DerivativeCard {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result {
+        write!(f, "{}", self.to_str())
     }
 }
 
@@ -118,5 +143,11 @@ impl EnumStr<AlgebraicCard> for AlgebraicCard {
             AlgebraicCard::Inverse => "f^-1",
             AlgebraicCard::Log => "ln",
         }
+    }
+}
+
+impl Display for AlgebraicCard {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result {
+        write!(f, "{}", self.to_str())
     }
 }
