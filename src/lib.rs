@@ -27,6 +27,7 @@ pub struct Canvas {
     hit_canvas_element: HtmlCanvasElement,
     context: CanvasRenderingContext2d,
     hit_context: CanvasRenderingContext2d,
+    hit_region_map: HashMap<String, String>,
 }
 
 impl Canvas {
@@ -55,14 +56,19 @@ impl Canvas {
             .dyn_into::<CanvasRenderingContext2d>()
             .unwrap();
 
+        let hit_region_map = HashMap::new();
+
         Canvas {
-            canvas_element: canvas_element,
-            hit_canvas_element: hit_canvas_element,
-            context: context,
-            hit_context: hit_context,
+            canvas_element,
+            hit_canvas_element,
+            context,
+            hit_context,
+            hit_region_map,
         }
     }
 }
+
+pub static mut CANVAS: Option<Canvas> = None;
 
 // This is like the `main` function, except for JavaScript.
 #[wasm_bindgen(start)]
@@ -74,7 +80,10 @@ pub fn main_js() -> Result<(), JsValue> {
 
     let window = web_sys::window().unwrap();
     let document = window.document().unwrap();
-    let canvas = Canvas::new(&document);
+    unsafe {
+        CANVAS = Some(Canvas::new(&document));
+    }
+    let canvas = unsafe { CANVAS.as_mut().unwrap() };
 
     let bounds = Vector2 {
         x: f64::from(canvas.canvas_element.width()),
@@ -86,17 +95,36 @@ pub fn main_js() -> Result<(), JsValue> {
     };
 
     let game = game::Game::new();
-    draw_field(&canvas, &center, &game.field);
+    draw_field(&center, &game.field);
 
     Ok(())
 }
 
-pub fn draw_field(canvas: &Canvas, center: &Vector2, field: &[Option<basis::Basis>; 6]) {
+pub fn random_hit_colour(hit_region_map: &HashMap<String, String>) -> String {
+    let mut hex_colour = String::new();
+
+    while hex_colour.is_empty() || hit_region_map.contains_key(&hex_colour) {
+        hex_colour = vec![0; 6]
+            .iter()
+            .map(|_| format!("{:x}", rand::thread_rng().gen_range(0..16)))
+            .collect::<Vec<String>>()
+            .join("");
+    }
+
+    format!("#{}", hex_colour)
+}
+
+pub fn draw_field(center: &Vector2, field: &[Option<basis::Basis>; 6]) {
+    let canvas = unsafe { CANVAS.as_mut().unwrap() };
+
     let rect_height = 300.0;
     let rect_width = 225.0;
     let gutter = 50.0;
 
     let context = &canvas.context;
+    let hit_context = &canvas.hit_context;
+    let hit_region_map = &mut canvas.hit_region_map;
+
     context.set_font("48px serif");
 
     for (i, card) in field.iter().enumerate() {
@@ -125,6 +153,12 @@ pub fn draw_field(canvas: &Canvas, center: &Vector2, field: &[Option<basis::Basi
                 - gutter / 2.0,
         };
         context.stroke_rect(card_pos.x, card_pos.y, rect_width, rect_height);
+
+        // draw rect onto hit canvas with random colour
+        let hit_colour = random_hit_colour(&hit_region_map);
+        hit_context.set_fill_style(&JsValue::from(&hit_colour));
+        hit_context.fill_rect(card_pos.x, card_pos.y, rect_width, rect_height);
+        hit_region_map.insert(hit_colour, format!("f{}", i));
 
         if let Some(basis) = card {
             context
