@@ -22,6 +22,48 @@ pub struct Vector2 {
     y: f64,
 }
 
+pub struct Canvas {
+    canvas_element: HtmlCanvasElement,
+    hit_canvas_element: HtmlCanvasElement,
+    context: CanvasRenderingContext2d,
+    hit_context: CanvasRenderingContext2d,
+}
+
+impl Canvas {
+    pub fn new(document: &Document) -> Canvas {
+        let canvas_element: HtmlCanvasElement = document
+            .get_element_by_id("canvas")
+            .unwrap()
+            .dyn_into()
+            .unwrap();
+        let hit_canvas_element: HtmlCanvasElement = document
+            .get_element_by_id("hitCanvas")
+            .unwrap()
+            .dyn_into()
+            .unwrap();
+
+        let context = canvas_element
+            .get_context("2d")
+            .unwrap()
+            .unwrap()
+            .dyn_into::<CanvasRenderingContext2d>()
+            .unwrap();
+        let hit_context = hit_canvas_element
+            .get_context("2d")
+            .unwrap()
+            .unwrap()
+            .dyn_into::<CanvasRenderingContext2d>()
+            .unwrap();
+
+        Canvas {
+            canvas_element: canvas_element,
+            hit_canvas_element: hit_canvas_element,
+            context: context,
+            hit_context: hit_context,
+        }
+    }
+}
+
 // This is like the `main` function, except for JavaScript.
 #[wasm_bindgen(start)]
 pub fn main_js() -> Result<(), JsValue> {
@@ -32,36 +74,29 @@ pub fn main_js() -> Result<(), JsValue> {
 
     let window = web_sys::window().unwrap();
     let document = window.document().unwrap();
-    let canvas: HtmlCanvasElement = document.get_element_by_id("canvas").unwrap().dyn_into()?;
+    let canvas = Canvas::new(&document);
 
     let bounds = Vector2 {
-        x: f64::from(canvas.width()),
-        y: f64::from(canvas.height()),
+        x: f64::from(canvas.canvas_element.width()),
+        y: f64::from(canvas.canvas_element.height()),
     };
     let center = Vector2 {
         x: bounds.x / 2.0,
         y: bounds.y / 2.0,
     };
 
-    let context = canvas
-        .get_context("2d")?
-        .unwrap()
-        .dyn_into::<CanvasRenderingContext2d>()?;
     let game = game::Game::new();
-    draw_field(&context, &center, &game.field);
+    draw_field(&canvas, &center, &game.field);
 
     Ok(())
 }
 
-pub fn draw_field(
-    context: &CanvasRenderingContext2d,
-    center: &Vector2,
-    field: &[Option<basis::Basis>; 6],
-) {
+pub fn draw_field(canvas: &Canvas, center: &Vector2, field: &[Option<basis::Basis>; 6]) {
     let rect_height = 300.0;
     let rect_width = 225.0;
     let gutter = 50.0;
 
+    let context = &canvas.context;
     context.set_font("48px serif");
 
     for (i, card) in field.iter().enumerate() {
