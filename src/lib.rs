@@ -24,6 +24,7 @@ mod util;
 static ALLOC: wee_alloc::WeeAlloc = wee_alloc::WeeAlloc::INIT;
 
 pub static mut CANVAS: Option<canvas::Canvas> = None;
+pub static mut GAME: Option<game::Game> = None;
 
 // This is like the `main` function, except for JavaScript.
 #[wasm_bindgen(start)]
@@ -37,6 +38,7 @@ pub fn main_js() -> Result<(), JsValue> {
     let document = window.document().unwrap();
     unsafe {
         CANVAS = Some(canvas::Canvas::new(&document));
+        GAME = Some(game::Game::new())
     }
     let canvas = unsafe { CANVAS.as_mut().unwrap() };
 
@@ -46,10 +48,9 @@ pub fn main_js() -> Result<(), JsValue> {
         event_listeners::mousedown_event_listener,
     ));
 
-    let game = game::Game::new();
-    render::draw_field(&game.field);
-    render::draw_hand(1, game.player_1);
-    render::draw_hand(2, game.player_2);
+    render::draw_field();
+    render::draw_hand(1);
+    render::draw_hand(2);
 
     Ok(())
 }

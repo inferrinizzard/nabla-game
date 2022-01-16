@@ -6,8 +6,8 @@ use rand::Rng;
 use std::collections::HashMap;
 
 use super::util::*;
-use super::CANVAS;
 use super::{basis::*, cards::*};
+use super::{CANVAS, GAME};
 
 pub fn random_hit_colour(hit_region_map: &HashMap<String, String>) -> String {
     let mut hex_colour = String::new();
@@ -23,8 +23,9 @@ pub fn random_hit_colour(hit_region_map: &HashMap<String, String>) -> String {
     format!("#{}", hex_colour)
 }
 
-pub fn draw_field(field: &[Option<Basis>; 6]) {
-    let canvas = unsafe { CANVAS.as_mut().unwrap() };
+pub fn draw_field() {
+    let (canvas, game) = unsafe { (CANVAS.as_mut().unwrap(), GAME.as_mut().unwrap()) };
+    let field = &game.field;
 
     let rect_height = 200.0;
     let rect_width = 150.0;
@@ -81,8 +82,13 @@ pub fn draw_field(field: &[Option<Basis>; 6]) {
     }
 }
 
-pub fn draw_hand(player_num: u32, hand: Vec<Card>) {
-    let canvas = unsafe { CANVAS.as_mut().unwrap() };
+pub fn draw_hand(player_num: u32) {
+    let (canvas, game) = unsafe { (CANVAS.as_mut().unwrap(), GAME.as_mut().unwrap()) };
+    let hand = if player_num == 1 {
+        &game.player_1
+    } else {
+        &game.player_2
+    };
 
     let rect_height = 100.0;
     let rect_width = 75.0;
@@ -95,10 +101,11 @@ pub fn draw_hand(player_num: u32, hand: Vec<Card>) {
     for (i, card) in hand.iter().enumerate() {
         context.begin_path();
 
-        let mut y_pos = gutter;
-        if player_num == 1 {
-            y_pos = canvas.canvas_bounds.y - gutter - rect_height;
-        }
+        let y_pos = if player_num == 1 {
+            canvas.canvas_bounds.y - gutter - rect_height
+        } else {
+            gutter
+        };
 
         let card_pos = Vector2 {
             x: canvas.canvas_center.x - (rect_width * 3.5) - gutter * 3.0
