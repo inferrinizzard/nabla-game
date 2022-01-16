@@ -21,6 +21,7 @@ mod util;
 #[global_allocator]
 static ALLOC: wee_alloc::WeeAlloc = wee_alloc::WeeAlloc::INIT;
 
+#[derive(Default)]
 pub struct Vector2 {
     x: f64,
     y: f64,
@@ -28,10 +29,14 @@ pub struct Vector2 {
 
 pub struct Canvas {
     canvas_element: HtmlCanvasElement,
-    hit_canvas_element: HtmlCanvasElement,
     context: CanvasRenderingContext2d,
+    canvas_bounds: Vector2,
+    canvas_center: Vector2,
+
+    hit_canvas_element: HtmlCanvasElement,
     hit_context: CanvasRenderingContext2d,
     hit_region_map: HashMap<String, String>,
+
     mousedown_listener: Option<EventListener>,
 }
 
@@ -65,8 +70,10 @@ impl Canvas {
 
         Canvas {
             canvas_element,
-            hit_canvas_element,
             context,
+            canvas_bounds: Vector2::default(),
+            canvas_center: Vector2::default(),
+            hit_canvas_element,
             hit_context,
             hit_region_map,
             mousedown_listener: None,
@@ -91,13 +98,13 @@ pub fn main_js() -> Result<(), JsValue> {
     }
     let canvas = unsafe { CANVAS.as_mut().unwrap() };
 
-    let bounds = Vector2 {
+    canvas.canvas_bounds = Vector2 {
         x: f64::from(canvas.canvas_element.width()),
         y: f64::from(canvas.canvas_element.height()),
     };
-    let center = Vector2 {
-        x: bounds.x / 2.0,
-        y: bounds.y / 2.0,
+    canvas.canvas_center = Vector2 {
+        x: canvas.canvas_bounds.x / 2.0,
+        y: canvas.canvas_bounds.y / 2.0,
     };
 
     canvas.mousedown_listener = Some(EventListener::new(
@@ -116,7 +123,7 @@ pub fn main_js() -> Result<(), JsValue> {
                 "#{}",
                 pixel[0..3]
                     .iter()
-                    .map(|p| format!("{:x}", p))
+                    .map(|p| format!("{:02X}", p))
                     .collect::<Vec<String>>()
                     .join(""),
             );
@@ -125,13 +132,15 @@ pub fn main_js() -> Result<(), JsValue> {
                 canvas
                     .hit_region_map
                     .get(&hit_colour)
-                    .unwrap_or(&String::new()),
+                    .unwrap_or(&hit_colour),
             ));
         },
     ));
 
     let game = game::Game::new();
-    draw_field(&center, &game.field);
+    draw_field(&game.field);
+    draw_hand(1, game.player_1);
+    draw_hand(2, game.player_2);
 
     Ok(())
 }
@@ -142,7 +151,7 @@ pub fn random_hit_colour(hit_region_map: &HashMap<String, String>) -> String {
     while hex_colour.is_empty() || hit_region_map.contains_key(&hex_colour) {
         hex_colour = vec![0; 6]
             .iter()
-            .map(|_| format!("{:x}", rand::thread_rng().gen_range(0..16)))
+            .map(|_| format!("{:X}", rand::thread_rng().gen_range(0..16)))
             .collect::<Vec<String>>()
             .join("");
     }
@@ -150,18 +159,16 @@ pub fn random_hit_colour(hit_region_map: &HashMap<String, String>) -> String {
     format!("#{}", hex_colour)
 }
 
-pub fn draw_field(center: &Vector2, field: &[Option<basis::Basis>; 6]) {
+pub fn draw_field(field: &[Option<basis::Basis>; 6]) {
     let canvas = unsafe { CANVAS.as_mut().unwrap() };
 
-    let rect_height = 300.0;
-    let rect_width = 225.0;
+    let rect_height = 200.0;
+    let rect_width = 150.0;
     let gutter = 50.0;
 
     let context = &canvas.context;
     let hit_context = &canvas.hit_context;
     let hit_region_map = &mut canvas.hit_region_map;
-
-    context.set_font("48px serif");
 
     for (i, card) in field.iter().enumerate() {
         if card.is_none() {
@@ -178,23 +185,25 @@ pub fn draw_field(center: &Vector2, field: &[Option<basis::Basis>; 6]) {
                 .set_line_dash(&JsValue::from(&js_sys::Array::new()))
                 .expect(format!("Cannot set line dash for {:?}", card).as_str());
         }
-
         context.begin_path();
         let card_pos = Vector2 {
-            x: center.x + (i.rem_euclid(3) as f64) * (rect_width + gutter)
+            x: canvas.canvas_center.x + ((i % 3) as f64) * (rect_width + gutter)
                 - rect_width * 1.5
                 - gutter,
-            y: center.y + (i.rem_euclid(2) as f64) * (rect_height + gutter)
+            y: canvas.canvas_center.y + ((i / 3) as f64) * (rect_height + gutter)
                 - rect_height
                 - gutter / 2.0,
         };
         context.stroke_rect(card_pos.x, card_pos.y, rect_width, rect_height);
-
         // draw rect onto hit canvas with random colour
         let hit_colour = random_hit_colour(&hit_region_map);
         hit_context.set_fill_style(&JsValue::from(&hit_colour));
         hit_context.fill_rect(card_pos.x, card_pos.y, rect_width, rect_height);
-        hit_region_map.insert(hit_colour, format!("f{}", i));
+        hit_region_map.insert(hit_colour, format!("f={}", i));
+
+        context.set_font("40px serif");
+        context.set_text_baseline("middle");
+        context.set_text_align("center");
 
         if let Some(basis) = card {
             context
@@ -205,5 +214,50 @@ pub fn draw_field(center: &Vector2, field: &[Option<basis::Basis>; 6]) {
                 )
                 .expect(&format!("Cannot print text for {:?}", card));
         }
+    }
+}
+
+pub fn draw_hand(player_num: u32, hand: Vec<cards::Card>) {
+    let canvas = unsafe { CANVAS.as_mut().unwrap() };
+
+    let rect_height = 100.0;
+    let rect_width = 75.0;
+    let gutter = 25.0;
+
+    let context = &canvas.context;
+    let hit_context = &canvas.hit_context;
+    let hit_region_map = &mut canvas.hit_region_map;
+
+    for (i, card) in hand.iter().enumerate() {
+        context.begin_path();
+
+        let mut y_pos = gutter;
+        if player_num == 1 {
+            y_pos = canvas.canvas_bounds.y - gutter - rect_height;
+        }
+
+        let card_pos = Vector2 {
+            x: canvas.canvas_center.x - (rect_width * 3.5) - gutter * 3.0
+                + (i as f64) * (rect_width + gutter),
+            y: y_pos,
+        };
+        context.stroke_rect(card_pos.x, card_pos.y, rect_width, rect_height);
+        // draw rect onto hit canvas with random colour
+        let hit_colour = random_hit_colour(&hit_region_map);
+        hit_context.set_fill_style(&JsValue::from(&hit_colour));
+        hit_context.fill_rect(card_pos.x, card_pos.y, rect_width, rect_height);
+        hit_region_map.insert(hit_colour, format!("p{}={}", player_num, i));
+
+        context.set_font("20px serif");
+        context.set_text_baseline("middle");
+        context.set_text_align("center");
+
+        context
+            .fill_text(
+                &card.to_string(),
+                card_pos.x + rect_width / 2.0,
+                card_pos.y + rect_width / 2.0,
+            )
+            .expect(&format!("Cannot print text for {:?}", card));
     }
 }
