@@ -1,6 +1,6 @@
 use std::fmt::{Display, Formatter, Result};
 
-use super::game::EnumStr;
+use super::util::EnumStr;
 
 // type union of the starter basis or complex basis
 #[derive(Clone, Debug, Eq, PartialEq)]

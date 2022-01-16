@@ -3,7 +3,7 @@
 use std::fmt::{Display, Formatter, Result};
 
 use super::basis::BasisCard;
-use super::game::EnumStr;
+use super::util::EnumStr;
 
 pub trait CardType {
     fn card_type(&self) -> &'static str;
