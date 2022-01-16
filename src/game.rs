@@ -55,7 +55,7 @@ fn create_players(deck: &mut Vec<Card>) -> (Vec<Card>, Vec<Card>) {
 
 #[derive(Debug)]
 pub struct Game {
-    pub turn_number: i32,          // turn counter
+    pub turn: Turn,                // turn counter
     pub field: [Option<Basis>; 6], // [0-2] for player_1, [3-5] for player_2
     pub player_1: Vec<Card>,       // up to 7 cards in hand (<7 if deck running low)
     pub player_2: Vec<Card>,
@@ -69,7 +69,10 @@ impl Game {
 
         let (player_1, player_2) = create_players(&mut deck);
         return Game {
-            turn_number: 0,
+            turn: Turn {
+                number: 0,
+                phase: TurnPhase::IDLE,
+            },
             field: [
                 Some(Basis::BasisCard(BasisCard::One)),
                 Some(Basis::BasisCard(BasisCard::X)),
@@ -85,3 +88,17 @@ impl Game {
     }
 }
 
+#[derive(Debug)]
+pub struct Turn {
+    pub number: u32,
+    pub phase: TurnPhase,
+}
+
+// IDLE → SELECTED →
+#[derive(Debug)]
+pub enum TurnPhase {
+    IDLE,
+    SELECT,       // single-basis operators or playing new operators with a blank slot
+    FIELD_SELECT, // nabla or laplacian
+    MULTISELECT,  // mult or div
+}

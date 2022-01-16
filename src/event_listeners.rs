@@ -4,8 +4,7 @@ use web_sys::*;
 use super::event_handlers::*;
 use super::CANVAS;
 
-pub fn mousedown_event_listener(event: &Event) {
-    let e = event.dyn_ref::<MouseEvent>().unwrap_throw();
+pub fn get_hit_region_id(e: &MouseEvent) -> String {
     let canvas = unsafe { CANVAS.as_mut().unwrap() };
     let pixel = canvas // get pixel colour on hit canvas at this mouse location
         .hit_context
@@ -22,7 +21,14 @@ pub fn mousedown_event_listener(event: &Event) {
             .join(""),
     );
 
-    let hit_region_id = canvas.hit_region_map.get(&hit_colour).unwrap();
+    canvas
+        .hit_region_map
+        .get(&hit_colour)
+        .unwrap_or(&String::new())
+        .clone()
+}
 
-    handle_mousedown(hit_region_id);
+pub fn mousedown_event_listener(event: &Event) {
+    let e = event.dyn_ref::<MouseEvent>().unwrap_throw();
+    handle_mousedown(&get_hit_region_id(e));
 }
