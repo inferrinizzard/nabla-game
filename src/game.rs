@@ -94,11 +94,10 @@ pub struct Turn {
     pub phase: TurnPhase,
 }
 
-// IDLE → SELECTED →
 #[derive(Debug)]
 pub enum TurnPhase {
-    IDLE,
-    SELECT,       // single-basis operators or playing new operators with a blank slot
-    FIELD_SELECT, // nabla or laplacian
-    MULTISELECT,  // mult or div
+    IDLE,               // start of turn
+    SELECT(Card),       // single-basis operators or playing new operators with a blank slot
+    FIELD_SELECT(Card), // nabla or laplacian
+    MULTISELECT(Card),  // mult or div
 }

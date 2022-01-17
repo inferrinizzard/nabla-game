@@ -2,8 +2,36 @@
 
 use std::fmt::{Display, Formatter, Result};
 
-use super::basis::BasisCard;
+use super::basis::*;
+use super::math::derivative::*;
 use super::util::EnumStr;
+
+pub fn apply_card(card: &Card) -> impl Fn(&Basis) -> Basis {
+    let card = card.clone();
+    return move |basis| match card {
+        Card::DerivativeCard(DerivativeCard::Derivative) => {
+            return derivative(basis);
+        }
+        Card::DerivativeCard(DerivativeCard::Integral) => {
+            // TODO: add integration here
+            return Basis::BasisCard(BasisCard::Zero);
+        }
+        Card::AlgebraicCard(AlgebraicCard::Sqrt) => {
+            return SqrtBasisNode(1, basis);
+        }
+        Card::AlgebraicCard(AlgebraicCard::Inverse) => {
+            // TODO: add inverse here
+            return Basis::BasisCard(BasisCard::Zero);
+        }
+        Card::AlgebraicCard(AlgebraicCard::Log) => {
+            // TODO: add log here
+            return Basis::BasisCard(BasisCard::Zero);
+        }
+        _ => {
+            return Basis::BasisCard(BasisCard::Zero);
+        }
+    };
+}
 
 pub trait CardType {
     fn card_type(&self) -> &'static str;
@@ -11,7 +39,7 @@ pub trait CardType {
 
 // type union of basis cards or operator cards
 // #[wasm_bindgen]
-#[derive(Copy, Clone, Debug)]
+#[derive(Copy, Clone, Debug, Hash, Eq, PartialEq)]
 pub enum Card {
     BasisCard(BasisCard),
     LimitCard(LimitCard),
@@ -41,7 +69,7 @@ impl Display for Card {
     }
 }
 
-#[derive(Copy, Clone, Debug)]
+#[derive(Copy, Clone, Debug, Hash, Eq, PartialEq)]
 pub enum LimitCard {
     LimPosInf,
     LimNegInf,
@@ -79,7 +107,7 @@ impl Display for LimitCard {
     }
 }
 
-#[derive(Copy, Clone, Debug)]
+#[derive(Copy, Clone, Debug, Hash, Eq, PartialEq)]
 pub enum DerivativeCard {
     Derivative,
     Nabla,
@@ -114,7 +142,7 @@ impl Display for DerivativeCard {
     }
 }
 
-#[derive(Copy, Clone, Debug)]
+#[derive(Copy, Clone, Debug, Hash, Eq, PartialEq)]
 pub enum AlgebraicCard {
     Div,
     Mult,
