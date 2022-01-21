@@ -51,6 +51,7 @@ pub enum BasisCard {
     Cos,
     Sin,
     E,
+    Inf,
 }
 
 impl EnumStr<BasisCard> for BasisCard {
@@ -63,6 +64,7 @@ impl EnumStr<BasisCard> for BasisCard {
             "cosx" => Some(BasisCard::Cos),
             "sinx" => Some(BasisCard::Sin),
             "e^x" => Some(BasisCard::E),
+            "INF" => Some(BasisCard::Inf),
             _ => None,
         }
     }
@@ -76,6 +78,7 @@ impl EnumStr<BasisCard> for BasisCard {
             BasisCard::Cos => "cosx",
             BasisCard::Sin => "sinx",
             BasisCard::E => "e^x",
+            BasisCard::Inf => "INF",
         }
     }
 }
