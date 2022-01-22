@@ -280,10 +280,26 @@ pub fn PowBasisNode(n: i32, left_operand: &Basis) -> Basis {
     // x^0 = 1
     if n == 0 {
         return Basis::BasisCard(BasisCard::One);
+    } else if matches!(
+        left_operand,
+        Basis::BasisCard(BasisCard::Zero) | Basis::BasisCard(BasisCard::One)
+    ) {
+        return left_operand.clone();
     }
     // x^2 → X2
     else if matches!(left_operand, Basis::BasisCard(BasisCard::X)) && n == 2 {
         return Basis::BasisCard(BasisCard::X2);
+    } else if let Basis::BasisNode(BasisNode {
+        operator: BasisOperator::Pow(m),
+        left_operand: inner_left_operand,
+        ..
+    }) = left_operand
+    {
+        return Basis::BasisNode(BasisNode {
+            operator: BasisOperator::Pow(n + m),
+            left_operand: inner_left_operand.clone(),
+            right_operand: Box::new(Basis::BasisCard(BasisCard::Zero)), // dummy, unused
+        });
     }
 
     Basis::BasisNode(BasisNode {
@@ -295,6 +311,24 @@ pub fn PowBasisNode(n: i32, left_operand: &Basis) -> Basis {
 
 #[allow(non_snake_case)]
 pub fn SqrtBasisNode(n: i32, left_operand: &Basis) -> Basis {
+    if matches!(
+        left_operand,
+        Basis::BasisCard(BasisCard::Zero) | Basis::BasisCard(BasisCard::One)
+    ) {
+        return left_operand.clone();
+    } else if let Basis::BasisNode(BasisNode {
+        operator: BasisOperator::Pow(m),
+        left_operand: inner_left_operand,
+        ..
+    }) = left_operand
+    {
+        return Basis::BasisNode(BasisNode {
+            operator: BasisOperator::Sqrt(n + m * 2),
+            left_operand: inner_left_operand.clone(),
+            right_operand: Box::new(Basis::BasisCard(BasisCard::Zero)), // dummy, unused
+        });
+    }
+
     Basis::BasisNode(BasisNode {
         operator: BasisOperator::Sqrt(n),
         left_operand: Box::new(left_operand.clone()),
