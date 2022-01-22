@@ -32,6 +32,7 @@ impl Display for BasisNode {
         match self.operator {
             BasisOperator::Pow(n) => write!(f, "{}^{}", self.left_operand, n),
             BasisOperator::Sqrt(n) => write!(f, "{}^({}/2)", self.left_operand, n),
+            BasisOperator::Log => write!(f, "log({})", self.left_operand),
             BasisOperator::Div => write!(f, "({})/({})", self.left_operand, self.right_operand),
             _ => write!(
                 f,
@@ -98,6 +99,7 @@ pub enum BasisOperator {
     Sqrt(i32), // Sqrt(n) = n/2 (numerator), ie. -1, 1, 3
     Mult,
     Div,
+    Log,
 }
 
 impl EnumStr<BasisOperator> for BasisOperator {
@@ -113,6 +115,7 @@ impl EnumStr<BasisOperator> for BasisOperator {
             )),
             "*" => Some(BasisOperator::Mult),
             "/" => Some(BasisOperator::Div),
+            "Log" => Some(BasisOperator::Log),
             _ => None,
         }
     }
@@ -125,6 +128,7 @@ impl EnumStr<BasisOperator> for BasisOperator {
             BasisOperator::Sqrt(i) => Box::leak(format!("^{}/2", i).into_boxed_str()), // TODO: remove box leak
             BasisOperator::Mult => "*",
             BasisOperator::Div => "/",
+            BasisOperator::Log => "Log",
         }
     }
 }
@@ -331,6 +335,15 @@ pub fn SqrtBasisNode(n: i32, left_operand: &Basis) -> Basis {
 
     Basis::BasisNode(BasisNode {
         operator: BasisOperator::Sqrt(n),
+        left_operand: Box::new(left_operand.clone()),
+        right_operand: Box::new(Basis::BasisCard(BasisCard::Zero)), // dummy, unused
+    })
+}
+
+#[allow(non_snake_case)]
+pub fn LogBasisNode(left_operand: &Basis) -> Basis {
+    Basis::BasisNode(BasisNode {
+        operator: BasisOperator::Log,
         left_operand: Box::new(left_operand.clone()),
         right_operand: Box::new(Basis::BasisCard(BasisCard::Zero)), // dummy, unused
     })
