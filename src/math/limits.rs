@@ -2,18 +2,8 @@ use std::collections::HashMap;
 
 use super::super::basis::*;
 use super::super::cards::*;
-use super::super::util::*;
 
 pub fn limit(card: &LimitCard) -> impl Fn(&Basis) -> Basis {
-    let card = card.clone();
-    return move |basis| {
-        let basis_limit = recursive_limit(&card)(basis);
-
-        Basis::BasisCard(BasisCard::Zero)
-    };
-}
-
-pub fn recursive_limit(card: &LimitCard) -> impl Fn(&Basis) -> Basis {
     let card = card.clone();
     return move |basis| {
         let limit_map = get_limit_map(&card);
@@ -25,8 +15,8 @@ pub fn recursive_limit(card: &LimitCard) -> impl Fn(&Basis) -> Basis {
                 right_operand,
             }) => Basis::BasisNode(BasisNode {
                 operator: *operator,
-                left_operand: Box::new(recursive_limit(&card)(left_operand)),
-                right_operand: Box::new(recursive_limit(&card)(right_operand)),
+                left_operand: Box::new(limit(&card)(left_operand)),
+                right_operand: Box::new(limit(&card)(right_operand)),
             }),
         }
     };
