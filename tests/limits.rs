@@ -21,7 +21,7 @@ fn test_basic_limit_zero() {
 
     for (key, value) in limit_zero_map.iter() {
         assert_eq!(
-            limit_zero_function(&Basis::BasisCard(*key)),
+            limit_zero_function(&Basis::BasisCard(*key)).unwrap(),
             Basis::BasisCard(*value)
         );
     }
@@ -41,11 +41,11 @@ fn test_basic_limit_inf() {
 
     for (key, value) in limit_inf_map.iter() {
         assert_eq!(
-            limit_pos_inf_function(&Basis::BasisCard(*key)),
+            limit_pos_inf_function(&Basis::BasisCard(*key)).unwrap(),
             Basis::BasisCard(*value)
         );
         assert_eq!(
-            limit_neg_inf_function(&Basis::BasisCard(*key)),
+            limit_neg_inf_function(&Basis::BasisCard(*key)).unwrap(),
             Basis::BasisCard(*value)
         );
     }
@@ -67,12 +67,58 @@ fn test_basic_liminfsup() {
 
     for (key, value) in liminfsup_map.iter() {
         assert_eq!(
-            liminf_function(&Basis::BasisCard(*key)),
+            liminf_function(&Basis::BasisCard(*key)).unwrap(),
             Basis::BasisCard(*value)
         );
         assert_eq!(
-            limsup_function(&Basis::BasisCard(*key)),
+            limsup_function(&Basis::BasisCard(*key)).unwrap(),
             Basis::BasisCard(*value)
         );
     }
+}
+
+#[test]
+fn test_complex_basis_limits() {
+    let add_basis = AddBasisNode(
+        &Basis::BasisCard(BasisCard::X),
+        &Basis::BasisCard(BasisCard::E),
+    );
+
+    assert_eq!(
+        limits::limit(&LimitCard::Lim0)(&add_basis)
+            .unwrap()
+            .resolve(),
+        Basis::BasisCard(BasisCard::One)
+    );
+
+    let minus_basis = MinusBasisNode(
+        &Basis::BasisCard(BasisCard::Sin),
+        &Basis::BasisCard(BasisCard::Cos),
+    );
+
+    assert_eq!(
+        limits::limit(&LimitCard::Limsup)(&minus_basis)
+            .unwrap()
+            .resolve(),
+        Basis::BasisCard(BasisCard::Zero)
+    );
+
+    let mult_basis = MultBasisNode(
+        &Basis::BasisCard(BasisCard::E),
+        &Basis::BasisCard(BasisCard::X2),
+    );
+
+    assert_eq!(
+        limits::limit(&LimitCard::LimPosInf)(&mult_basis)
+            .unwrap()
+            .resolve(),
+        Basis::BasisCard(BasisCard::Inf)
+    );
+
+    let invalid_basis = MultBasisNode(
+        &Basis::BasisCard(BasisCard::X),
+        &Basis::BasisCard(BasisCard::Sin),
+    );
+
+    assert_eq!(limits::limit(&LimitCard::LimPosInf)(&invalid_basis), None);
 }

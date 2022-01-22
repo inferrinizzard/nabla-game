@@ -3,21 +3,36 @@ use std::collections::HashMap;
 use super::super::basis::*;
 use super::super::cards::*;
 
-pub fn limit(card: &LimitCard) -> impl Fn(&Basis) -> Basis {
-    let card = card.clone();
+pub fn limit(_limit_card: &LimitCard) -> impl Fn(&Basis) -> Option<Basis> {
+    let limit_card = _limit_card.clone();
     return move |basis| {
-        let limit_map = get_limit_map(&card);
+        let limit_map = get_limit_map(&limit_card);
         match basis {
-            Basis::BasisCard(basis_card) => Basis::BasisCard(limit_map[&basis_card]),
+            Basis::BasisCard(basis_card) => {
+                if matches!(limit_card, LimitCard::LimPosInf | LimitCard::LimNegInf)
+                    && matches!(basis_card, BasisCard::Sin | BasisCard::Cos)
+                {
+                    return None; // invalid limit (ie. oscillating function)
+                }
+                Some(Basis::BasisCard(limit_map[&basis_card]))
+            }
             Basis::BasisNode(BasisNode {
                 operator,
                 left_operand,
                 right_operand,
-            }) => Basis::BasisNode(BasisNode {
-                operator: *operator,
-                left_operand: Box::new(limit(&card)(left_operand)),
-                right_operand: Box::new(limit(&card)(right_operand)),
-            }),
+            }) => {
+                let left_limit = limit(&limit_card)(left_operand);
+                let right_limit = limit(&limit_card)(right_operand);
+                if left_limit.is_none() || right_limit.is_none() {
+                    return None; // bubble up invalid limit
+                }
+
+                Some(Basis::BasisNode(BasisNode {
+                    operator: *operator,
+                    left_operand: Box::new(left_limit.unwrap()),
+                    right_operand: Box::new(right_limit.unwrap()),
+                }))
+            }
         }
     };
 }

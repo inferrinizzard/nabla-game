@@ -29,7 +29,10 @@ pub fn apply_card(card: &Card) -> impl Fn(&Basis) -> Basis {
             return Basis::BasisCard(BasisCard::Zero);
         }
         Card::LimitCard(limit_card) => {
-            return limit(&limit_card)(&basis).resolve();
+            let basis_limit = limit(&limit_card)(&basis).unwrap_or(
+                Basis::BasisCard(BasisCard::X), // invalid limit placeholder
+            );
+            return basis_limit.resolve();
         }
         _ => {
             return Basis::BasisCard(BasisCard::Zero);
