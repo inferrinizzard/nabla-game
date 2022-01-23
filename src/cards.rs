@@ -4,6 +4,7 @@ use std::fmt::{Display, Formatter, Result};
 
 use super::basis::*;
 use super::math::derivative::*;
+use super::math::logarithm::*;
 use super::util::EnumStr;
 
 pub fn apply_card(card: &Card) -> impl Fn(&Basis) -> Basis {
@@ -23,10 +24,7 @@ pub fn apply_card(card: &Card) -> impl Fn(&Basis) -> Basis {
             // TODO: add inverse here
             return Basis::BasisCard(BasisCard::Zero);
         }
-        Card::AlgebraicCard(AlgebraicCard::Log) => {
-            // TODO: add log here
-            return Basis::BasisCard(BasisCard::Zero);
-        }
+        Card::AlgebraicCard(AlgebraicCard::Log) => logarithm(&basis),
         _ => {
             return Basis::BasisCard(BasisCard::Zero);
         }
