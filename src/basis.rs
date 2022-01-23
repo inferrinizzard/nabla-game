@@ -1,7 +1,6 @@
-use std::fmt;
-use std::string::ToString;
+use std::fmt::{Display, Formatter, Result};
 
-use super::game::EnumStr;
+use super::util::EnumStr;
 
 // type union of the starter basis or complex basis
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -10,8 +9,8 @@ pub enum Basis {
     BasisNode(BasisNode),
 }
 
-impl fmt::Display for Basis {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+impl Display for Basis {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result {
         match self {
             Basis::BasisCard(basis_card) => write!(f, "{}", basis_card),
             Basis::BasisNode(basis_node) => write!(f, "{}", basis_node),
@@ -28,8 +27,8 @@ pub struct BasisNode {
     pub right_operand: Box<Basis>,
 }
 
-impl fmt::Display for BasisNode {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+impl Display for BasisNode {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result {
         match self.operator {
             BasisOperator::Pow(n) => write!(f, "{}^{}", self.left_operand, n),
             BasisOperator::Sqrt(n) => write!(f, "{}^({}/2)", self.left_operand, n),
@@ -81,8 +80,8 @@ impl EnumStr<BasisCard> for BasisCard {
     }
 }
 
-impl fmt::Display for BasisCard {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+impl Display for BasisCard {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result {
         match self {
             BasisCard::Cos => write!(f, "{}", "cos(x)"),
             BasisCard::Sin => write!(f, "{}", "sin(x)"),
@@ -130,8 +129,8 @@ impl EnumStr<BasisOperator> for BasisOperator {
     }
 }
 
-impl fmt::Display for BasisOperator {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+impl Display for BasisOperator {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result {
         write!(f, "{}", self.to_str())
     }
 }

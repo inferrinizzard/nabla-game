@@ -1,7 +1,37 @@
 // use wasm_bindgen::prelude::*;
 
-use super::basis::BasisCard;
-use super::game::EnumStr;
+use std::fmt::{Display, Formatter, Result};
+
+use super::basis::*;
+use super::math::derivative::*;
+use super::util::EnumStr;
+
+pub fn apply_card(card: &Card) -> impl Fn(&Basis) -> Basis {
+    let card = card.clone();
+    return move |basis| match card {
+        Card::DerivativeCard(DerivativeCard::Derivative) => {
+            return derivative(basis);
+        }
+        Card::DerivativeCard(DerivativeCard::Integral) => {
+            // TODO: add integration here
+            return Basis::BasisCard(BasisCard::Zero);
+        }
+        Card::AlgebraicCard(AlgebraicCard::Sqrt) => {
+            return SqrtBasisNode(1, basis);
+        }
+        Card::AlgebraicCard(AlgebraicCard::Inverse) => {
+            // TODO: add inverse here
+            return Basis::BasisCard(BasisCard::Zero);
+        }
+        Card::AlgebraicCard(AlgebraicCard::Log) => {
+            // TODO: add log here
+            return Basis::BasisCard(BasisCard::Zero);
+        }
+        _ => {
+            return Basis::BasisCard(BasisCard::Zero);
+        }
+    };
+}
 
 pub trait CardType {
     fn card_type(&self) -> &'static str;
@@ -9,7 +39,7 @@ pub trait CardType {
 
 // type union of basis cards or operator cards
 // #[wasm_bindgen]
-#[derive(Copy, Clone, Debug)]
+#[derive(Copy, Clone, Debug, Hash, Eq, PartialEq)]
 pub enum Card {
     BasisCard(BasisCard),
     LimitCard(LimitCard),
@@ -28,7 +58,18 @@ impl CardType for Card {
     }
 }
 
-#[derive(Copy, Clone, Debug)]
+impl Display for Card {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result {
+        match self {
+            Card::BasisCard(basis_card) => write!(f, "{}", basis_card),
+            Card::LimitCard(limit_card) => write!(f, "{}", limit_card),
+            Card::AlgebraicCard(algebraic_card) => write!(f, "{}", algebraic_card),
+            Card::DerivativeCard(derivative_card) => write!(f, "{}", derivative_card),
+        }
+    }
+}
+
+#[derive(Copy, Clone, Debug, Hash, Eq, PartialEq)]
 pub enum LimitCard {
     LimPosInf,
     LimNegInf,
@@ -60,7 +101,13 @@ impl EnumStr<LimitCard> for LimitCard {
     }
 }
 
-#[derive(Copy, Clone, Debug)]
+impl Display for LimitCard {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result {
+        write!(f, "{}", self.to_str())
+    }
+}
+
+#[derive(Copy, Clone, Debug, Hash, Eq, PartialEq)]
 pub enum DerivativeCard {
     Derivative,
     Nabla,
@@ -89,7 +136,13 @@ impl EnumStr<DerivativeCard> for DerivativeCard {
     }
 }
 
-#[derive(Copy, Clone, Debug)]
+impl Display for DerivativeCard {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result {
+        write!(f, "{}", self.to_str())
+    }
+}
+
+#[derive(Copy, Clone, Debug, Hash, Eq, PartialEq)]
 pub enum AlgebraicCard {
     Div,
     Mult,
@@ -118,5 +171,11 @@ impl EnumStr<AlgebraicCard> for AlgebraicCard {
             AlgebraicCard::Inverse => "f^-1",
             AlgebraicCard::Log => "ln",
         }
+    }
+}
+
+impl Display for AlgebraicCard {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result {
+        write!(f, "{}", self.to_str())
     }
 }
