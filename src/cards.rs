@@ -1,3 +1,5 @@
+// use wasm_bindgen::prelude::*;
+
 use super::basis::BasisCard;
 use super::game::EnumStr;
 
@@ -6,6 +8,7 @@ pub trait CardType {
 }
 
 // type union of basis cards or operator cards
+// #[wasm_bindgen]
 #[derive(Copy, Clone, Debug)]
 pub enum Card {
     BasisCard(BasisCard),
