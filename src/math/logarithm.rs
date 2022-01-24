@@ -21,7 +21,7 @@ pub fn logarithm(basis: &Basis) -> Basis {
                 &logarithm(&basis_node.left_operand),
                 &logarithm(&basis_node.right_operand),
             ),
-            BasisOperator::Pow(_) | BasisOperator::Sqrt(_) => {
+            BasisOperator::Pow(_, _) | BasisOperator::Sqrt(_) => {
                 LogBasisNode(&*basis_node.left_operand)
             }
         },

@@ -69,9 +69,9 @@ pub fn derivative(basis: &Basis) -> Basis {
                     ),
                 );
             }
-            BasisOperator::Pow(n) => {
+            BasisOperator::Pow(n, d) => {
                 // power rule, n * x^(n-1) : preceding n is discarded
-                return PowBasisNode(n - 1, &*basis_node.left_operand);
+                return PowBasisNode(n - d, d, &*basis_node.left_operand);
             }
             BasisOperator::Sqrt(n) => {
                 // power rule, n/2 * x^(n/2-1) : preceding n is discarded
