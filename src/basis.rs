@@ -37,7 +37,6 @@ impl Display for BasisNode {
                 }
                 write!(f, "{}^({}/{})", self.left_operand, n, d)
             }
-            BasisOperator::Sqrt(n) => write!(f, "{}^({}/2)", self.left_operand, n),
             BasisOperator::Log => write!(f, "log({})", self.left_operand),
             BasisOperator::Div => write!(f, "({})/({})", self.left_operand, self.right_operand),
             _ => write!(
@@ -102,7 +101,6 @@ pub enum BasisOperator {
     Add,
     Minus,
     Pow(i32, i32), // numerator, denominator,
-    Sqrt(i32),     // Sqrt(n) = n/2 (numerator), ie. -1, 1, 3
     Mult,
     Div,
     Log,
@@ -117,9 +115,6 @@ impl EnumStr<BasisOperator> for BasisOperator {
                 s[1..2].parse::<i32>().unwrap(),
                 s[2..3].parse::<i32>().unwrap(),
             )), // convert ^(n/d) to Pow(n, d)
-            s if s.matches("[^]-?\\d+(?=[/]2)").count() > 0 => Some(BasisOperator::Sqrt(
-                s[4..(s.len() - 2)].parse::<i32>().unwrap(),
-            )),
             "*" => Some(BasisOperator::Mult),
             "/" => Some(BasisOperator::Div),
             "Log" => Some(BasisOperator::Log),
@@ -137,7 +132,6 @@ impl EnumStr<BasisOperator> for BasisOperator {
                 }
                 Box::leak(format!("^({}/{})", n, d).into_boxed_str()) // TODO: remove box leak
             }
-            BasisOperator::Sqrt(i) => Box::leak(format!("^{}/2", i).into_boxed_str()), // TODO: remove box leak
             BasisOperator::Mult => "*",
             BasisOperator::Div => "/",
             BasisOperator::Log => "Log",
@@ -298,29 +292,7 @@ pub fn PowBasisNode(_n: i32, _d: i32, left_operand: &Basis) -> Basis {
 
 #[allow(non_snake_case)]
 pub fn SqrtBasisNode(n: i32, left_operand: &Basis) -> Basis {
-    if matches!(
-        left_operand,
-        Basis::BasisCard(BasisCard::Zero) | Basis::BasisCard(BasisCard::One)
-    ) {
-        return left_operand.clone();
-    } else if let Basis::BasisNode(BasisNode {
-        operator: BasisOperator::Pow(m, _),
-        left_operand: inner_left_operand,
-        ..
-    }) = left_operand
-    {
-        return Basis::BasisNode(BasisNode {
-            operator: BasisOperator::Sqrt(n + m * 2),
-            left_operand: inner_left_operand.clone(),
-            right_operand: Box::new(Basis::BasisCard(BasisCard::Zero)), // dummy, unused
-        });
-    }
-
-    Basis::BasisNode(BasisNode {
-        operator: BasisOperator::Sqrt(n),
-        left_operand: Box::new(left_operand.clone()),
-        right_operand: Box::new(Basis::BasisCard(BasisCard::Zero)), // dummy, unused
-    })
+    PowBasisNode(n, 2, &left_operand)
 }
 
 #[allow(non_snake_case)]
