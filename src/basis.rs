@@ -39,6 +39,9 @@ impl Display for BasisNode {
             }
             BasisOperator::Log => write!(f, "log({})", self.left_operand),
             BasisOperator::Div => write!(f, "({})/({})", self.left_operand, self.right_operand),
+            BasisOperator::Func => {
+                write!(f, "{}({})", self.left_operand, self.right_operand)
+            }
             _ => write!(
                 f,
                 "{} {} {}",
@@ -104,6 +107,7 @@ pub enum BasisOperator {
     Mult,
     Div,
     Log,
+    Func,
 }
 
 impl EnumStr<BasisOperator> for BasisOperator {
@@ -135,6 +139,7 @@ impl EnumStr<BasisOperator> for BasisOperator {
             BasisOperator::Mult => "*",
             BasisOperator::Div => "/",
             BasisOperator::Log => "Log",
+            BasisOperator::Func => "Func",
         }
     }
 }
@@ -233,11 +238,19 @@ pub fn MultBasisNode(left_operand: &Basis, right_operand: &Basis) -> Basis {
 
 #[allow(non_snake_case)]
 pub fn DivBasisNode(left_operand: &Basis, right_operand: &Basis) -> Basis {
-    return Basis::BasisNode(BasisNode {
+    if matches!(left_operand, Basis::BasisCard(BasisCard::Zero)) {
+        return Basis::BasisCard(BasisCard::Zero);
+    } else if matches!(left_operand, Basis::BasisCard(BasisCard::One)) {
+        return PowBasisNode(-1, 1, &right_operand);
+    } else if left_operand == right_operand {
+        return Basis::BasisCard(BasisCard::One);
+    }
+
+    Basis::BasisNode(BasisNode {
         operator: BasisOperator::Div,
         left_operand: Box::new(left_operand.clone()),
         right_operand: Box::new(right_operand.clone()),
-    });
+    })
 }
 
 #[allow(non_snake_case)]
@@ -297,9 +310,42 @@ pub fn SqrtBasisNode(n: i32, left_operand: &Basis) -> Basis {
 
 #[allow(non_snake_case)]
 pub fn LogBasisNode(left_operand: &Basis) -> Basis {
+    // log(e^y) = y
+    if let Basis::BasisNode(BasisNode {
+        operator: BasisOperator::Func,
+        left_operand: inner_left_operand,
+        right_operand,
+    }) = left_operand
+    {
+        if matches!(**inner_left_operand, Basis::BasisCard(BasisCard::E)) {
+            return *right_operand.clone();
+        }
+    }
+
     Basis::BasisNode(BasisNode {
         operator: BasisOperator::Log,
         left_operand: Box::new(left_operand.clone()),
         right_operand: Box::new(Basis::BasisCard(BasisCard::Zero)), // dummy, unused
     })
+}
+
+#[allow(non_snake_case)]
+pub fn FuncBasisNode(left_operand: &Basis, right_operand: &Basis) -> Basis {
+    Basis::BasisNode(BasisNode {
+        operator: BasisOperator::Func,
+        left_operand: Box::new(left_operand.clone()), // operator (cos, sin, e)
+        right_operand: Box::new(right_operand.clone()), // operand (inner)
+    })
+}
+#[allow(non_snake_case)]
+pub fn CosBasisNode(right_operand: &Basis) -> Basis {
+    FuncBasisNode(&Basis::BasisCard(BasisCard::Cos), &right_operand)
+}
+#[allow(non_snake_case)]
+pub fn SinBasisNode(right_operand: &Basis) -> Basis {
+    FuncBasisNode(&Basis::BasisCard(BasisCard::Sin), &right_operand)
+}
+#[allow(non_snake_case)]
+pub fn EBasisNode(right_operand: &Basis) -> Basis {
+    FuncBasisNode(&Basis::BasisCard(BasisCard::E), &right_operand)
 }

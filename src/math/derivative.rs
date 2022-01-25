@@ -16,71 +16,64 @@ fn atomic_derivative(basis: &BasisCard) -> BasisCard {
 }
 
 pub fn derivative(basis: &Basis) -> Basis {
-    if let Basis::BasisCard(basis_card) = basis {
+    return match basis {
         // is standard basis
-        return Basis::BasisCard(atomic_derivative(&basis_card));
-    } else if let Basis::BasisNode(basis_node) = basis {
+        Basis::BasisCard(basis_card) => Basis::BasisCard(atomic_derivative(&basis_card)),
         // is complex basis
-
-        match basis_node.operator {
-            BasisOperator::Add => {
-                return AddBasisNode(
-                    &derivative(&*basis_node.left_operand),
-                    &derivative(&*basis_node.right_operand),
-                );
-            }
-            BasisOperator::Minus => {
-                return MinusBasisNode(
-                    &derivative(&*basis_node.left_operand),
-                    &derivative(&*basis_node.right_operand),
-                );
-            }
-            BasisOperator::Div => {
-                // quotient rule, (vdu - udv) / uu
-                return DivBasisNode(
-                    // vdu - udv
-                    &MinusBasisNode(
-                        &MultBasisNode(
-                            &basis_node.right_operand,             // v
-                            &derivative(&basis_node.left_operand), // du
-                        ),
-                        &MultBasisNode(
-                            &basis_node.left_operand,               // u
-                            &derivative(&basis_node.right_operand), // dv
-                        ),
-                    ),
-                    // uu
-                    &MultBasisNode(
-                        &basis_node.left_operand, // u
-                        &basis_node.left_operand, // u
-                    ),
-                );
-            }
-            BasisOperator::Mult => {
-                // product rule, udv + vdu
-                return AddBasisNode(
-                    &MultBasisNode(
-                        &basis_node.left_operand,               // u
-                        &derivative(&basis_node.right_operand), // dv
-                    ),
+        Basis::BasisNode(basis_node) => match basis_node.operator {
+            BasisOperator::Add => AddBasisNode(
+                &derivative(&*basis_node.left_operand),
+                &derivative(&*basis_node.right_operand),
+            ),
+            BasisOperator::Minus => MinusBasisNode(
+                &derivative(&*basis_node.left_operand),
+                &derivative(&*basis_node.right_operand),
+            ),
+            // quotient rule, (vdu - udv) / uu
+            BasisOperator::Div => DivBasisNode(
+                // vdu - udv
+                &MinusBasisNode(
                     &MultBasisNode(
                         &basis_node.right_operand,             // v
                         &derivative(&basis_node.left_operand), // du
                     ),
-                );
-            }
-            BasisOperator::Pow(n, d) => {
-                // power rule, n * x^(n-1) : preceding n is discarded
-                return PowBasisNode(n - d, d, &*basis_node.left_operand);
-            }
-            BasisOperator::Log => {
-                // log rule, dx/x
-                return DivBasisNode(
+                    &MultBasisNode(
+                        &basis_node.left_operand,               // u
+                        &derivative(&basis_node.right_operand), // dv
+                    ),
+                ),
+                // uu
+                &MultBasisNode(
+                    &basis_node.left_operand, // u
+                    &basis_node.left_operand, // u
+                ),
+            ),
+            // product rule, udv + vdu
+            BasisOperator::Mult => AddBasisNode(
+                &MultBasisNode(
+                    &basis_node.left_operand,               // u
+                    &derivative(&basis_node.right_operand), // dv
+                ),
+                &MultBasisNode(
+                    &basis_node.right_operand,             // v
+                    &derivative(&basis_node.left_operand), // du
+                ),
+            ),
+            // power rule, n * x^(n-1) : preceding n is discarded
+            BasisOperator::Pow(n, d) => PowBasisNode(n - d, d, &*basis_node.left_operand),
+            // log rule, dx/x
+            BasisOperator::Log => DivBasisNode(
+                &derivative(&basis_node.left_operand),
+                &*basis_node.left_operand,
+            ),
+            // chain rule, f'(x) = x' * (f')(x)
+            BasisOperator::Func => MultBasisNode(
+                &derivative(&basis_node.right_operand),
+                &FuncBasisNode(
                     &derivative(&basis_node.left_operand),
-                    &*basis_node.left_operand,
-                );
-            }
-        }
-    }
-    panic!("Passed Object {:?} is not a Basis!", basis);
+                    &basis_node.right_operand,
+                ),
+            ),
+        },
+    };
 }
