@@ -39,6 +39,7 @@ impl Display for BasisNode {
             }
             BasisOperator::Log => write!(f, "log({})", self.left_operand),
             BasisOperator::Div => write!(f, "({})/({})", self.left_operand, self.right_operand),
+            BasisOperator::Inv => write!(f, "f-1({})", self.left_operand),
             BasisOperator::Func => {
                 write!(f, "{}({})", self.left_operand, self.right_operand)
             }
@@ -107,6 +108,7 @@ pub enum BasisOperator {
     Mult,
     Div,
     Log,
+    Inv,
     Func,
 }
 
@@ -139,6 +141,7 @@ impl EnumStr<BasisOperator> for BasisOperator {
             BasisOperator::Mult => "*",
             BasisOperator::Div => "/",
             BasisOperator::Log => "Log",
+            BasisOperator::Inv => "Inv",
             BasisOperator::Func => "Func",
         }
     }
@@ -324,6 +327,15 @@ pub fn LogBasisNode(left_operand: &Basis) -> Basis {
 
     Basis::BasisNode(BasisNode {
         operator: BasisOperator::Log,
+        left_operand: Box::new(left_operand.clone()),
+        right_operand: Box::new(Basis::BasisCard(BasisCard::Zero)), // dummy, unused
+    })
+}
+
+#[allow(non_snake_case)]
+pub fn InvBasisNode(left_operand: &Basis) -> Basis {
+    Basis::BasisNode(BasisNode {
+        operator: BasisOperator::Inv,
         left_operand: Box::new(left_operand.clone()),
         right_operand: Box::new(Basis::BasisCard(BasisCard::Zero)), // dummy, unused
     })
