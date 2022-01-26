@@ -5,6 +5,7 @@ use std::fmt::{Display, Formatter, Result};
 use super::basis::*;
 use super::math::derivative::*;
 use super::math::inverse::*;
+use super::math::limits::*;
 use super::math::logarithm::*;
 use super::util::EnumStr;
 
@@ -19,6 +20,12 @@ pub fn apply_card(card: &Card) -> impl Fn(&Basis) -> Basis {
         Card::AlgebraicCard(AlgebraicCard::Sqrt) => SqrtBasisNode(1, basis),
         Card::AlgebraicCard(AlgebraicCard::Inverse) => inverse(basis),
         Card::AlgebraicCard(AlgebraicCard::Log) => logarithm(&basis),
+        Card::LimitCard(limit_card) => {
+            let basis_limit = limit(&limit_card)(&basis).unwrap_or(
+                Basis::BasisCard(BasisCard::X), // invalid limit placeholder
+            );
+            basis_limit.resolve()
+        }
         _ => Basis::BasisCard(BasisCard::Zero),
     };
 }
