@@ -22,6 +22,7 @@ pub fn logarithm(basis: &Basis) -> Basis {
                 &logarithm(&basis_node.right_operand),
             ),
             BasisOperator::Pow(_, _) => LogBasisNode(&*basis_node.left_operand),
+            BasisOperator::Inv => LogBasisNode(basis),
             BasisOperator::Func => {
                 if matches!(*basis_node.left_operand, Basis::BasisCard(BasisCard::E)) {
                     return *basis_node.right_operand.clone();

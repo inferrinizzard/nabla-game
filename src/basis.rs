@@ -334,6 +334,21 @@ pub fn LogBasisNode(left_operand: &Basis) -> Basis {
 
 #[allow(non_snake_case)]
 pub fn InvBasisNode(left_operand: &Basis) -> Basis {
+    if let Basis::BasisNode(basis_node) = left_operand {
+        if matches!(*basis_node.left_operand, Basis::BasisCard(BasisCard::E)) {
+            return LogBasisNode(&Basis::BasisCard(BasisCard::X));
+        } else if let Basis::BasisNode(BasisNode {
+            operator: BasisOperator::Log,
+            left_operand: inner_left_operand,
+            ..
+        }) = &*basis_node.left_operand
+        {
+            if matches!(**inner_left_operand, Basis::BasisCard(BasisCard::X)) {
+                return Basis::BasisCard(BasisCard::E);
+            }
+        }
+    }
+
     Basis::BasisNode(BasisNode {
         operator: BasisOperator::Inv,
         left_operand: Box::new(left_operand.clone()),
