@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 
 use super::super::basis::*;
+use super::super::math::*;
 
 fn atomic_derivative(basis: &BasisCard) -> BasisCard {
     let derivative_lookup = HashMap::from([
@@ -60,11 +61,25 @@ pub fn derivative(basis: &Basis) -> Basis {
                 ),
             ),
             // power rule, n * x^(n-1) : preceding n is discarded
-            BasisOperator::Pow(n, d) => PowBasisNode(n - d, d, &*basis_node.left_operand),
+            BasisOperator::Pow(n, d) => {
+                if matches!(*basis_node.left_operand, Basis::BasisCard(BasisCard::X)) {
+                    return PowBasisNode(n - d, d, &*basis_node.left_operand);
+                }
+                MultBasisNode(
+                    &derivative(&*basis_node.left_operand),
+                    &PowBasisNode(n - d, d, &*basis_node.left_operand),
+                )
+            }
             // log rule, dx/x
             BasisOperator::Log => DivBasisNode(
                 &derivative(&basis_node.left_operand),
                 &*basis_node.left_operand,
+            ),
+            // inverse rule, d(f-1(x)) = 1/f-1(d(x))
+            BasisOperator::Inv => PowBasisNode(
+                -1,
+                1,
+                &inverse::inverse(&derivative(&basis_node.left_operand)),
             ),
             // chain rule, f'(x) = x' * (f')(x)
             BasisOperator::Func => MultBasisNode(

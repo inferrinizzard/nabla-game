@@ -4,30 +4,22 @@ use std::fmt::{Display, Formatter, Result};
 
 use super::basis::*;
 use super::math::derivative::*;
+use super::math::inverse::*;
 use super::math::logarithm::*;
 use super::util::EnumStr;
 
 pub fn apply_card(card: &Card) -> impl Fn(&Basis) -> Basis {
     let card = card.clone();
     return move |basis| match card {
-        Card::DerivativeCard(DerivativeCard::Derivative) => {
-            return derivative(basis);
-        }
+        Card::DerivativeCard(DerivativeCard::Derivative) => derivative(basis),
         Card::DerivativeCard(DerivativeCard::Integral) => {
             // TODO: add integration here
             return Basis::BasisCard(BasisCard::Zero);
         }
-        Card::AlgebraicCard(AlgebraicCard::Sqrt) => {
-            return SqrtBasisNode(1, basis);
-        }
-        Card::AlgebraicCard(AlgebraicCard::Inverse) => {
-            // TODO: add inverse here
-            return Basis::BasisCard(BasisCard::Zero);
-        }
+        Card::AlgebraicCard(AlgebraicCard::Sqrt) => SqrtBasisNode(1, basis),
+        Card::AlgebraicCard(AlgebraicCard::Inverse) => inverse(basis),
         Card::AlgebraicCard(AlgebraicCard::Log) => logarithm(&basis),
-        _ => {
-            return Basis::BasisCard(BasisCard::Zero);
-        }
+        _ => Basis::BasisCard(BasisCard::Zero),
     };
 }
 
