@@ -47,11 +47,17 @@ pub fn get_limit_map(card: &LimitCard) -> HashMap<BasisCard, BasisCard> {
         (BasisCard::One, BasisCard::One),
         (BasisCard::Zero, BasisCard::Zero),
     ]);
-    // pos and neg inf both diverge
-    let limit_inf_map = HashMap::from([
-        (BasisCard::E, BasisCard::Inf),
-        (BasisCard::X, BasisCard::Inf),
-        (BasisCard::X2, BasisCard::Inf),
+    let limit_pos_inf_map = HashMap::from([
+        (BasisCard::E, BasisCard::PosInf),
+        (BasisCard::X, BasisCard::PosInf),
+        (BasisCard::X2, BasisCard::PosInf),
+        (BasisCard::One, BasisCard::One),
+        (BasisCard::Zero, BasisCard::Zero),
+    ]);
+    let limit_neg_inf_map = HashMap::from([
+        (BasisCard::E, BasisCard::Zero),
+        (BasisCard::X, BasisCard::NegInf),
+        (BasisCard::X2, BasisCard::PosInf),
         (BasisCard::One, BasisCard::One),
         (BasisCard::Zero, BasisCard::Zero),
     ]);
@@ -61,13 +67,14 @@ pub fn get_limit_map(card: &LimitCard) -> HashMap<BasisCard, BasisCard> {
         (BasisCard::Cos, BasisCard::One),
         (BasisCard::Sin, BasisCard::One),
     ]);
-    for (key, value) in limit_inf_map.iter() {
+    for (key, value) in limit_pos_inf_map.iter() {
         liminf_limsup_map.insert(*key, *value);
     }
 
     match card {
         LimitCard::Lim0 => limit_zero_map,
-        LimitCard::LimPosInf | LimitCard::LimNegInf => limit_inf_map,
+        LimitCard::LimPosInf => limit_pos_inf_map,
+        LimitCard::LimNegInf => limit_neg_inf_map,
         LimitCard::Limsup | LimitCard::Liminf => liminf_limsup_map,
     }
 }
