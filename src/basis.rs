@@ -348,36 +348,27 @@ pub fn DivBasisNode(left_operand: &Basis, right_operand: &Basis) -> Basis {
     })
 }
 
-fn gcd(_a: i32, _b: i32) -> i32 {
-    let (mut a, mut b) = (_a, _b);
+fn simplify_fraction(n: i32, d: i32) -> (i32, i32) {
+    let (abs_n, abs_d) = (n.abs(), d.abs());
+    let (mut a, mut b) = (max(abs_n, abs_d), (min(abs_n, abs_d)));
     // euclidian algorithm
     while b > 0 {
         let c = a;
         a = b;
         b = c % b;
     }
-    a
+    let gcd = a;
+
+    let (new_n, new_d) = (n / gcd, d / gcd);
+    if new_d < 0 {
+        return (-1 * new_n, -1 * new_d);
+    }
+    (new_n, new_d)
 }
 
 #[allow(non_snake_case)]
 pub fn PowBasisNode(_n: i32, _d: i32, left_operand: &Basis) -> Basis {
-    // only store negative in n, never d
-    let (mut n, mut d) = (_n, _d);
-    if _d < 0 {
-        n *= -1;
-        d *= -1;
-    }
-
-    // if base inside Pow is also a x^(n/d), then result is x^((n/d)*(i_n/i_d))
-    let (inner_n, inner_d) = get_x_ponent(&left_operand);
-    if inner_n > 0 {
-        n *= inner_n;
-        d *= inner_d;
-    }
-
-    let gcd = gcd(max(n, d), min(n, d));
-    n /= gcd;
-    d /= gcd;
+    let (mut n, mut d) = simplify_fraction(_n, _d);
 
     // x^0 = 1
     if n == 0 {
@@ -410,6 +401,17 @@ pub fn PowBasisNode(_n: i32, _d: i32, left_operand: &Basis) -> Basis {
     // x^2 → X2
     if matches!(left_operand, Basis::BasisCard(BasisCard::X)) && n / d == 2 {
         return Basis::BasisCard(BasisCard::X2);
+    }
+
+    // if base inside Pow is also a x^(n/d), then result is x^((n/d)*(i_n/i_d))
+    let (inner_n, inner_d) = get_x_ponent(&left_operand);
+    if inner_n > 0 {
+        n *= inner_n;
+        d *= inner_d;
+        // (n, d) = simplify_fraction(n, d); // to soon be fixed, Rust 1.59+ ?
+        let (new_n, new_d) = simplify_fraction(n, d);
+        n = new_n;
+        d = new_d;
     }
 
     Basis::BasisNode(BasisNode {
