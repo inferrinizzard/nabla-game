@@ -49,7 +49,7 @@ pub fn branch_turn_phase(id: &String, player_num: u32) {
             match player[id_val] {
                 Card::BasisCard(basis_card) => {
                     // allow play if empty slot
-                    if game.field.iter().any(|b| b.is_none()) {
+                    if game.field.iter().any(|b| b.basis.is_none()) {
                         next_phase(TurnPhase::SELECT(Card::BasisCard(basis_card)));
                     }
                 }
@@ -78,18 +78,18 @@ pub fn branch_turn_phase(id: &String, player_num: u32) {
         }
         TurnPhase::SELECT(select_operator) => match select_operator {
             Card::BasisCard(basis_card) => {
-                if id_key == "f" && game.field[id_val].is_none() {
+                if id_key == "f" && game.field[id_val].basis.is_none() {
                     // place basis_card into slot
                 }
             }
             operator_card => {
                 if id_key == "f" {
                     let result_basis =
-                        apply_card(&operator_card)(game.field[id_val].as_ref().unwrap());
+                        apply_card(&operator_card)(game.field[id_val].basis.as_ref().unwrap());
                     if matches!(result_basis, Basis::BasisCard(BasisCard::Zero)) {
-                        game.field[id_val] = None;
+                        game.field[id_val] = FieldBasis::none();
                     } else {
-                        game.field[id_val] = Some(result_basis);
+                        game.field[id_val] = FieldBasis::new(&result_basis);
                     }
 
                     // player.remove()

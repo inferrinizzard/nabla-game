@@ -36,7 +36,7 @@ pub fn draw_field() {
     let hit_region_map = &mut canvas.hit_region_map;
 
     for (i, card) in field.iter().enumerate() {
-        if card.is_none() {
+        if card.basis.is_none() {
             context
                 .set_line_dash(&JsValue::from(&Array::fill(
                     &Array::new_with_length(2),
@@ -70,7 +70,7 @@ pub fn draw_field() {
         context.set_text_baseline("middle");
         context.set_text_align("center");
 
-        if let Some(basis) = card {
+        if let Some(basis) = &card.basis {
             context
                 .fill_text(
                     &basis.to_string(),
