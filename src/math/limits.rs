@@ -3,6 +3,46 @@ use std::collections::HashMap;
 use super::super::basis::*;
 use super::super::cards::*;
 
+fn limit_arccos_arcsin(
+    limit_card: &LimitCard,
+    left_operand: &Basis,
+    right_limit: Basis,
+) -> Option<Basis> {
+    // max(arccos) = PI, max(arcsin) = PI/2
+    if matches!(limit_card, LimitCard::Limsup) {
+        return Some(Basis::BasisCard(BasisCard::One));
+    } else if matches!(limit_card, LimitCard::Liminf) {
+        // min(arccos) = 0
+        if matches!(left_operand, Basis::BasisCard(BasisCard::Cos)) {
+            return Some(Basis::BasisCard(BasisCard::Zero));
+        }
+        // min(arcsin) = -PI/2
+        if matches!(left_operand, Basis::BasisCard(BasisCard::Sin)) {
+            return Some(Basis::BasisCard(BasisCard::One));
+        }
+    }
+
+    if matches!(right_limit, Basis::BasisCard(BasisCard::Zero)) {
+        // arccos(0) = PI/2
+        if matches!(left_operand, Basis::BasisCard(BasisCard::Cos)) {
+            return Some(Basis::BasisCard(BasisCard::One));
+        }
+        // arcsin(0) = 0
+        if matches!(left_operand, Basis::BasisCard(BasisCard::Sin)) {
+            return Some(Basis::BasisCard(BasisCard::Zero));
+        }
+    }
+    // arccos(-INF)
+    if matches!(right_limit, Basis::BasisCard(BasisCard::NegInf))
+        && matches!(left_operand, Basis::BasisCard(BasisCard::Cos))
+    {
+        return Some(Basis::BasisCard(BasisCard::Zero));
+    }
+
+    // arccos(INF) | arccos(n) | arcsin(INF | -INF) | arcsin(n) ≃ n → 1
+    Some(Basis::BasisCard(BasisCard::One))
+}
+
 pub fn limit(_limit_card: &LimitCard) -> impl Fn(&Basis) -> Option<Basis> {
     let limit_card = _limit_card.clone();
     return move |basis| {
@@ -20,19 +60,95 @@ pub fn limit(_limit_card: &LimitCard) -> impl Fn(&Basis) -> Option<Basis> {
                 operator,
                 left_operand,
                 right_operand,
-            }) => {
-                let left_limit = limit(&limit_card)(left_operand);
-                let right_limit = limit(&limit_card)(right_operand);
-                if left_limit.is_none() || right_limit.is_none() {
-                    return None; // bubble up invalid limit
+            }) => match operator {
+                BasisOperator::Inv => {
+                    let right_limit = limit(&limit_card)(&**right_operand)?.resolve();
+                    if matches!(
+                        **left_operand,
+                        Basis::BasisCard(BasisCard::Cos | BasisCard::Sin)
+                    ) {
+                        return limit_arccos_arcsin(&limit_card, &**left_operand, right_limit);
+                    }
+                    panic!(
+                        "Not yet implemented: {} of {} ({:?})",
+                        limit_card, basis, basis
+                    );
+                    Some(Basis::BasisCard(BasisCard::Zero))
                 }
+                BasisOperator::Func => {
+                    if let Basis::BasisNode(BasisNode {
+                        operator,
+                        left_operand: inner_left_operand,
+                        right_operand: inner_right_operand,
+                    }) = &**left_operand
+                    {
+                        // arccos(f(x)) or arcsin(f(x))
+                        if matches!(operator, BasisOperator::Inv) {
+                            let right_limit = limit(&limit_card)(&**inner_right_operand)?.resolve();
+                            return limit_arccos_arcsin(
+                                &limit_card,
+                                &**inner_left_operand,
+                                right_limit,
+                            );
+                        }
+                    }
 
-                Some(Basis::BasisNode(BasisNode {
-                    operator: *operator,
-                    left_operand: Box::new(left_limit.unwrap()),
-                    right_operand: Box::new(right_limit.unwrap()),
-                }))
-            }
+                    let right_limit = limit(&limit_card)(&**right_operand)?.resolve();
+                    if matches!(**left_operand, Basis::BasisCard(BasisCard::E)) {
+                        // e^INF
+                        if matches!(right_limit, Basis::BasisCard(BasisCard::PosInf)) {
+                            return Some(Basis::BasisCard(BasisCard::PosInf));
+                        }
+                        // e^-INF
+                        else if matches!(right_limit, Basis::BasisCard(BasisCard::NegInf)) {
+                            return Some(Basis::BasisCard(BasisCard::Zero));
+                        }
+                        // e^n
+                        return Some(Basis::BasisCard(BasisCard::One));
+                    } else if matches!(
+                        **left_operand,
+                        Basis::BasisCard(BasisCard::Cos | BasisCard::Sin)
+                    ) {
+                        if matches!(limit_card, LimitCard::Limsup | LimitCard::Liminf) {
+                            return Some(Basis::BasisCard(BasisCard::One));
+                        }
+                        // cos(INF) | sin(INF)
+                        else if matches!(limit_card, LimitCard::LimPosInf | LimitCard::LimNegInf)
+                            || matches!(
+                                right_limit,
+                                Basis::BasisCard(BasisCard::PosInf | BasisCard::NegInf)
+                            )
+                        {
+                            return None;
+                        }
+                        // sin(0)
+                        if matches!(right_limit, Basis::BasisCard(BasisCard::Zero))
+                            && matches!(**left_operand, Basis::BasisCard(BasisCard::Sin))
+                        {
+                            return Some(Basis::BasisCard(BasisCard::Zero));
+                        }
+                        // cos(0) | cos(n) | sin(n) → 1
+                        return Some(Basis::BasisCard(BasisCard::One));
+                    }
+                    panic!(
+                        "Not yet implemented: {} of {} ({:?})",
+                        limit_card, basis, basis
+                    );
+                    Some(Basis::BasisCard(BasisCard::Zero))
+                }
+                _ => {
+                    let left_limit = limit(&limit_card)(left_operand);
+                    let right_limit = limit(&limit_card)(right_operand);
+                    if left_limit.is_none() || right_limit.is_none() {
+                        return None; // bubble up invalid limit
+                    }
+                    Some(Basis::BasisNode(BasisNode {
+                        operator: *operator,
+                        left_operand: Box::new(left_limit.unwrap()),
+                        right_operand: Box::new(right_limit.unwrap()),
+                    }))
+                }
+            },
         }
     };
 }
