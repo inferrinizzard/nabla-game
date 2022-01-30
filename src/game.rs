@@ -2,6 +2,7 @@
 
 use rand::seq::SliceRandom;
 use rand::thread_rng;
+use std::collections::HashMap;
 
 use super::basis::*;
 use super::cards::*;
@@ -54,10 +55,77 @@ fn create_players(deck: &mut Vec<Card>) -> (Vec<Card>, Vec<Card>) {
 }
 
 #[derive(Debug)]
+pub struct FieldBasis {
+    pub basis: Option<Basis>,
+    pub index: i32,
+    pub history: HashMap<String, Basis>, // numerical keys for derivative/integral, INV for current inverse
+}
+
+impl FieldBasis {
+    pub fn new(basis: &Basis) -> FieldBasis {
+        let history = HashMap::from([(String::from("0"), basis.clone())]);
+        FieldBasis {
+            basis: Some(history["0"].clone()),
+            index: 0,
+            history,
+        }
+    }
+    pub fn none() -> FieldBasis {
+        FieldBasis {
+            basis: None,
+            index: 0,
+            history: HashMap::default(),
+        }
+    }
+
+    pub fn has_value(&self, card: &Card) -> bool {
+        if matches!(
+            card,
+            Card::DerivativeCard(DerivativeCard::Derivative | DerivativeCard::Nabla)
+        ) {
+            return self.history.contains_key(&(self.index - 1).to_string());
+        } else if matches!(card, Card::DerivativeCard(DerivativeCard::Laplacian)) {
+            return self.history.contains_key(&(self.index - 2).to_string());
+        } else if matches!(card, Card::DerivativeCard(DerivativeCard::Integral)) {
+            return self.history.contains_key(&(self.index + 1).to_string());
+        }
+        false
+    }
+
+    pub fn derivative(&mut self, basis: Option<&Basis>)
+    // -> Option<Basis>
+    {
+        self.index -= 1;
+        if basis.is_some() {
+            self.history
+                .insert(self.index.to_string(), basis.unwrap().clone());
+        }
+        self.basis = Some(self.history[&self.index.to_string()].clone());
+        // return self.basis.as_ref();
+    }
+
+    pub fn integral(&mut self, basis: Option<&Basis>)
+    // -> Option<Basis>
+    {
+        self.index += 1;
+        if basis.is_some() {
+            self.history
+                .insert(self.index.to_string(), basis.unwrap().clone());
+        }
+        self.basis = Some(self.history[&self.index.to_string()].clone());
+        // return self.basis.as_ref();
+    }
+
+    // pub fn inverse(mut self, basis: &Basis) -> Option<Basis> {
+    //     return self.basis;
+    // }
+}
+
+#[derive(Debug)]
 pub struct Game {
-    pub turn: Turn,                // turn counter
-    pub field: [Option<Basis>; 6], // [0-2] for player_1, [3-5] for player_2
-    pub player_1: Vec<Card>,       // up to 7 cards in hand (<7 if deck running low)
+    pub turn: Turn,             // turn counter
+    pub field: [FieldBasis; 6], // [0-2] for player_1, [3-5] for player_2
+    pub player_1: Vec<Card>,    // up to 7 cards in hand (<7 if deck running low)
     pub player_2: Vec<Card>,
     pub deck: Vec<Card>,
 }
@@ -74,12 +142,12 @@ impl Game {
                 phase: TurnPhase::IDLE,
             },
             field: [
-                Some(Basis::BasisCard(BasisCard::One)),
-                Some(Basis::BasisCard(BasisCard::X)),
-                Some(Basis::BasisCard(BasisCard::X2)),
-                Some(Basis::BasisCard(BasisCard::One)),
-                Some(Basis::BasisCard(BasisCard::X)),
-                Some(Basis::BasisCard(BasisCard::X2)),
+                FieldBasis::new(&Basis::BasisCard(BasisCard::One)),
+                FieldBasis::new(&Basis::BasisCard(BasisCard::X)),
+                FieldBasis::new(&Basis::BasisCard(BasisCard::X2)),
+                FieldBasis::new(&Basis::BasisCard(BasisCard::One)),
+                FieldBasis::new(&Basis::BasisCard(BasisCard::X)),
+                FieldBasis::new(&Basis::BasisCard(BasisCard::X2)),
             ],
             player_1: player_1,
             player_2: player_2,
@@ -94,6 +162,7 @@ pub struct Turn {
     pub phase: TurnPhase,
 }
 
+#[allow(non_camel_case_types)]
 #[derive(Debug)]
 pub enum TurnPhase {
     IDLE,               // start of turn

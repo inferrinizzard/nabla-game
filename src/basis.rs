@@ -1,3 +1,4 @@
+use std::cmp::{max, min};
 use std::fmt::{Display, Formatter, Result};
 
 use super::util::EnumStr;
@@ -7,6 +8,32 @@ use super::util::EnumStr;
 pub enum Basis {
     BasisCard(BasisCard),
     BasisNode(BasisNode),
+}
+
+impl Basis {
+    pub fn resolve(self) -> Basis {
+        match self {
+            Basis::BasisCard(_) => self,
+            Basis::BasisNode(BasisNode {
+                operator,
+                left_operand,
+                right_operand,
+            }) => {
+                let left = left_operand.resolve();
+                let right = right_operand.resolve();
+                match operator {
+                    BasisOperator::Add => AddBasisNode(&left, &right),
+                    BasisOperator::Minus => MinusBasisNode(&left, &right),
+                    BasisOperator::Mult => MultBasisNode(&left, &right),
+                    BasisOperator::Div => DivBasisNode(&left, &right),
+                    BasisOperator::Log => LogBasisNode(&left),
+                    BasisOperator::Inv => InvBasisNode(&left),
+                    BasisOperator::Func => FuncBasisNode(&left, &right),
+                    BasisOperator::Pow(n, d) => PowBasisNode(n, d, &left),
+                }
+            }
+        }
+    }
 }
 
 impl Display for Basis {
@@ -30,9 +57,18 @@ pub struct BasisNode {
 impl Display for BasisNode {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result {
         match self.operator {
-            BasisOperator::Pow(n) => write!(f, "{}^{}", self.left_operand, n),
-            BasisOperator::Sqrt(n) => write!(f, "{}^({}/2)", self.left_operand, n),
+            BasisOperator::Pow(n, d) => {
+                if d == 1 {
+                    return write!(f, "{}^{}", self.left_operand, n);
+                }
+                write!(f, "{}^({}/{})", self.left_operand, n, d)
+            }
+            BasisOperator::Log => write!(f, "log({})", self.left_operand),
             BasisOperator::Div => write!(f, "({})/({})", self.left_operand, self.right_operand),
+            BasisOperator::Inv => write!(f, "f-1({})", self.left_operand),
+            BasisOperator::Func => {
+                write!(f, "{}({})", self.left_operand, self.right_operand)
+            }
             _ => write!(
                 f,
                 "{} {} {}",
@@ -51,6 +87,8 @@ pub enum BasisCard {
     Cos,
     Sin,
     E,
+    PosInf,
+    NegInf,
 }
 
 impl EnumStr<BasisCard> for BasisCard {
@@ -63,6 +101,9 @@ impl EnumStr<BasisCard> for BasisCard {
             "cosx" => Some(BasisCard::Cos),
             "sinx" => Some(BasisCard::Sin),
             "e^x" => Some(BasisCard::E),
+            "INF" => Some(BasisCard::PosInf),
+            "+INF" => Some(BasisCard::PosInf),
+            "-INF" => Some(BasisCard::NegInf),
             _ => None,
         }
     }
@@ -76,6 +117,8 @@ impl EnumStr<BasisCard> for BasisCard {
             BasisCard::Cos => "cosx",
             BasisCard::Sin => "sinx",
             BasisCard::E => "e^x",
+            BasisCard::PosInf => "INF",
+            BasisCard::NegInf => "-INF",
         }
     }
 }
@@ -94,10 +137,12 @@ impl Display for BasisCard {
 pub enum BasisOperator {
     Add,
     Minus,
-    Pow(i32),
-    Sqrt(i32), // Sqrt(n) = n/2 (numerator), ie. -1, 1, 3
+    Pow(i32, i32), // numerator, denominator,
     Mult,
     Div,
+    Log,
+    Inv,
+    Func,
 }
 
 impl EnumStr<BasisOperator> for BasisOperator {
@@ -105,14 +150,13 @@ impl EnumStr<BasisOperator> for BasisOperator {
         match s {
             "+" => Some(BasisOperator::Add),
             "-" => Some(BasisOperator::Minus),
-            s if s.matches("[^]-?\\d+(?!=[/]2)").count() > 0 => {
-                Some(BasisOperator::Pow(s[1..].parse::<i32>().unwrap()))
-            } // convert ^n to Pow(n)
-            s if s.matches("[^]-?\\d+(?=[/]2)").count() > 0 => Some(BasisOperator::Sqrt(
-                s[4..(s.len() - 2)].parse::<i32>().unwrap(),
-            )),
+            s if s.matches("[^](-?\\d+)/(\\d+)").count() > 0 => Some(BasisOperator::Pow(
+                s[1..2].parse::<i32>().unwrap(),
+                s[2..3].parse::<i32>().unwrap(),
+            )), // convert ^(n/d) to Pow(n, d)
             "*" => Some(BasisOperator::Mult),
             "/" => Some(BasisOperator::Div),
+            "Log" => Some(BasisOperator::Log),
             _ => None,
         }
     }
@@ -121,10 +165,17 @@ impl EnumStr<BasisOperator> for BasisOperator {
         match self {
             BasisOperator::Add => "+",
             BasisOperator::Minus => "-",
-            BasisOperator::Pow(i) => Box::leak(format!("^{}", i).into_boxed_str()), // TODO: remove box leak
-            BasisOperator::Sqrt(i) => Box::leak(format!("^{}/2", i).into_boxed_str()), // TODO: remove box leak
+            BasisOperator::Pow(n, d) => {
+                if *d == 1 {
+                    return Box::leak(format!("^{}", d).into_boxed_str()); // TODO: remove box leak
+                }
+                Box::leak(format!("^({}/{})", n, d).into_boxed_str()) // TODO: remove box leak
+            }
             BasisOperator::Mult => "*",
             BasisOperator::Div => "/",
+            BasisOperator::Log => "Log",
+            BasisOperator::Inv => "Inv",
+            BasisOperator::Func => "Func",
         }
     }
 }
@@ -137,8 +188,20 @@ impl Display for BasisOperator {
 
 #[allow(non_snake_case)]
 pub fn AddBasisNode(left_operand: &Basis, right_operand: &Basis) -> Basis {
+    // INF + x = INF | x + INF = INF
+    if matches!(left_operand, Basis::BasisCard(BasisCard::PosInf))
+        || matches!(right_operand, Basis::BasisCard(BasisCard::PosInf))
+    {
+        return Basis::BasisCard(BasisCard::PosInf);
+    }
+    // -INF + x = -INF | x + -INF = -INF
+    else if matches!(left_operand, Basis::BasisCard(BasisCard::NegInf))
+        || matches!(right_operand, Basis::BasisCard(BasisCard::NegInf))
+    {
+        return Basis::BasisCard(BasisCard::NegInf);
+    }
     // x + 0 = x
-    if let Basis::BasisCard(BasisCard::Zero) = left_operand {
+    else if let Basis::BasisCard(BasisCard::Zero) = left_operand {
         return right_operand.clone();
     }
     // 0 + x = x
@@ -159,8 +222,20 @@ pub fn AddBasisNode(left_operand: &Basis, right_operand: &Basis) -> Basis {
 
 #[allow(non_snake_case)]
 pub fn MinusBasisNode(left_operand: &Basis, right_operand: &Basis) -> Basis {
+    // INF - x = INF | x - -INF = INF
+    if matches!(left_operand, Basis::BasisCard(BasisCard::PosInf))
+        || matches!(right_operand, Basis::BasisCard(BasisCard::NegInf))
+    {
+        return Basis::BasisCard(BasisCard::PosInf);
+    }
+    // -INF - x = -INF | x - INF = -INF
+    else if matches!(left_operand, Basis::BasisCard(BasisCard::NegInf))
+        || matches!(right_operand, Basis::BasisCard(BasisCard::PosInf))
+    {
+        return Basis::BasisCard(BasisCard::NegInf);
+    }
     // x - 0 = x
-    if let Basis::BasisCard(BasisCard::Zero) = right_operand {
+    else if let Basis::BasisCard(BasisCard::Zero) = right_operand {
         return left_operand.clone();
     }
     // 0 - x = -x, - discarded
@@ -179,8 +254,33 @@ pub fn MinusBasisNode(left_operand: &Basis, right_operand: &Basis) -> Basis {
     })
 }
 
+fn get_x_ponent(basis: &Basis) -> (i32, i32) {
+    match basis {
+        Basis::BasisCard(BasisCard::X) => (1, 1),
+        Basis::BasisCard(BasisCard::X2) => (2, 1),
+        Basis::BasisNode(BasisNode {
+            operator: BasisOperator::Pow(n, d),
+            left_operand,
+            ..
+        }) if matches!(**left_operand, Basis::BasisCard(BasisCard::X)) => (*n, *d),
+        _ => (0, 0),
+    }
+}
+
 #[allow(non_snake_case)]
 pub fn MultBasisNode(left_operand: &Basis, right_operand: &Basis) -> Basis {
+    // -INF * x = -INF | x * -INF = -INF
+    if matches!(left_operand, Basis::BasisCard(BasisCard::NegInf))
+        ^ matches!(right_operand, Basis::BasisCard(BasisCard::NegInf))
+    {
+        return Basis::BasisCard(BasisCard::NegInf);
+    }
+    // INF * x = INF | x * INF = INF
+    else if matches!(left_operand, Basis::BasisCard(BasisCard::PosInf))
+        || matches!(right_operand, Basis::BasisCard(BasisCard::PosInf))
+    {
+        return Basis::BasisCard(BasisCard::PosInf);
+    }
     // x * 1 = x
     if matches!(left_operand, Basis::BasisCard(BasisCard::One)) {
         return right_operand.clone();
@@ -190,104 +290,132 @@ pub fn MultBasisNode(left_operand: &Basis, right_operand: &Basis) -> Basis {
         return left_operand.clone();
     }
 
-    // x * x^2 || x^2 * x || x * x || x^2 * x^2
-    if matches!(
-        left_operand,
-        Basis::BasisCard(BasisCard::X) | Basis::BasisCard(BasisCard::X2)
-    ) && matches!(
-        right_operand,
-        Basis::BasisCard(BasisCard::X) | Basis::BasisCard(BasisCard::X2)
-    ) {
+    // if left and right are x^(ln/ld) & x^(rn/rd), return x^((ln/ld)+(rn/rd))
+    let (left_n, left_d) = get_x_ponent(&left_operand);
+    let (right_n, right_d) = get_x_ponent(&right_operand);
+    if left_n > 0 && right_n > 0 {
         return PowBasisNode(
-            2 + (matches!(left_operand, Basis::BasisCard(BasisCard::X2)) as i32)
-                + (matches!(right_operand, Basis::BasisCard(BasisCard::X2)) as i32),
+            left_n * right_d + right_n * left_d,
+            left_d * right_d,
             &Basis::BasisCard(BasisCard::X),
         );
     }
-    // y * y = y^2
-    if matches!(left_operand, Basis::BasisCard(_)) && left_operand == right_operand {
-        return PowBasisNode(2, left_operand);
-    }
-    // if lhs = y^n
-    if let Basis::BasisNode(BasisNode {
-        operator: BasisOperator::Pow(n),
-        left_operand: left_base,
-        ..
-    }) = left_operand
-    {
-        // y^n * y = y^(n+1)
-        if matches!(right_operand, Basis::BasisCard(_)) {
-            if **left_base == *right_operand {
-                return PowBasisNode(n + 1, left_base);
-            }
-            // x^n * x^2 = x^(n+2)
-            else if matches!(**left_base, Basis::BasisCard(BasisCard::X))
-                && matches!(right_operand, Basis::BasisCard(BasisCard::X2))
-            {
-                return PowBasisNode(n + 2, left_base);
-            }
-        }
-        // y^n * y^m = y^(n+m)
-        if let Basis::BasisNode(BasisNode {
-            operator: BasisOperator::Pow(m),
-            left_operand: right_base,
-            ..
-        }) = right_operand
-        {
-            if left_base == right_base {
-                return PowBasisNode(n + m, left_base);
-            }
-        }
+    // n * n = n^2
+    else if left_operand == right_operand {
+        return PowBasisNode(2, 1, left_operand);
     }
 
-    // if rhs = y^n
-    if let Basis::BasisNode(BasisNode {
-        operator: BasisOperator::Pow(n),
-        left_operand: right_base,
-        ..
-    }) = right_operand
-    {
-        // y * y^n = y^(n+1)
-        if matches!(left_operand, Basis::BasisCard(_)) && **right_base == *left_operand {
-            return PowBasisNode(n + 1, right_base);
-        }
-        // x^2 * x^n = x^(n+2)
-        else if matches!(**right_base, Basis::BasisCard(BasisCard::X))
-            && matches!(left_operand, Basis::BasisCard(BasisCard::X2))
-        {
-            return PowBasisNode(n + 2, right_base);
-        }
-    }
-
-    return Basis::BasisNode(BasisNode {
+    Basis::BasisNode(BasisNode {
         operator: BasisOperator::Mult,
         left_operand: Box::new(left_operand.clone()),
         right_operand: Box::new(right_operand.clone()),
-    });
+    })
 }
 
 #[allow(non_snake_case)]
 pub fn DivBasisNode(left_operand: &Basis, right_operand: &Basis) -> Basis {
-    return Basis::BasisNode(BasisNode {
+    // 0 / n = 0
+    if matches!(left_operand, Basis::BasisCard(BasisCard::Zero)) {
+        return Basis::BasisCard(BasisCard::Zero);
+    }
+    // 1 / n = n^-1
+    else if matches!(left_operand, Basis::BasisCard(BasisCard::One)) {
+        return PowBasisNode(-1, 1, &right_operand);
+    }
+    // n / n = 1
+    else if left_operand == right_operand {
+        return Basis::BasisCard(BasisCard::One);
+    }
+
+    // INF / x = INF
+    if matches!(left_operand, Basis::BasisCard(BasisCard::PosInf)) {
+        return Basis::BasisCard(BasisCard::PosInf);
+    } else if matches!(left_operand, Basis::BasisCard(BasisCard::NegInf)) {
+        return Basis::BasisCard(BasisCard::NegInf);
+    }
+    // x / INF = 0
+    else if matches!(
+        right_operand,
+        Basis::BasisCard(BasisCard::PosInf | BasisCard::NegInf)
+    ) {
+        return Basis::BasisCard(BasisCard::Zero);
+    }
+
+    Basis::BasisNode(BasisNode {
         operator: BasisOperator::Div,
         left_operand: Box::new(left_operand.clone()),
         right_operand: Box::new(right_operand.clone()),
-    });
+    })
+}
+
+fn simplify_fraction(n: i32, d: i32) -> (i32, i32) {
+    let (abs_n, abs_d) = (n.abs(), d.abs());
+    let (mut a, mut b) = (max(abs_n, abs_d), (min(abs_n, abs_d)));
+    // euclidian algorithm
+    while b > 0 {
+        let c = a;
+        a = b;
+        b = c % b;
+    }
+    let gcd = a;
+
+    let (new_n, new_d) = (n / gcd, d / gcd);
+    if new_d < 0 {
+        return (-1 * new_n, -1 * new_d);
+    }
+    (new_n, new_d)
 }
 
 #[allow(non_snake_case)]
-pub fn PowBasisNode(n: i32, left_operand: &Basis) -> Basis {
+pub fn PowBasisNode(_n: i32, _d: i32, left_operand: &Basis) -> Basis {
+    let (mut n, mut d) = simplify_fraction(_n, _d);
+
     // x^0 = 1
     if n == 0 {
         return Basis::BasisCard(BasisCard::One);
     }
+    // x^(n/n) = x
+    else if n == d {
+        return left_operand.clone();
+    }
+    // 0^n = 0, 1^n = 1
+    else if matches!(
+        left_operand,
+        Basis::BasisCard(BasisCard::Zero) | Basis::BasisCard(BasisCard::One)
+    ) {
+        return left_operand.clone();
+    }
+    // INF^x = INF
+    else if matches!(left_operand, Basis::BasisCard(BasisCard::PosInf)) {
+        return Basis::BasisCard(BasisCard::PosInf);
+    }
+    // (-INF)^x = INF | -INF
+    else if matches!(left_operand, Basis::BasisCard(BasisCard::NegInf)) {
+        // odd power
+        if n % 2 == 1 && d % 2 == 1 {
+            return Basis::BasisCard(BasisCard::NegInf);
+        }
+        // even power
+        return Basis::BasisCard(BasisCard::PosInf);
+    }
     // x^2 → X2
-    else if matches!(left_operand, Basis::BasisCard(BasisCard::X)) && n == 2 {
+    if matches!(left_operand, Basis::BasisCard(BasisCard::X)) && n / d == 2 {
         return Basis::BasisCard(BasisCard::X2);
     }
 
+    // if base inside Pow is also a x^(n/d), then result is x^((n/d)*(i_n/i_d))
+    let (inner_n, inner_d) = get_x_ponent(&left_operand);
+    if inner_n > 0 {
+        n *= inner_n;
+        d *= inner_d;
+        // (n, d) = simplify_fraction(n, d); // to soon be fixed, Rust 1.59+ ?
+        let (new_n, new_d) = simplify_fraction(n, d);
+        n = new_n;
+        d = new_d;
+    }
+
     Basis::BasisNode(BasisNode {
-        operator: BasisOperator::Pow(n),
+        operator: BasisOperator::Pow(n, d),
         left_operand: Box::new(left_operand.clone()),
         right_operand: Box::new(Basis::BasisCard(BasisCard::Zero)), // dummy, unused
     })
@@ -295,9 +423,71 @@ pub fn PowBasisNode(n: i32, left_operand: &Basis) -> Basis {
 
 #[allow(non_snake_case)]
 pub fn SqrtBasisNode(n: i32, left_operand: &Basis) -> Basis {
+    PowBasisNode(n, 2, &left_operand)
+}
+
+#[allow(non_snake_case)]
+pub fn LogBasisNode(left_operand: &Basis) -> Basis {
+    // log(e^y) = y
+    if let Basis::BasisNode(BasisNode {
+        operator: BasisOperator::Func,
+        left_operand: inner_left_operand,
+        right_operand,
+    }) = left_operand
+    {
+        if matches!(**inner_left_operand, Basis::BasisCard(BasisCard::E)) {
+            return *right_operand.clone();
+        }
+    }
+
     Basis::BasisNode(BasisNode {
-        operator: BasisOperator::Sqrt(n),
+        operator: BasisOperator::Log,
         left_operand: Box::new(left_operand.clone()),
         right_operand: Box::new(Basis::BasisCard(BasisCard::Zero)), // dummy, unused
     })
+}
+
+#[allow(non_snake_case)]
+pub fn InvBasisNode(left_operand: &Basis) -> Basis {
+    if let Basis::BasisNode(basis_node) = left_operand {
+        if matches!(*basis_node.left_operand, Basis::BasisCard(BasisCard::E)) {
+            return LogBasisNode(&Basis::BasisCard(BasisCard::X));
+        } else if let Basis::BasisNode(BasisNode {
+            operator: BasisOperator::Log,
+            left_operand: inner_left_operand,
+            ..
+        }) = &*basis_node.left_operand
+        {
+            if matches!(**inner_left_operand, Basis::BasisCard(BasisCard::X)) {
+                return Basis::BasisCard(BasisCard::E);
+            }
+        }
+    }
+
+    Basis::BasisNode(BasisNode {
+        operator: BasisOperator::Inv,
+        left_operand: Box::new(left_operand.clone()),
+        right_operand: Box::new(Basis::BasisCard(BasisCard::Zero)), // dummy, unused
+    })
+}
+
+#[allow(non_snake_case)]
+pub fn FuncBasisNode(left_operand: &Basis, right_operand: &Basis) -> Basis {
+    Basis::BasisNode(BasisNode {
+        operator: BasisOperator::Func,
+        left_operand: Box::new(left_operand.clone()), // operator (cos, sin, e)
+        right_operand: Box::new(right_operand.clone()), // operand (inner)
+    })
+}
+#[allow(non_snake_case)]
+pub fn CosBasisNode(right_operand: &Basis) -> Basis {
+    FuncBasisNode(&Basis::BasisCard(BasisCard::Cos), &right_operand)
+}
+#[allow(non_snake_case)]
+pub fn SinBasisNode(right_operand: &Basis) -> Basis {
+    FuncBasisNode(&Basis::BasisCard(BasisCard::Sin), &right_operand)
+}
+#[allow(non_snake_case)]
+pub fn EBasisNode(right_operand: &Basis) -> Basis {
+    FuncBasisNode(&Basis::BasisCard(BasisCard::E), &right_operand)
 }

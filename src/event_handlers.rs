@@ -49,7 +49,7 @@ pub fn branch_turn_phase(id: &String, player_num: u32) {
             match player[id_val] {
                 Card::BasisCard(basis_card) => {
                     // allow play if empty slot
-                    if game.field.iter().any(|b| b.is_none()) {
+                    if game.field.iter().any(|b| b.basis.is_none()) {
                         next_phase(TurnPhase::SELECT(Card::BasisCard(basis_card)));
                     }
                 }
@@ -78,18 +78,45 @@ pub fn branch_turn_phase(id: &String, player_num: u32) {
         }
         TurnPhase::SELECT(select_operator) => match select_operator {
             Card::BasisCard(basis_card) => {
-                if id_key == "f" && game.field[id_val].is_none() {
-                    // place basis_card into slot
+                if id_key == "f" && game.field[id_val].basis.is_none() {
+                    game.field[id_val] = FieldBasis::new(&Basis::BasisCard(basis_card));
                 }
             }
             operator_card => {
                 if id_key == "f" {
+                    let selected_field_basis = &mut game.field[id_val];
+                    if selected_field_basis.has_value(&operator_card) {
+                        if matches!(
+                            operator_card,
+                            Card::DerivativeCard(DerivativeCard::Derivative)
+                        ) {
+                            selected_field_basis.derivative(None); // use saved derivative
+                        } else if matches!(
+                            operator_card,
+                            Card::DerivativeCard(DerivativeCard::Integral)
+                        ) {
+                            selected_field_basis.integral(None); // use saved integral
+                        }
+                        return;
+                    }
+
                     let result_basis =
-                        apply_card(&operator_card)(game.field[id_val].as_ref().unwrap());
+                        apply_card(&operator_card)(selected_field_basis.basis.as_ref().unwrap());
                     if matches!(result_basis, Basis::BasisCard(BasisCard::Zero)) {
-                        game.field[id_val] = None;
+                        game.field[id_val] = FieldBasis::none();
                     } else {
-                        game.field[id_val] = Some(result_basis);
+                        if matches!(
+                            operator_card,
+                            Card::DerivativeCard(DerivativeCard::Derivative)
+                        ) {
+                            selected_field_basis.derivative(Some(&result_basis));
+                        } else if matches!(
+                            operator_card,
+                            Card::DerivativeCard(DerivativeCard::Integral)
+                        ) {
+                            selected_field_basis.integral(Some(&result_basis));
+                        }
+                        game.field[id_val] = FieldBasis::new(&result_basis);
                     }
 
                     // player.remove()
@@ -99,7 +126,48 @@ pub fn branch_turn_phase(id: &String, player_num: u32) {
         },
         TurnPhase::FIELD_SELECT(field_operator) => {
             if id_key == "f" {
-                // apply derivative to all fields
+                let is_laplacian = matches!(
+                    field_operator,
+                    Card::DerivativeCard(DerivativeCard::Laplacian)
+                );
+
+                let card_range;
+                if id_val > 3 {
+                    card_range = 0..3;
+                } else {
+                    card_range = 3..6;
+                }
+
+                // for each basis on the field
+                for i in card_range {
+                    let selected_field_basis = &mut game.field[i];
+                    if selected_field_basis.has_value(&field_operator) {
+                        selected_field_basis.derivative(None);
+                        if is_laplacian {
+                            selected_field_basis.derivative(None);
+                        }
+                    } else {
+                        let first_derivative = apply_card(&field_operator)(
+                            selected_field_basis.basis.as_ref().unwrap(),
+                        );
+                        if matches!(first_derivative, Basis::BasisCard(BasisCard::Zero)) {
+                            game.field[i] = FieldBasis::none();
+                            continue;
+                        }
+                        selected_field_basis.derivative(Some(&first_derivative));
+                        if is_laplacian {
+                            let second_derivative = apply_card(&field_operator)(&first_derivative);
+                            if matches!(second_derivative, Basis::BasisCard(BasisCard::Zero)) {
+                                game.field[i] = FieldBasis::none();
+                                continue;
+                            }
+                            selected_field_basis.derivative(Some(&second_derivative));
+                        }
+                    }
+                }
+
+                // resolve hand
+                next_turn();
             }
         }
         TurnPhase::MULTISELECT(multi_operator) => {

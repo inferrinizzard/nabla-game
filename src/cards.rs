@@ -4,32 +4,31 @@ use std::fmt::{Display, Formatter, Result};
 
 use super::basis::*;
 use super::math::derivative::*;
+use super::math::inverse::*;
+use super::math::limits::*;
+use super::math::logarithm::*;
 use super::util::EnumStr;
 
 pub fn apply_card(card: &Card) -> impl Fn(&Basis) -> Basis {
     let card = card.clone();
     return move |basis| match card {
-        Card::DerivativeCard(DerivativeCard::Derivative) => {
-            return derivative(basis);
-        }
+        Card::DerivativeCard(
+            DerivativeCard::Derivative | DerivativeCard::Nabla | DerivativeCard::Laplacian,
+        ) => derivative(basis),
         Card::DerivativeCard(DerivativeCard::Integral) => {
             // TODO: add integration here
             return Basis::BasisCard(BasisCard::Zero);
         }
-        Card::AlgebraicCard(AlgebraicCard::Sqrt) => {
-            return SqrtBasisNode(1, basis);
+        Card::AlgebraicCard(AlgebraicCard::Sqrt) => SqrtBasisNode(1, basis),
+        Card::AlgebraicCard(AlgebraicCard::Inverse) => inverse(basis),
+        Card::AlgebraicCard(AlgebraicCard::Log) => logarithm(&basis),
+        Card::LimitCard(limit_card) => {
+            let basis_limit = limit(&limit_card)(&basis).unwrap_or(
+                Basis::BasisCard(BasisCard::X), // invalid limit placeholder
+            );
+            basis_limit.resolve()
         }
-        Card::AlgebraicCard(AlgebraicCard::Inverse) => {
-            // TODO: add inverse here
-            return Basis::BasisCard(BasisCard::Zero);
-        }
-        Card::AlgebraicCard(AlgebraicCard::Log) => {
-            // TODO: add log here
-            return Basis::BasisCard(BasisCard::Zero);
-        }
-        _ => {
-            return Basis::BasisCard(BasisCard::Zero);
-        }
+        _ => Basis::BasisCard(BasisCard::Zero),
     };
 }
 
