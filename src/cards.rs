@@ -12,7 +12,9 @@ use super::util::EnumStr;
 pub fn apply_card(card: &Card) -> impl Fn(&Basis) -> Basis {
     let card = card.clone();
     return move |basis| match card {
-        Card::DerivativeCard(DerivativeCard::Derivative) => derivative(basis),
+        Card::DerivativeCard(
+            DerivativeCard::Derivative | DerivativeCard::Nabla | DerivativeCard::Laplacian,
+        ) => derivative(basis),
         Card::DerivativeCard(DerivativeCard::Integral) => {
             // TODO: add integration here
             return Basis::BasisCard(BasisCard::Zero);
