@@ -43,6 +43,11 @@ pub fn branch_turn_phase(id: &String, player_num: u32) {
 
     let (id_key, id_val) = split_id(id);
 
+    if id_key == "x" {
+        next_phase(TurnPhase::IDLE);
+        return;
+    }
+
     match turn.phase {
         TurnPhase::IDLE if id_key == format!("p{}", player_num) => {
             // match against current card in player hand
@@ -175,12 +180,16 @@ pub fn branch_turn_phase(id: &String, player_num: u32) {
                 // add to queue of operands to be mult / div (need special menu here)
             }
         }
-        _ => panic!("unknown case, received id:{} on turn:{:?}", id, turn),
+        _ => console::log_1(&JsValue::from(format!(
+            "unknown case, received id:{} on turn:{:?}",
+            id, turn
+        ))),
     }
 }
 
 pub fn next_phase(phase: TurnPhase) {
     let game = unsafe { GAME.as_mut().unwrap() };
+    console::log_1(&JsValue::from(format!("entering phase: {:?}", phase)));
     game.turn = Turn {
         number: game.turn.number,
         phase: phase,
@@ -193,8 +202,13 @@ pub fn next_turn() {
     // console::log_1(&JsValue::from(format!("{:?}", game.player_1)));
     // console::log_1(&JsValue::from(format!("{:?}", game.player_2)));
 
+    console::log_1(&JsValue::from(format!(
+        "entering turn: {}",
+        game.turn.number + 1
+    )));
     game.turn = Turn {
         number: game.turn.number + 1,
         phase: TurnPhase::IDLE,
     };
+    render::draw();
 }
