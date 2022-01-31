@@ -45,7 +45,10 @@ pub fn branch_turn_phase(id: &String, player_num: u32) {
     }
 
     match turn.phase {
-        TurnPhase::IDLE if id_key == format!("p{}", player_num) => idle_turn_phase(player[id_val]),
+        TurnPhase::IDLE if id_key == format!("p{}", player_num) => {
+            idle_turn_phase(player[id_val]);
+            game.active.selected.push(id.to_string());
+        }
         TurnPhase::SELECT(select_operator) => select_turn_phase(select_operator, (id_key, id_val)),
         TurnPhase::FIELD_SELECT(field_operator) if id_key == "f" => {
             field_select_phase(field_operator, (id_key, id_val))
@@ -54,6 +57,7 @@ pub fn branch_turn_phase(id: &String, player_num: u32) {
             if id_key == "f" || id_key == format!("p{}", player_num) {
                 // add to queue of operands to be mult / div (need special menu here)
             }
+            end_turn();
         }
         _ => console::log_1(&JsValue::from(format!(
             "unknown case, received id:{} on turn:{:?}",
@@ -102,10 +106,12 @@ fn select_turn_phase(select_operator: Card, (id_key, id_val): (&str, usize)) {
 
     match select_operator {
         Card::BasisCard(basis_card) => {
-            if id_key == "f" && game.field[id_val].basis.is_none() {
+            if id_key == "f"
+                && game.field[id_val].basis.is_none()
+                && !matches!(basis_card, BasisCard::Zero)
+            {
                 game.field[id_val] = FieldBasis::new(&Basis::BasisCard(basis_card));
-                // player.remove()
-                next_turn();
+                end_turn();
             }
         }
         operator_card => {
@@ -125,9 +131,7 @@ fn select_turn_phase(select_operator: Card, (id_key, id_val): (&str, usize)) {
                         game.field[id_val] = FieldBasis::new(&result_basis);
                     }
                 }
-
-                // player.remove()
-                next_turn();
+                end_turn();
             }
         }
     }
@@ -139,9 +143,7 @@ fn field_select_phase(field_operator: Card, (id_key, id_val): (&str, usize)) {
     for i in card_range {
         handle_derivative_card(field_operator, i);
     }
-
-    // resolve hand
-    next_turn();
+    end_turn();
 }
 
 fn handle_derivative_card(card: Card, i: usize) {
@@ -193,13 +195,50 @@ fn handle_derivative_card(card: Card, i: usize) {
     }
 }
 
-pub fn next_phase(phase: TurnPhase) {
+fn end_turn() {
+    let game = unsafe { GAME.as_mut().unwrap() };
+    // get vector indices of cards used by player this turn
+    let mut selected_indices = game
+        .active
+        .selected
+        .iter()
+        .map(|card| {
+            card.split("=").collect::<Vec<&str>>()[1]
+                .parse::<usize>()
+                .unwrap()
+        })
+        .collect::<Vec<usize>>();
+    selected_indices.sort();
+    selected_indices.reverse();
+
+    let player = if &game.turn.number % 2 == 0 {
+        &mut game.player_1
+    } else {
+        &mut game.player_2
+    };
+    // remove used cards
+    for i in selected_indices.iter() {
+        player.remove(*i);
+    }
+
+    let deck = &mut game.deck;
+    // replenish from deck if possible
+    for _ in player.len()..7 {
+        if deck.len() > 0 {
+            player.push(deck.pop().unwrap());
+        }
+    }
+    next_turn();
+}
+
+fn next_phase(phase: TurnPhase) {
     let game = unsafe { GAME.as_mut().unwrap() };
     console::log_1(&JsValue::from(format!("entering phase: {:?}", phase)));
     game.turn = Turn {
         number: game.turn.number,
         phase: phase,
     };
+    render::draw();
 }
 
 pub fn next_turn() {
@@ -216,5 +255,6 @@ pub fn next_turn() {
         number: game.turn.number + 1,
         phase: TurnPhase::IDLE,
     };
+    game.active.clear();
     render::draw();
 }

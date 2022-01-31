@@ -37,7 +37,10 @@ fn random_hit_colour(hit_region_map: &HashMap<String, String>) -> String {
 }
 
 fn draw_x() {
-    let canvas = unsafe { CANVAS.as_mut().unwrap() };
+    let (canvas, game) = unsafe { (CANVAS.as_mut().unwrap(), GAME.as_mut().unwrap()) };
+    if game.active.selected.is_empty() {
+        return;
+    }
 
     let context = &canvas.context;
     let hit_context = &canvas.hit_context;

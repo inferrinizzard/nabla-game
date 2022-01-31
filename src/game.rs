@@ -128,6 +128,7 @@ pub struct Game {
     pub player_1: Vec<Card>,    // up to 7 cards in hand (<7 if deck running low)
     pub player_2: Vec<Card>,
     pub deck: Vec<Card>,
+    pub active: ActiveCards,
 }
 
 impl Game {
@@ -152,6 +153,10 @@ impl Game {
             player_1: player_1,
             player_2: player_2,
             deck: deck,
+            active: ActiveCards {
+                selected: Vec::default(),
+                hover: None,
+            },
         };
     }
 }
@@ -169,4 +174,17 @@ pub enum TurnPhase {
     SELECT(Card),       // single-basis operators or playing new operators with a blank slot
     FIELD_SELECT(Card), // nabla or laplacian
     MULTISELECT(Card),  // mult or div
+}
+
+#[derive(Debug)]
+pub struct ActiveCards {
+    pub selected: Vec<String>,
+    pub hover: Option<String>,
+}
+
+impl ActiveCards {
+    pub fn clear(&mut self) {
+        self.selected = Vec::default();
+        self.hover = None;
+    }
 }
