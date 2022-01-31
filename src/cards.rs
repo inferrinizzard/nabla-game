@@ -4,6 +4,7 @@ use std::fmt::{Display, Formatter, Result};
 
 use super::basis::*;
 use super::math::derivative::*;
+use super::math::integral::*;
 use super::math::inverse::*;
 use super::math::limits::*;
 use super::math::logarithm::*;
@@ -13,10 +14,7 @@ pub fn apply_card(card: &Card) -> impl Fn(&Basis) -> Basis {
     let card = card.clone();
     return move |basis| match card {
         Card::DerivativeCard(DerivativeCard::Derivative) => derivative(basis),
-        Card::DerivativeCard(DerivativeCard::Integral) => {
-            // TODO: add integration here
-            return Basis::BasisCard(BasisCard::Zero);
-        }
+        Card::DerivativeCard(DerivativeCard::Integral) => integral(basis),
         Card::AlgebraicCard(AlgebraicCard::Sqrt) => SqrtBasisNode(1, basis),
         Card::AlgebraicCard(AlgebraicCard::Inverse) => inverse(basis),
         Card::AlgebraicCard(AlgebraicCard::Log) => logarithm(&basis),
