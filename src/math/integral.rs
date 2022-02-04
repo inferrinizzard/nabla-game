@@ -1,19 +1,29 @@
+use std::cmp::{max, min};
 use std::collections::HashMap;
 
 use super::super::basis::*;
 use super::super::cards::*;
+use super::super::math::*;
+
+fn atomic_integral(basis: &BasisCard) -> Basis {
+    let integral_lookup = HashMap::from([
+        (BasisCard::E, Basis::BasisCard(BasisCard::E)),
+        (BasisCard::X, Basis::BasisCard(BasisCard::X2)),
+        (
+            BasisCard::X2,
+            PowBasisNode(3, 1, &Basis::BasisCard(BasisCard::X)),
+        ),
+        (BasisCard::Sin, Basis::BasisCard(BasisCard::Cos)),
+        (BasisCard::Cos, Basis::BasisCard(BasisCard::Sin)),
+        (BasisCard::One, Basis::BasisCard(BasisCard::X)),
+        (BasisCard::Zero, Basis::BasisCard(BasisCard::Zero)),
+    ]);
+    return integral_lookup[basis];
+}
 
 pub fn integral(basis: &Basis) -> Basis {
     match basis {
-        Basis::BasisCard(basis_card) => match basis_card {
-            BasisCard::E => Basis::BasisCard(BasisCard::E),
-            BasisCard::X => Basis::BasisCard(BasisCard::X2),
-            BasisCard::X2 => PowBasisNode(3, 1, &Basis::BasisCard(BasisCard::X)),
-            BasisCard::Sin => Basis::BasisCard(BasisCard::Cos),
-            BasisCard::Cos => Basis::BasisCard(BasisCard::Sin),
-            BasisCard::One => Basis::BasisCard(BasisCard::X),
-            BasisCard::Zero => Basis::BasisCard(BasisCard::Zero),
-        },
+        Basis::BasisCard(basis_card) => atomic_integral(&basis_card),
         Basis::BasisNode(basis_node) => match basis_node.operator {
             BasisOperator::Add => AddBasisNode(
                 &integral(&basis_node.left_operand),
@@ -27,27 +37,24 @@ pub fn integral(basis: &Basis) -> Basis {
                 // TODO: cos^2 reduction
                 PowBasisNode(n + d, d, &basis_node.left_operand)
             }
-            BasisOperator::Mult => {
-                integration_by_parts(&basis_node.left_operand, &basis_node.right_operand)
-            }
-            BasisOperator::Div => {
+            BasisOperator::Mult | BasisOperator::Div => {
                 // TODO: edge cases
                 // * sin/x^n, cos/x^n
-                integration_by_parts(&basis_node.left_operand, &basis_node.right_operand)
+                substitution_integration(basis_node)
             }
         },
     }
 }
 
-fn find_basis_weight(basis: &Basis) -> f32 {
+fn find_basis_weight(basis: &Basis) -> i32 {
     match basis {
         Basis::BasisCard(basis_card) => {
             let lookup = HashMap::from([
-                (BasisCard::X2, 3.2),
-                (BasisCard::X, 3.0),
-                (BasisCard::Sin, 2.0),
-                (BasisCard::Cos, 2.0),
-                (BasisCard::E, 1.0),
+                (BasisCard::X2, 32),
+                (BasisCard::X, 30),
+                (BasisCard::Sin, 20),
+                (BasisCard::Cos, 20),
+                (BasisCard::E, 10),
             ]);
             lookup[basis_card]
         }
@@ -56,9 +63,10 @@ fn find_basis_weight(basis: &Basis) -> f32 {
             left_operand,
             right_operand,
         }) => match operator {
-            BasisOperator::Log => 5.0,
-            BasisOperator::Inv => 4.0,
-            BasisOperator::Pow(n, d) => 3.0 + (*n as f32) / (*d as f32),
+            // consider inner bases ?
+            BasisOperator::Log => 50,
+            BasisOperator::Inv => 40,
+            BasisOperator::Pow(n, d) => 30 + *n / *d,
             BasisOperator::Func => {
                 if let Basis::BasisNode(BasisNode {
                     operator: inner_operator,
@@ -72,7 +80,7 @@ fn find_basis_weight(basis: &Basis) -> f32 {
                             Basis::BasisCard(BasisCard::Cos | BasisCard::Sin)
                         )
                     {
-                        return 4.1;
+                        return 41;
                     }
                 }
 
@@ -80,18 +88,51 @@ fn find_basis_weight(basis: &Basis) -> f32 {
                     **left_operand,
                     Basis::BasisCard(BasisCard::Cos | BasisCard::Sin)
                 ) {
-                    return 2.0;
+                    return 20;
                 } else if matches!(**left_operand, Basis::BasisCard(BasisCard::E)) {
-                    return 1.0;
+                    return 10;
                 }
-                0.0
+                00
             }
-            _ => 0.0, // Add/Minus, Mult/Div are invalid here
+            _ => 00, // Add/Minus, Mult/Div are invalid here
         },
     }
 }
 
-fn integration_by_parts(left_operand: &Basis, right_operand: &Basis) -> Basis {
+fn get_u_v(left_operand: &Basis, right_operand: &Basis, operator: BasisOperator) -> (Basis, Basis) {
+    let left_weight = find_basis_weight(&left_operand);
+    let right_weight = find_basis_weight(&right_operand);
+    // choose appropriate u and v here
+    let f_u = if left_weight != right_weight {
+        [left_operand, right_operand][max((left_weight, 0), (right_weight, 1)).1]
+    } else {
+        // if weights are equal
+        if operator == BasisOperator::Div {
+            right_operand
+        } else {
+            left_operand
+        }
+    };
+    let f_v = if left_weight != right_weight {
+        [left_operand, right_operand][min((left_weight, 0), (right_weight, 1)).1]
+    } else {
+        // if weights are equal
+        if operator == BasisOperator::Div {
+            left_operand
+        } else {
+            right_operand
+        }
+    };
+
+    let (_, u) = basis_into_stack(f_u);
+    let (_, v) = basis_into_stack(f_v);
+    (Basis::BasisCard(u), Basis::BasisCard(v))
+}
+
+fn substitution_integration(basis_node: &BasisNode) -> Basis {
+    let left_operand = *basis_node.left_operand;
+    let right_operand = *basis_node.right_operand;
+    let operator = basis_node.operator;
     // TODO: edge cases
     // * e * sin / e * cos (recursive integration by parts, check if equal to original left/right)
 
@@ -108,24 +149,58 @@ fn integration_by_parts(left_operand: &Basis, right_operand: &Basis) -> Basis {
             ..
         })
     ) {
-        return polynomial_integration_by_parts(left_operand, right_operand);
+        return polynomial_integration_by_parts(&left_operand, &right_operand);
     }
 
-    let left_weight = find_basis_weight(&left_operand);
-    let right_weight = find_basis_weight(&right_operand);
-    // choose appropriate u and v here
-    let u = if left_weight > right_weight {
-        left_operand
-    } else {
-        right_operand
-    };
-    let v = if left_weight > right_weight {
-        right_operand
-    } else {
-        left_operand
-    };
+    let (u, v) = get_u_v(&left_operand, &right_operand, operator);
 
+    if operator == BasisOperator::Mult {
+        return mult_u_sub(&u, &v);
+    } else if operator == BasisOperator::Div {
+        return Basis::BasisCard(BasisCard::Zero);
+    }
+    panic!("Not yet implemented for basis: {}",)
+}
+
+fn mult_u_sub(u: &Basis, v: &Basis) -> Basis {
+    let du = derivative::derivative(&u);
+
+    // I(f(u))
+    if du == *v {
+        // I(udu)
+        if let Basis::BasisCard(_) = u {
+            return PowBasisNode(2, 1, &u);
+        }
+        // // I(u^ndu)
+        // else if let Basis::BasisNode(BasisNode {
+        //     operator: BasisOperator::Pow(n, d),
+        //     left_operand,
+        //     ..
+        // }) = u
+        // {
+        //     return PowBasisNode(2, 1, &u);
+        // }
+    }
     Basis::BasisCard(BasisCard::Zero)
+}
+
+fn basis_into_stack(basis: &Basis) -> (Vec<BasisNode>, BasisCard) {
+    let stack = Vec::default();
+    let _basis = basis;
+    let _basis_card;
+    loop {
+        match _basis {
+            Basis::BasisCard(basis_card) => {
+                _basis_card = *basis_card;
+                break;
+            }
+            Basis::BasisNode(basis_node) => {
+                stack.push(*basis_node);
+                _basis = &*basis_node.left_operand;
+            }
+        }
+    }
+    (stack, _basis_card)
 }
 
 fn polynomial_integration_by_parts(left_operand: &Basis, right_operand: &Basis) -> Basis {
