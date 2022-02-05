@@ -428,8 +428,12 @@ pub fn SqrtBasisNode(n: i32, left_operand: &Basis) -> Basis {
 
 #[allow(non_snake_case)]
 pub fn LogBasisNode(left_operand: &Basis) -> Basis {
+    // log(e^x) = x
+    if matches!(left_operand, Basis::BasisCard(BasisCard::E)) {
+        return Basis::BasisCard(BasisCard::X);
+    }
     // log(e^y) = y
-    if let Basis::BasisNode(BasisNode {
+    else if let Basis::BasisNode(BasisNode {
         operator: BasisOperator::Func,
         left_operand: inner_left_operand,
         right_operand,

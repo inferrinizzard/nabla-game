@@ -6,6 +6,8 @@ use super::super::cards::*;
 pub fn inverse(basis: &Basis) -> Basis {
     match basis {
         Basis::BasisCard(basis_card) => HashMap::from([
+            (BasisCard::Zero, Basis::BasisCard(BasisCard::Zero)),
+            (BasisCard::One, Basis::BasisCard(BasisCard::One)),
             (BasisCard::X, Basis::BasisCard(BasisCard::X)),
             (
                 BasisCard::X2,

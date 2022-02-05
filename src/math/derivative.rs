@@ -76,11 +76,31 @@ pub fn derivative(basis: &Basis) -> Basis {
                 &*basis_node.left_operand,
             ),
             // inverse rule, d(f-1(x)) = 1/f-1(d(x))
-            BasisOperator::Inv => PowBasisNode(
-                -1,
-                1,
-                &inverse::inverse(&derivative(&basis_node.left_operand)),
-            ),
+            BasisOperator::Inv => {
+                // d/dx arccos(x)|arcsin(x) = -x/sqrt(1-x^2)
+                // * d/dx arccos(f(x))|arcsin(f(x)) = -f'(x)/sqrt(1-f(x)^2)
+                if matches!(
+                    *basis_node.left_operand,
+                    Basis::BasisCard(BasisCard::Cos | BasisCard::Sin)
+                ) {
+                    return DivBasisNode(
+                        &Basis::BasisCard(BasisCard::X),
+                        &SqrtBasisNode(
+                            1,
+                            &MinusBasisNode(
+                                &Basis::BasisCard(BasisCard::One),
+                                &Basis::BasisCard(BasisCard::X2),
+                            ),
+                        ),
+                    );
+                }
+
+                PowBasisNode(
+                    -1,
+                    1,
+                    &inverse::inverse(&derivative(&basis_node.left_operand)),
+                )
+            }
             // chain rule, f'(x) = x' * (f')(x)
             BasisOperator::Func => MultBasisNode(
                 &derivative(&basis_node.right_operand),
