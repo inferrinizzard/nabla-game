@@ -34,12 +34,47 @@ pub fn integral(basis: &Basis) -> Basis {
                 &integral(&basis_node.right_operand),
             ),
             BasisOperator::Pow(n, d) => {
-                // TODO: cos^2 reduction
+                // cos^n(x) | sin^n(x)
+                if matches!(
+                    *basis_node.left_operand,
+                    Basis::BasisCard(BasisCard::Cos | BasisCard::Sin)
+                ) {
+                    return IntBasisNode(basis);
+                }
+                // log^n(f(x))
+                if matches!(
+                    *basis_node.left_operand,
+                    Basis::BasisNode(BasisNode {
+                        operator: BasisOperator::Log,
+                        left_operand,
+                        ..
+                    })
+                ) {
+                    // tabular
+                }
                 PowBasisNode(n + d, d, &basis_node.left_operand)
             }
             BasisOperator::Mult | BasisOperator::Div => {
                 // TODO: edge cases
-                // * sin/x^n, cos/x^n
+                // cosx/x^n | sinx/x^n
+                if matches!(basis_node.operator, BasisOperator::Div)
+                    && matches!(
+                        *basis_node.left_operand,
+                        Basis::BasisCard(BasisCard::Cos | BasisCard::Sin)
+                    )
+                {
+                    match *basis_node.right_operand {
+                        Basis::BasisCard(BasisCard::X) => return IntBasisNode(basis),
+                        Basis::BasisNode(BasisNode {
+                            operator: BasisOperator::Pow(..),
+                            left_operand: inner_left_operand,
+                            ..
+                        }) if matches!(*inner_left_operand, Basis::BasisCard(BasisCard::X)) => {
+                            return IntBasisNode(basis)
+                        }
+                        _ => {}
+                    }
+                }
                 substitution_integration(basis_node)
             }
             // I(log(f(x))) = xlog(f(x)) - I(xf'(x)/f(x))

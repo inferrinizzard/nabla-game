@@ -30,6 +30,7 @@ impl Basis {
                     BasisOperator::Inv => InvBasisNode(&left),
                     BasisOperator::Func => FuncBasisNode(&left, &right),
                     BasisOperator::Pow(n, d) => PowBasisNode(n, d, &left),
+                    BasisOperator::Int => IntBasisNode(&left),
                 }
             }
         }
@@ -143,6 +144,7 @@ pub enum BasisOperator {
     Log,
     Inv,
     Func,
+    Int,
 }
 
 impl EnumStr<BasisOperator> for BasisOperator {
@@ -176,6 +178,7 @@ impl EnumStr<BasisOperator> for BasisOperator {
             BasisOperator::Log => "Log",
             BasisOperator::Inv => "Inv",
             BasisOperator::Func => "Func",
+            BasisOperator::Int => "I",
         }
     }
 }
@@ -490,4 +493,13 @@ pub fn SinBasisNode(right_operand: &Basis) -> Basis {
 #[allow(non_snake_case)]
 pub fn EBasisNode(right_operand: &Basis) -> Basis {
     FuncBasisNode(&Basis::BasisCard(BasisCard::E), &right_operand)
+}
+
+#[allow(non_snake_case)]
+pub fn IntBasisNode(left_operand: &Basis) -> Basis {
+    Basis::BasisNode(BasisNode {
+        operator: BasisOperator::Int,
+        left_operand: Box::new(left_operand.clone()),
+        right_operand: Box::new(Basis::BasisCard(BasisCard::Zero)), // dummy, unused
+    })
 }
