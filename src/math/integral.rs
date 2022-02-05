@@ -42,6 +42,46 @@ pub fn integral(basis: &Basis) -> Basis {
                 // * sin/x^n, cos/x^n
                 substitution_integration(basis_node)
             }
+            // I(log(f(x))) = xlog(f(x)) - I(xf'(x)/f(x))
+            BasisOperator::Log => MinusBasisNode(
+                &MultBasisNode(&Basis::BasisCard(BasisCard::X), basis),
+                &integral(&DivBasisNode(
+                    &MultBasisNode(
+                        &Basis::BasisCard(BasisCard::X),
+                        &derivative::derivative(&basis_node.left_operand),
+                    ),
+                    &basis_node.left_operand,
+                )),
+            ),
+            BasisOperator::Inv => {
+                // I(arccos(x)|arcsin(x)) = x(arccos(x)|arcsin(x)) + sqrt(1-x^2)
+                if matches!(
+                    *basis_node.left_operand,
+                    Basis::BasisCard(BasisCard::Cos | BasisCard::Sin)
+                ) {
+                    return AddBasisNode(
+                        &MultBasisNode(&Basis::BasisCard(BasisCard::X), basis),
+                        &SqrtBasisNode(
+                            1,
+                            &MinusBasisNode(
+                                &Basis::BasisCard(BasisCard::One),
+                                &PowBasisNode(2, 1, &Basis::BasisCard(BasisCard::X)),
+                            ),
+                        ),
+                    );
+                }
+                // I(f-1(x)) = xf-1(x) - I(f)(f-1(x))
+                MinusBasisNode(
+                    &MultBasisNode(&Basis::BasisCard(BasisCard::X), basis),
+                    &FuncBasisNode(&integral(&*basis_node.left_operand), basis),
+                )
+            }
+            BasisOperator::Func => {
+                panic!(
+                    "Integral Func not yet implemented for {} of {}",
+                    basis_node.left_operand, basis_node.right_operand
+                )
+            }
         },
     }
 }
