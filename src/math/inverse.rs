@@ -20,15 +20,12 @@ pub fn inverse(basis: &Basis) -> Basis {
             BasisOperator::Inv => *basis_node.left_operand.clone(),
             BasisOperator::Log => {
                 // f-1(ln(x)) = e^x
-                if matches!(*basis_node.left_operand, Basis::BasisCard(BasisCard::X)) {
+                if (*basis_node.left_operand).is_of_card(BasisCard::X) {
                     return Basis::BasisCard(BasisCard::E);
                 }
 
                 // log(cos(x)) = arccos(e^x) | sin
-                if matches!(
-                    *basis_node.left_operand,
-                    Basis::BasisCard(BasisCard::Cos | BasisCard::Sin)
-                ) {
+                if (*basis_node.left_operand).is_of_cards(&[BasisCard::Cos, BasisCard::Sin]) {
                     return FuncBasisNode(
                         &InvBasisNode(&*basis_node.left_operand),
                         &Basis::BasisCard(BasisCard::E),
@@ -48,7 +45,7 @@ pub fn inverse(basis: &Basis) -> Basis {
                 InvBasisNode(basis)
             }
             BasisOperator::Pow(n, d) => {
-                if matches!(*basis_node.left_operand, Basis::BasisCard(BasisCard::X)) {
+                if (*basis_node.left_operand).is_of_card(BasisCard::X) {
                     // f-1(sqrt(x)) = x^2
                     if n == 1 && d == 2 {
                         return Basis::BasisCard(BasisCard::X2);
@@ -57,7 +54,7 @@ pub fn inverse(basis: &Basis) -> Basis {
                     return PowBasisNode(d, n, &basis_node.left_operand);
                 }
                 // f-1(e^(x*n)) = ln(x)/n
-                if matches!(*basis_node.left_operand, Basis::BasisCard(BasisCard::E)) {
+                if (*basis_node.left_operand).is_of_card(BasisCard::E) {
                     return LogBasisNode(&Basis::BasisCard(BasisCard::X));
                 }
 
@@ -65,7 +62,7 @@ pub fn inverse(basis: &Basis) -> Basis {
             }
             BasisOperator::Func => {
                 // f-1(e^(y)) = ln(f-1(y))
-                if matches!(*basis_node.left_operand, Basis::BasisCard(BasisCard::E)) {
+                if (*basis_node.left_operand).is_of_card(BasisCard::E) {
                     return LogBasisNode(&inverse(&*basis_node.right_operand));
                 }
                 // f-1(cos(y)) = cos-1(f-1(y)) | sin

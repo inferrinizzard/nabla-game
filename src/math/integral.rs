@@ -37,21 +37,11 @@ pub fn integral(basis: &Basis) -> Basis {
             ),
             BasisOperator::Pow(n, d) => {
                 // cos^n(x) | sin^n(x)
-                if matches!(
-                    *basis_node.left_operand,
-                    Basis::BasisCard(BasisCard::Cos | BasisCard::Sin)
-                ) {
+                if (*basis_node.left_operand).is_of_cards(&[BasisCard::Cos, BasisCard::Sin]) {
                     return IntBasisNode(basis);
                 }
                 // log^n(f(x))
-                if matches!(
-                    *basis_node.left_operand,
-                    Basis::BasisNode(BasisNode {
-                        operator: BasisOperator::Log,
-                        left_operand,
-                        ..
-                    })
-                ) {
+                if (*basis_node.left_operand).is_of_node(BasisOperator::Log) {
                     // tabular
                 }
                 PowBasisNode(n + d, d, &basis_node.left_operand)
@@ -60,10 +50,7 @@ pub fn integral(basis: &Basis) -> Basis {
                 // TODO: edge cases
                 // cosx/x^n | sinx/x^n
                 if matches!(basis_node.operator, BasisOperator::Div)
-                    && matches!(
-                        *basis_node.left_operand,
-                        Basis::BasisCard(BasisCard::Cos | BasisCard::Sin)
-                    )
+                    && (*basis_node.left_operand).is_of_cards(&[BasisCard::Cos, BasisCard::Sin])
                 {
                     match *basis_node.right_operand {
                         Basis::BasisCard(BasisCard::X) => return IntBasisNode(basis),
@@ -71,7 +58,7 @@ pub fn integral(basis: &Basis) -> Basis {
                             operator: BasisOperator::Pow(..),
                             left_operand: inner_left_operand,
                             ..
-                        }) if matches!(*inner_left_operand, Basis::BasisCard(BasisCard::X)) => {
+                        }) if (*inner_left_operand).is_of_card(BasisCard::X) => {
                             return IntBasisNode(basis)
                         }
                         _ => {}
@@ -83,11 +70,7 @@ pub fn integral(basis: &Basis) -> Basis {
                         operator: BasisOperator::Inv,
                         left_operand: inner_left_operand,
                         ..
-                    }) if matches!(
-                        *inner_left_operand,
-                        Basis::BasisCard(BasisCard::Cos | BasisCard::Sin)
-                    ) =>
-                    {
+                    }) if (*inner_left_operand).is_of_cards(&[BasisCard::Cos, BasisCard::Sin]) => {
                         return IntBasisNode(basis)
                     }
                     _ => {}
@@ -98,11 +81,7 @@ pub fn integral(basis: &Basis) -> Basis {
                         operator: BasisOperator::Inv,
                         left_operand: inner_left_operand,
                         ..
-                    }) if matches!(
-                        *inner_left_operand,
-                        Basis::BasisCard(BasisCard::Cos | BasisCard::Sin)
-                    ) =>
-                    {
+                    }) if (*inner_left_operand).is_of_cards(&[BasisCard::Cos, BasisCard::Sin]) => {
                         return IntBasisNode(basis)
                     }
                     _ => {}
@@ -122,10 +101,7 @@ pub fn integral(basis: &Basis) -> Basis {
             ),
             BasisOperator::Inv => {
                 // I(arccos(x)|arcsin(x)) = x(arccos(x)|arcsin(x)) + sqrt(1-x^2)
-                if matches!(
-                    *basis_node.left_operand,
-                    Basis::BasisCard(BasisCard::Cos | BasisCard::Sin)
-                ) {
+                if (*basis_node.left_operand).is_of_cards(&[BasisCard::Cos, BasisCard::Sin]) {
                     return AddBasisNode(
                         &MultBasisNode(&Basis::BasisCard(BasisCard::X), basis),
                         &SqrtBasisNode(
@@ -182,21 +158,15 @@ fn find_basis_weight(basis: &Basis) -> i32 {
                 }) = **left_operand
                 {
                     if matches!(inner_operator, BasisOperator::Inv)
-                        && matches!(
-                            *inner_left_operand,
-                            Basis::BasisCard(BasisCard::Cos | BasisCard::Sin)
-                        )
+                        && (*inner_left_operand).is_of_cards(&[BasisCard::Cos, BasisCard::Sin])
                     {
                         return 41;
                     }
                 }
 
-                if matches!(
-                    **left_operand,
-                    Basis::BasisCard(BasisCard::Cos | BasisCard::Sin)
-                ) {
+                if (**left_operand).is_of_cards(&[BasisCard::Cos, BasisCard::Sin]) {
                     return 20;
-                } else if matches!(**left_operand, Basis::BasisCard(BasisCard::E)) {
+                } else if (**left_operand).is_of_card(BasisCard::E) {
                     return 10;
                 }
                 00
@@ -250,37 +220,17 @@ fn substitution_integration(basis_node: &BasisNode) -> Basis {
      * cos|sin * e^x → by parts + lrs check
      */
 
-    if matches!(
-        left_operand,
-        Basis::BasisNode(BasisNode {
-            operator: BasisOperator::Mult | BasisOperator::Div,
-            ..
-        })
-    ) | matches!(
-        right_operand,
-        Basis::BasisNode(BasisNode {
-            operator: BasisOperator::Mult | BasisOperator::Div,
-            ..
-        })
-    ) {
+    if left_operand.is_of_node(BasisOperator::Mult)
+        | left_operand.is_of_node(BasisOperator::Div)
+        | right_operand.is_of_node(BasisOperator::Mult)
+        | right_operand.is_of_node(BasisOperator::Div)
+    {
         return polynomial_integration_by_parts(&left_operand, &right_operand);
     }
 
     let (u, dv) = get_u_dv(&left_operand, &right_operand, operator);
 
-    if matches!(
-        left_operand,
-        Basis::BasisNode(BasisNode {
-            operator: BasisOperator::Log,
-            ..
-        })
-    ) | matches!(
-        right_operand,
-        Basis::BasisNode(BasisNode {
-            operator: BasisOperator::Log,
-            ..
-        })
-    ) {
+    if left_operand.is_of_node(BasisOperator::Log) | right_operand.is_of_node(BasisOperator::Log) {
         // u should be the log component
         return integration_by_parts(&u, &dv);
     }
@@ -306,13 +256,8 @@ fn substitution_integration(basis_node: &BasisNode) -> Basis {
             operator: BasisOperator::Pow(_, 1) | BasisOperator::Log,
             left_operand: inner_left_operand,
             ..
-        }) if matches!(
-            *inner_left_operand,
-            Basis::BasisCard(BasisCard::Cos | BasisCard::Sin)
-        ) && matches!(
-            right_operand,
-            Basis::BasisCard(BasisCard::Cos | BasisCard::Sin)
-        ) =>
+        }) if (*inner_left_operand).is_of_cards(&[BasisCard::Cos, BasisCard::Sin])
+            && right_operand.is_of_cards(&[BasisCard::Cos, BasisCard::Sin]) =>
         {
             return u_sub(&u, &dv, operator);
         }
@@ -324,13 +269,8 @@ fn substitution_integration(basis_node: &BasisNode) -> Basis {
             operator: BasisOperator::Pow(_, 1) | BasisOperator::Log,
             left_operand: inner_left_operand,
             ..
-        }) if matches!(
-            *inner_left_operand,
-            Basis::BasisCard(BasisCard::Cos | BasisCard::Sin)
-        ) && matches!(
-            right_operand,
-            Basis::BasisCard(BasisCard::Cos | BasisCard::Sin)
-        ) =>
+        }) if (*inner_left_operand).is_of_cards(&[BasisCard::Cos, BasisCard::Sin])
+            && right_operand.is_of_cards(&[BasisCard::Cos, BasisCard::Sin]) =>
         {
             return u_sub(&u, &dv, operator);
         }

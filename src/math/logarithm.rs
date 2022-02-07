@@ -24,7 +24,7 @@ pub fn logarithm(basis: &Basis) -> Basis {
             BasisOperator::Pow(_, _) => logarithm(&*basis_node.left_operand),
             BasisOperator::Func => {
                 // log(e^f(x)) = f(x)
-                if matches!(*basis_node.left_operand, Basis::BasisCard(BasisCard::E)) {
+                if (*basis_node.left_operand).is_of_card(BasisCard::E) {
                     return *basis_node.right_operand.clone();
                 }
                 // else cos or sin
