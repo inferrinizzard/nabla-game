@@ -136,6 +136,7 @@ pub fn limit(_limit_card: &LimitCard) -> impl Fn(&Basis) -> Option<Basis> {
                     );
                     Some(Basis::BasisCard(BasisCard::Zero))
                 }
+                BasisOperator::Pow(-1, 1) if matches!(limit_card, LimitCard::Lim0) => None,
                 _ => {
                     let left_limit = limit(&limit_card)(left_operand);
                     let right_limit = limit(&limit_card)(right_operand);
