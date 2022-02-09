@@ -36,15 +36,26 @@ pub fn integral(basis: &Basis) -> Basis {
                 &integral(&basis_node.right_operand),
             ),
             BasisOperator::Pow(n, d) => {
-                // cos^n(x) | sin^n(x)
-                if (*basis_node.left_operand).is_of_cards(&[BasisCard::Cos, BasisCard::Sin]) {
-                    return IntBasisNode(basis);
+                match *basis_node.left_operand {
+                    // cos^n(x) | sin^n(x)
+                    Basis::BasisCard(BasisCard::Cos | BasisCard::Sin) => IntBasisNode(basis),
+                    // log^n(x)
+                    Basis::BasisNode(BasisNode {
+                        operator: BasisOperator::Log,
+                        left_operand: inner_left_operand,
+                        ..
+                    }) if matches!(*inner_left_operand, Basis::BasisCard(BasisCard::X))
+                        && d == 1 =>
+                    {
+                        // tabular
+                        // integration_by_parts(basis, &Basis::BasisCard(BasisCard::One))
+                        IntBasisNode(basis)
+                    }
+                    Basis::BasisCard(BasisCard::X) => {
+                        PowBasisNode(n + d, d, &basis_node.left_operand)
+                    }
+                    _ => IntBasisNode(basis),
                 }
-                // log^n(f(x))
-                if (*basis_node.left_operand).is_of_node(BasisOperator::Log) {
-                    // tabular
-                }
-                PowBasisNode(n + d, d, &basis_node.left_operand)
             }
             BasisOperator::Mult | BasisOperator::Div => {
                 // TODO: edge cases
@@ -64,41 +75,27 @@ pub fn integral(basis: &Basis) -> Basis {
                         _ => {}
                     }
                 }
-                // left side arccos | arcsin
-                match *basis_node.left_operand {
-                    Basis::BasisNode(BasisNode {
-                        operator: BasisOperator::Inv,
-                        left_operand: inner_left_operand,
-                        ..
-                    }) if (*inner_left_operand).is_of_cards(&[BasisCard::Cos, BasisCard::Sin]) => {
-                        return IntBasisNode(basis)
-                    }
-                    _ => {}
-                }
-                // right side arccos | arcsin
-                match *basis_node.right_operand {
-                    Basis::BasisNode(BasisNode {
-                        operator: BasisOperator::Inv,
-                        left_operand: inner_left_operand,
-                        ..
-                    }) if (*inner_left_operand).is_of_cards(&[BasisCard::Cos, BasisCard::Sin]) => {
-                        return IntBasisNode(basis)
-                    }
-                    _ => {}
-                }
                 substitution_integration(basis_node)
             }
-            // I(log(f(x))) = xlog(f(x)) - I(xf'(x)/f(x))
-            BasisOperator::Log => MinusBasisNode(
-                &MultBasisNode(&Basis::BasisCard(BasisCard::X), basis),
-                &integral(&DivBasisNode(
-                    &MultBasisNode(
-                        &Basis::BasisCard(BasisCard::X),
-                        &derivative::derivative(&basis_node.left_operand),
-                    ),
-                    &basis_node.left_operand,
-                )),
-            ),
+            BasisOperator::Log => match *basis_node.left_operand {
+                // I(log(x)) = xlog(x) - x
+                // integration_by_parts(basis, &Basis::BasisCard(BasisCard::One))
+                Basis::BasisCard(BasisCard::X) => MinusBasisNode(
+                    &MultBasisNode(&Basis::BasisCard(BasisCard::X), basis),
+                    &Basis::BasisCard(BasisCard::X),
+                ),
+                // I(log(f(x))) = xlog(f(x)) - I(xf'(x)/f(x))
+                _ => MinusBasisNode(
+                    &MultBasisNode(&Basis::BasisCard(BasisCard::X), &*basis_node.left_operand),
+                    &integral(&DivBasisNode(
+                        &MultBasisNode(
+                            &Basis::BasisCard(BasisCard::X),
+                            &derivative::derivative(&basis_node.left_operand),
+                        ),
+                        &basis_node.left_operand,
+                    )),
+                ),
+            },
             BasisOperator::Inv => {
                 // I(arccos(x)|arcsin(x)) = x(arccos(x)|arcsin(x)) + sqrt(1-x^2)
                 if (*basis_node.left_operand).is_of_cards(&[BasisCard::Cos, BasisCard::Sin]) {
@@ -116,15 +113,17 @@ pub fn integral(basis: &Basis) -> Basis {
                 // I(f-1(x)) = xf-1(x) - I(f)(f-1(x))
                 MinusBasisNode(
                     &MultBasisNode(&Basis::BasisCard(BasisCard::X), basis),
-                    &FuncBasisNode(&integral(&*basis_node.left_operand), basis),
+                    &integral(&FuncBasisNode(&integral(&*basis_node.left_operand), basis)),
                 )
             }
             BasisOperator::Func => {
                 panic!(
                     "Integral Func not yet implemented for {} of {}",
                     basis_node.left_operand, basis_node.right_operand
-                )
+                );
+                IntBasisNode(basis)
             }
+            BasisOperator::Int => IntBasisNode(basis),
         },
     }
 }
@@ -204,17 +203,18 @@ fn get_u_dv(
             right_operand
         }
     };
-    (*u, *dv)
+    (u.clone(), dv.clone())
 }
 
 fn substitution_integration(basis_node: &BasisNode) -> Basis {
-    let left_operand = *basis_node.left_operand;
-    let right_operand = *basis_node.right_operand;
+    let left_operand = &*basis_node.left_operand;
+    let right_operand = &*basis_node.right_operand;
     let operator = basis_node.operator;
     // TODO: edge cases
     /*
-     * any arccosx|arcsinx → skip
      * x^nlogx, cosx*logx, e^x*logx → by parts
+     * any arccosx|arcsinx → skip
+     * other inverse → by parts
      * x^ncosx|x^nsinx, x^ne^x → recursive integration by parts / tabular
      * cos^n(x)*sinx | sin^n(x)*cosx → u sub (choose inner cos/sin as u)
      * cos|sin * e^x → by parts + lrs check
@@ -225,96 +225,57 @@ fn substitution_integration(basis_node: &BasisNode) -> Basis {
         | right_operand.is_of_node(BasisOperator::Mult)
         | right_operand.is_of_node(BasisOperator::Div)
     {
+        // maybe just skip here
+        // return IntBasisNode(&Basis::BasisNode(*basis_node));
         return polynomial_integration_by_parts(&left_operand, &right_operand);
     }
 
     let (u, dv) = get_u_dv(&left_operand, &right_operand, operator);
 
-    if left_operand.is_of_node(BasisOperator::Log) | right_operand.is_of_node(BasisOperator::Log) {
-        // u should be the log component
-        return integration_by_parts(&u, &dv);
+    let logarithmic = liate::logarithmic(basis_node, &u, &dv);
+    if logarithmic.is_some() {
+        return logarithmic.unwrap();
+    }
+    let inv_trig = liate::inv_trig(basis_node);
+    if inv_trig.is_none() {
+        return IntBasisNode(&Basis::BasisNode(basis_node.clone()));
+    }
+    let algebraic = liate::algebraic(basis_node, &u, &dv);
+    if algebraic.is_some() {
+        return algebraic.unwrap();
+    }
+    let trig = if operator == BasisOperator::Mult {
+        liate::trig(basis_node, &u, &dv)
+    } else {
+        None
+    };
+    if trig.is_some() {
+        return trig.unwrap();
+    }
+    let exponential = liate::exponential(basis_node, &u, &dv);
+    if exponential.is_some() {
+        return exponential.unwrap();
     }
 
-    // any fractional exponent is not accepted
-    if let Basis::BasisNode(BasisNode {
-        operator: BasisOperator::Pow(n, 1),
-        ..
-    }) = left_operand
-    {
-        return tabular_integration(n, dv);
-    } else if let Basis::BasisNode(BasisNode {
-        operator: BasisOperator::Pow(n, 1),
-        ..
-    }) = right_operand
-    {
-        return tabular_integration(n, dv);
-    }
-
-    // f(cos)sin | f(sin)cos
-    match left_operand {
-        Basis::BasisNode(BasisNode {
-            operator: BasisOperator::Pow(_, 1) | BasisOperator::Log,
-            left_operand: inner_left_operand,
-            ..
-        }) if (*inner_left_operand).is_of_cards(&[BasisCard::Cos, BasisCard::Sin])
-            && right_operand.is_of_cards(&[BasisCard::Cos, BasisCard::Sin]) =>
-        {
-            return u_sub(&u, &dv, operator);
-        }
-        _ => {}
-    }
-    // sinf(cos) | cosf(sin)
-    match right_operand {
-        Basis::BasisNode(BasisNode {
-            operator: BasisOperator::Pow(_, 1) | BasisOperator::Log,
-            left_operand: inner_left_operand,
-            ..
-        }) if (*inner_left_operand).is_of_cards(&[BasisCard::Cos, BasisCard::Sin])
-            && right_operand.is_of_cards(&[BasisCard::Cos, BasisCard::Sin]) =>
-        {
-            return u_sub(&u, &dv, operator);
-        }
-        _ => {}
-    }
-
-    panic!("Not yet implemented for basis: {}", basis_node)
+    panic!("Not yet implemented for basis: {}", basis_node);
+    IntBasisNode(&Basis::BasisNode(*basis_node))
 }
 
-fn u_sub(u: &Basis, v: &Basis, operator: BasisOperator) -> Basis {
-    let (_, _u) = basis_into_stack(u);
-    let du = derivative::derivative(&Basis::BasisCard(_u));
-
-    // I(f(u))
-    if du == *v {}
+pub fn tabular_integration(n: i32, dv: &Basis) -> Basis {
+    let mut elements: Vec<Basis> = vec![];
+    let mut v: Basis = dv.clone();
+    for i in 0..n {
+        v = integral(&v);
+        // account for cos sin signs here later
+        elements.push(MultBasisNode(
+            &PowBasisNode(n - i, 1, &Basis::BasisCard(BasisCard::X)),
+            &v,
+        ))
+    }
     Basis::BasisCard(BasisCard::Zero)
 }
 
-fn tabular_integration(n: i32, dv: Basis) -> Basis {
-    // if n>4 {}
-    for i in 0..n {}
-    Basis::BasisCard(BasisCard::Zero)
-}
-
-fn basis_into_stack(basis: &Basis) -> (Vec<BasisNode>, BasisCard) {
-    let stack = Vec::default();
-    let _basis = basis;
-    let _basis_card;
-    loop {
-        match _basis {
-            Basis::BasisCard(basis_card) => {
-                _basis_card = *basis_card;
-                break;
-            }
-            Basis::BasisNode(basis_node) => {
-                stack.push(*basis_node);
-                _basis = &*basis_node.left_operand;
-            }
-        }
-    }
-    (stack, _basis_card)
-}
-
-fn integration_by_parts(u: &Basis, dv: &Basis) -> Basis {
+pub fn integration_by_parts(u: &Basis, dv: &Basis) -> Basis {
     let v = &integral(dv);
     MinusBasisNode(
         &MultBasisNode(u, v),
