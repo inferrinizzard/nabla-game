@@ -125,6 +125,11 @@ pub fn limit(_limit_card: &LimitCard) -> impl Fn(&Basis) -> Option<Basis> {
                     );
                     Some(Basis::BasisCard(BasisCard::Zero))
                 }
+                BasisOperator::Int => {
+                    // assume that the limits of integration are from 0 to x for INF, x to 0 for -INF, what for 0?
+                    let res = integral_limit(basis);
+                    Some(Basis::BasisCard(BasisCard::Zero))
+                }
                 _ => {
                     let left_limit = limit(&limit_card)(left_operand);
                     let right_limit = limit(&limit_card)(right_operand);
@@ -142,7 +147,11 @@ pub fn limit(_limit_card: &LimitCard) -> impl Fn(&Basis) -> Option<Basis> {
     };
 }
 
-pub fn get_limit_map(card: &LimitCard) -> HashMap<BasisCard, BasisCard> {
+fn integral_limit(basis: &Basis) -> Option<Basis> {
+    None
+}
+
+fn get_limit_map(card: &LimitCard) -> HashMap<BasisCard, BasisCard> {
     let limit_zero_map = HashMap::from([
         (BasisCard::E, BasisCard::One),
         (BasisCard::X, BasisCard::Zero),

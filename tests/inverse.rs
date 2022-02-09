@@ -7,29 +7,38 @@ use nabla_game::math::*;
 
 #[test]
 fn test_basic_inverses() {
-    let list = [
-        Basis::BasisCard(BasisCard::X),
-        Basis::BasisCard(BasisCard::E),
-        Basis::BasisCard(BasisCard::X2),
-        LogBasisNode(&Basis::BasisCard(BasisCard::X)),
-        SqrtBasisNode(1, &Basis::BasisCard(BasisCard::X)),
-        Basis::BasisCard(BasisCard::Sin),
-        InvBasisNode(&Basis::BasisCard(BasisCard::Cos)),
-    ];
+    println!(
+        "{} {}",
+        LogBasisNode(&Basis::BasisCard(BasisCard::X)).is_of_node(BasisOperator::Log),
+        LogBasisNode(&Basis::BasisCard(BasisCard::X)).is_of_node(BasisOperator::Inv)
+    );
 
-    let inverses = [
-        Basis::BasisCard(BasisCard::X),
-        LogBasisNode(&Basis::BasisCard(BasisCard::X)),
-        SqrtBasisNode(1, &Basis::BasisCard(BasisCard::X)),
-        Basis::BasisCard(BasisCard::E),
-        Basis::BasisCard(BasisCard::X2),
-        InvBasisNode(&Basis::BasisCard(BasisCard::Sin)),
-        Basis::BasisCard(BasisCard::Cos),
-    ];
+    println!("{:?}", SqrtBasisNode(1, &Basis::BasisCard(BasisCard::X)));
+    println!("{:?}", PowBasisNode(1, 2, &Basis::BasisCard(BasisCard::X)));
+    // let list = [
+    //     Basis::BasisCard(BasisCard::X),
+    //     Basis::BasisCard(BasisCard::E),
+    //     Basis::BasisCard(BasisCard::X2),
+    //     LogBasisNode(&Basis::BasisCard(BasisCard::X)),
+    //     SqrtBasisNode(1, &Basis::BasisCard(BasisCard::X)),
+    //     Basis::BasisCard(BasisCard::Sin),
+    //     InvBasisNode(&Basis::BasisCard(BasisCard::Cos)),
+    // ];
 
-    for (i, basis) in list.iter().enumerate() {
-        assert_eq!(inverse::inverse(&basis), inverses[i]);
-    }
+    // let inverses = [
+    //     Basis::BasisCard(BasisCard::X),
+    //     LogBasisNode(&Basis::BasisCard(BasisCard::X)),
+    //     SqrtBasisNode(1, &Basis::BasisCard(BasisCard::X)),
+    //     Basis::BasisCard(BasisCard::E),
+    //     Basis::BasisCard(BasisCard::X2),
+    //     InvBasisNode(&Basis::BasisCard(BasisCard::Sin)),
+    //     Basis::BasisCard(BasisCard::Cos),
+    // ];
+
+    // for (i, basis) in list.iter().enumerate() {
+    //     println!("f-1({:?}) = {:?}", basis, inverses[i]);
+    //     assert_eq!(inverse::inverse(&basis), inverses[i]);
+    // }
 }
 
 #[test]

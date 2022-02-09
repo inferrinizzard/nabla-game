@@ -20,7 +20,7 @@ fn atomic_integral(basis: &BasisCard) -> Basis {
         (BasisCard::One, Basis::BasisCard(BasisCard::X)),
         (BasisCard::Zero, Basis::BasisCard(BasisCard::Zero)),
     ]);
-    return integral_lookup[basis];
+    return integral_lookup[basis].clone();
 }
 
 pub fn integral(basis: &Basis) -> Basis {
@@ -36,7 +36,7 @@ pub fn integral(basis: &Basis) -> Basis {
                 &integral(&basis_node.right_operand),
             ),
             BasisOperator::Pow(n, d) => {
-                match *basis_node.left_operand {
+                match &*basis_node.left_operand {
                     // cos^n(x) | sin^n(x)
                     Basis::BasisCard(BasisCard::Cos | BasisCard::Sin) => IntBasisNode(basis),
                     // log^n(x)
@@ -44,7 +44,7 @@ pub fn integral(basis: &Basis) -> Basis {
                         operator: BasisOperator::Log,
                         left_operand: inner_left_operand,
                         ..
-                    }) if matches!(*inner_left_operand, Basis::BasisCard(BasisCard::X))
+                    }) if matches!(**inner_left_operand, Basis::BasisCard(BasisCard::X))
                         && d == 1 =>
                     {
                         // tabular
@@ -63,7 +63,7 @@ pub fn integral(basis: &Basis) -> Basis {
                 if matches!(basis_node.operator, BasisOperator::Div)
                     && (*basis_node.left_operand).is_of_cards(&[BasisCard::Cos, BasisCard::Sin])
                 {
-                    match *basis_node.right_operand {
+                    match &*basis_node.right_operand {
                         Basis::BasisCard(BasisCard::X) => return IntBasisNode(basis),
                         Basis::BasisNode(BasisNode {
                             operator: BasisOperator::Pow(..),
@@ -143,7 +143,7 @@ fn find_basis_weight(basis: &Basis) -> i32 {
         Basis::BasisNode(BasisNode {
             operator,
             left_operand,
-            right_operand,
+            ..
         }) => match operator {
             // consider inner bases ?
             BasisOperator::Log => 50,
@@ -154,7 +154,7 @@ fn find_basis_weight(basis: &Basis) -> i32 {
                     operator: inner_operator,
                     left_operand: inner_left_operand,
                     ..
-                }) = **left_operand
+                }) = &**left_operand
                 {
                     if matches!(inner_operator, BasisOperator::Inv)
                         && (*inner_left_operand).is_of_cards(&[BasisCard::Cos, BasisCard::Sin])
@@ -284,7 +284,7 @@ pub fn integration_by_parts(u: &Basis, dv: &Basis) -> Basis {
 }
 
 fn polynomial_integration_by_parts(left_operand: &Basis, right_operand: &Basis) -> Basis {
-    let elements = vec![];
+    let elements: Vec<Basis> = vec![];
     let pointer = left_operand;
     while matches!(pointer, Basis::BasisNode(basis_node)) {
         // TODO: collect terms here

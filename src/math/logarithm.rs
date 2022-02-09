@@ -10,9 +10,11 @@ pub fn logarithm(basis: &Basis) -> Basis {
             _ => LogBasisNode(basis),
         },
         Basis::BasisNode(basis_node) => match basis_node.operator {
-            BasisOperator::Add | BasisOperator::Minus | BasisOperator::Log | BasisOperator::Inv => {
-                LogBasisNode(basis)
-            }
+            BasisOperator::Add
+            | BasisOperator::Minus
+            | BasisOperator::Log
+            | BasisOperator::Inv
+            | BasisOperator::Int => LogBasisNode(basis),
             BasisOperator::Mult => AddBasisNode(
                 &logarithm(&basis_node.left_operand),
                 &logarithm(&basis_node.right_operand),
