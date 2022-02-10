@@ -435,6 +435,14 @@ pub fn LogBasisNode(left_operand: &Basis) -> Basis {
     if matches!(left_operand, Basis::BasisCard(BasisCard::E)) {
         return Basis::BasisCard(BasisCard::X);
     }
+    // log(INF) = INF
+    else if matches!(left_operand, Basis::BasisCard(BasisCard::PosInf)) {
+        return Basis::BasisCard(BasisCard::PosInf);
+    }
+    // lim|x→0, log(x) = -INF
+    else if matches!(left_operand, Basis::BasisCard(BasisCard::Zero)) {
+        return Basis::BasisCard(BasisCard::NegInf);
+    }
     // log(e^y) = y
     else if let Basis::BasisNode(BasisNode {
         operator: BasisOperator::Func,
