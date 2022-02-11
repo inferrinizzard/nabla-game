@@ -30,6 +30,33 @@ pub fn apply_card(card: &Card) -> impl Fn(&Basis) -> Basis {
     };
 }
 
+pub fn apply_multi_card(card: &Card, bases: Vec<Basis>) -> Basis {
+    let mut rev = bases.clone();
+    rev.reverse();
+    match card {
+        Card::AlgebraicCard(AlgebraicCard::Mult) => {
+            let mut out = rev.pop().unwrap();
+            while rev.len() > 0 {
+                out = MultBasisNode(&out, &rev.pop().unwrap());
+            }
+            out
+        }
+        Card::AlgebraicCard(AlgebraicCard::Div) => {
+            let mut numerator = rev.pop().unwrap();
+            let mut denominator = rev.pop().unwrap();
+            while rev.len() > 0 {
+                if rev.len() % 2 == 1 {
+                    numerator = MultBasisNode(&numerator, &rev.pop().unwrap());
+                } else {
+                    denominator = MultBasisNode(&denominator, &rev.pop().unwrap());
+                }
+            }
+            DivBasisNode(&numerator, &denominator)
+        }
+        _ => panic!("Unknown MULTISELECT card: {}!", card),
+    }
+}
+
 pub trait CardType {
     fn card_type(&self) -> &'static str;
 }

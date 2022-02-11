@@ -59,10 +59,7 @@ pub fn branch_turn_phase(id: String, player_num: u32) {
             field_select_phase(field_operator, (id_key, id_val))
         }
         TurnPhase::MULTISELECT(multi_operator) => {
-            if id_key == "f" || id_key == format!("p{}", player_num) {
-                // add to queue of operands to be mult / div (need special menu here)
-            }
-            end_turn();
+            multi_select_phase(multi_operator, id, player_num)
         }
         _ => console::log_1(&JsValue::from(format!(
             "unknown case, received id:{} on turn:{:?}",
@@ -197,6 +194,73 @@ fn handle_derivative_card(card: Card, i: usize) {
             }
             selected_field_basis.derivative(Some(&second_derivative));
         }
+    }
+}
+
+fn multi_select_phase(multi_operator: Card, id: String, player_num: u32) {
+    let game = unsafe { GAME.as_mut().unwrap() };
+    let player = if &game.turn.number % 2 == 0 {
+        &mut game.player_1
+    } else {
+        &mut game.player_2
+    };
+    let field = &mut game.field;
+    let (id_key, id_val) = get_key_val(&id);
+    if id_key == "f"
+        || (id_key == format!("p{}", player_num) && matches!(player[id_val], Card::BasisCard(_)))
+    {
+        game.active.selected.push(id.to_string());
+        console::log_1(&JsValue::from(format!("added to multiselect: {}", id)));
+    }
+
+    if id_key == "x"
+        && id_val == 1
+        && game // must have at least 1 field basis
+            .active
+            .selected
+            .iter()
+            .find(|sel_id| sel_id.as_str().starts_with("f"))
+            .is_some()
+    {
+        let result_basis = apply_multi_card(
+            &multi_operator,
+            game.active
+                .selected
+                .iter()
+                .filter_map(|sel_id| {
+                    let (sel_key, sel_val) = get_key_val(&sel_id);
+
+                    if sel_key == "f" {
+                        return Some(field[sel_val].basis.as_ref().unwrap().clone());
+                    } else if sel_key == format!("p{}", player_num) {
+                        if let Card::AlgebraicCard(_operator) = player[sel_val] {
+                            // skip the mult_operator
+                            return None;
+                        } else if let Card::BasisCard(basis_card) = player[sel_val] {
+                            return Some(Basis::BasisCard(basis_card));
+                        }
+                    }
+                    panic!("invalid card selected! {}", sel_id);
+                })
+                .collect::<Vec<Basis>>(),
+        );
+        let used_field_bases = game
+            .active
+            .selected
+            .iter()
+            .filter_map(|sel_id| {
+                let (sel_key, sel_val) = get_key_val(&sel_id);
+                if sel_key == "f" {
+                    return Some(sel_val);
+                }
+                None
+            })
+            .collect::<Vec<usize>>();
+        used_field_bases // clear used field bases
+            .iter()
+            .for_each(|field_index| field[*field_index] = FieldBasis::none());
+        field[used_field_bases[0]] = FieldBasis::new(&result_basis); // assign result basis to any newly empty field
+        end_turn();
     }
 }
 

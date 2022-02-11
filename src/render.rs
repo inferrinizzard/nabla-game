@@ -19,6 +19,7 @@ pub fn draw() {
     draw_hand(1);
     draw_hand(2);
     draw_x();
+    draw_multi_done();
     // build list of eleemnts to draw here
 }
 
@@ -53,6 +54,23 @@ fn draw_x() {
     hit_context.set_fill_style(&JsValue::from(&hit_colour));
     hit_context.fill_rect(10.0, 10.0, 25.0, 25.0);
     hit_region_map.insert(hit_colour, "x=0".to_string());
+}
+
+fn draw_multi_done() {
+    let (canvas, game) = unsafe { (CANVAS.as_mut().unwrap(), GAME.as_mut().unwrap()) };
+
+    let context = &canvas.context;
+    let bounds = &canvas.canvas_bounds;
+    let hit_context = &canvas.hit_context;
+    let hit_region_map = &mut canvas.hit_region_map;
+
+    context.stroke_rect(bounds.x - 35.0, 10.0, 25.0, 25.0);
+
+    // draw rect onto hit canvas with random colour
+    let hit_colour = random_hit_colour(&hit_region_map);
+    hit_context.set_fill_style(&JsValue::from(&hit_colour));
+    hit_context.fill_rect(bounds.x - 35.0, 10.0, 25.0, 25.0);
+    hit_region_map.insert(hit_colour, "x=1".to_string());
 }
 
 fn draw_field() {
