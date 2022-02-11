@@ -405,13 +405,16 @@ pub fn PowBasisNode(_n: i32, _d: i32, left_operand: &Basis) -> Basis {
 
     // if base inside Pow is also a x^(n/d), then result is x^((n/d)*(i_n/i_d))
     let (inner_n, inner_d) = get_x_ponent(&left_operand);
-    if inner_n > 0 {
+    if inner_n != 0 {
         n *= inner_n;
         d *= inner_d;
         // (n, d) = simplify_fraction(n, d); // to soon be fixed, Rust 1.59+ ?
         let (new_n, new_d) = simplify_fraction(n, d);
-        n = new_n;
-        d = new_d;
+        return Basis::BasisNode(BasisNode {
+            operator: BasisOperator::Pow(new_n, new_d),
+            left_operand: Box::new(Basis::BasisCard(BasisCard::X)),
+            right_operand: Box::new(Basis::BasisCard(BasisCard::Zero)), // dummy, unused
+        });
     }
 
     Basis::BasisNode(BasisNode {
@@ -428,8 +431,20 @@ pub fn SqrtBasisNode(n: i32, left_operand: &Basis) -> Basis {
 
 #[allow(non_snake_case)]
 pub fn LogBasisNode(left_operand: &Basis) -> Basis {
+    // log(e^x) = x
+    if matches!(left_operand, Basis::BasisCard(BasisCard::E)) {
+        return Basis::BasisCard(BasisCard::X);
+    }
+    // log(INF) = INF
+    else if matches!(left_operand, Basis::BasisCard(BasisCard::PosInf)) {
+        return Basis::BasisCard(BasisCard::PosInf);
+    }
+    // lim|x→0, log(x) = -INF
+    else if matches!(left_operand, Basis::BasisCard(BasisCard::Zero)) {
+        return Basis::BasisCard(BasisCard::NegInf);
+    }
     // log(e^y) = y
-    if let Basis::BasisNode(BasisNode {
+    else if let Basis::BasisNode(BasisNode {
         operator: BasisOperator::Func,
         left_operand: inner_left_operand,
         right_operand,
