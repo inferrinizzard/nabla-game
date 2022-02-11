@@ -1,5 +1,3 @@
-// use wasm_bindgen::prelude::*;
-
 use std::fmt::{Display, Formatter, Result};
 
 use super::basis::*;

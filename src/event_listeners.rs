@@ -32,5 +32,5 @@ pub fn mousedown_event_listener(event: &Event) {
     let e = event.dyn_ref::<MouseEvent>().unwrap_throw();
     let hit_region_id = get_hit_region_id(e);
     console::log_1(&JsValue::from(&format!("Clicked: {}", hit_region_id)));
-    handle_mousedown(&hit_region_id);
+    handle_mousedown(hit_region_id);
 }

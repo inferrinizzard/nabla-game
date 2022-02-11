@@ -6,7 +6,7 @@ use super::render;
 use super::GAME;
 use super::{basis::*, cards::*};
 
-pub fn handle_mousedown(id: &String) {
+pub fn handle_mousedown(id: String) {
     if id.is_empty() {
         return;
     }
@@ -27,7 +27,12 @@ pub fn handle_mousedown(id: &String) {
     }
 }
 
-pub fn branch_turn_phase(id: &String, player_num: u32) {
+fn get_key_val(id: &String) -> (String, usize) {
+    let kvp = id.split("=").collect::<Vec<&str>>();
+    (kvp[0].to_string(), kvp[1].parse::<usize>().unwrap())
+}
+
+pub fn branch_turn_phase(id: String, player_num: u32) {
     let game = unsafe { GAME.as_mut().unwrap() };
     let turn = &game.turn;
     let player = if player_num == 1 {
@@ -36,18 +41,18 @@ pub fn branch_turn_phase(id: &String, player_num: u32) {
         &game.player_2
     };
 
-    let kvp = id.split("=").collect::<Vec<&str>>();
-    let (id_key, id_val) = (kvp[0], kvp[1].parse::<usize>().unwrap());
+    let (id_key, id_val) = get_key_val(&id);
 
-    if id_key == "x" {
+    if id_key == "x" && id_val == 0 {
+        game.active.clear();
         next_phase(TurnPhase::IDLE);
         return;
     }
 
     match turn.phase {
         TurnPhase::IDLE if id_key == format!("p{}", player_num) => {
-            idle_turn_phase(player[id_val]);
             game.active.selected.push(id.to_string());
+            idle_turn_phase(player[id_val]);
         }
         TurnPhase::SELECT(select_operator) => select_turn_phase(select_operator, (id_key, id_val)),
         TurnPhase::FIELD_SELECT(field_operator) if id_key == "f" => {
@@ -101,7 +106,7 @@ fn idle_turn_phase(card: Card) {
     }
 }
 
-fn select_turn_phase(select_operator: Card, (id_key, id_val): (&str, usize)) {
+fn select_turn_phase(select_operator: Card, (id_key, id_val): (String, usize)) {
     let game = unsafe { GAME.as_mut().unwrap() };
 
     match select_operator {
@@ -137,7 +142,7 @@ fn select_turn_phase(select_operator: Card, (id_key, id_val): (&str, usize)) {
     }
 }
 
-fn field_select_phase(field_operator: Card, (id_key, id_val): (&str, usize)) {
+fn field_select_phase(field_operator: Card, (id_key, id_val): (String, usize)) {
     let card_range = if id_val < 3 { 0..3 } else { 3..6 };
     // for each basis on one half of the field
     for i in card_range {
@@ -202,6 +207,7 @@ fn end_turn() {
         .active
         .selected
         .iter()
+        .filter(|card| card.get(0..1).unwrap() == "p")
         .map(|card| {
             card.split("=").collect::<Vec<&str>>()[1]
                 .parse::<usize>()
