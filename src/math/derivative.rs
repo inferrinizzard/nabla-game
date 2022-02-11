@@ -23,93 +23,86 @@ pub fn derivative(basis: &Basis) -> Basis {
         // is complex basis
         Basis::BasisNode(basis_node) => match basis_node.operator {
             BasisOperator::Add => AddBasisNode(
-                &derivative(&*basis_node.left_operand),
-                &derivative(&*basis_node.right_operand),
+                basis_node
+                    .operands
+                    .iter()
+                    .map(|op| derivative(&op))
+                    .collect(),
             ),
             BasisOperator::Minus => MinusBasisNode(
-                &derivative(&*basis_node.left_operand),
-                &derivative(&*basis_node.right_operand),
+                basis_node
+                    .operands
+                    .iter()
+                    .map(|op| derivative(&op))
+                    .collect(),
             ),
             // quotient rule, (vdu - udv) / uu
-            BasisOperator::Div => DivBasisNode(
-                // vdu - udv
-                &MinusBasisNode(
-                    &MultBasisNode(
-                        &basis_node.right_operand,             // v
-                        &derivative(&basis_node.left_operand), // du
-                    ),
-                    &MultBasisNode(
-                        &basis_node.left_operand,               // u
-                        &derivative(&basis_node.right_operand), // dv
-                    ),
-                ),
-                // uu
-                &MultBasisNode(
-                    &basis_node.left_operand, // u
-                    &basis_node.left_operand, // u
-                ),
-            ),
-            // product rule, udv + vdu
-            BasisOperator::Mult => AddBasisNode(
-                &MultBasisNode(
-                    &basis_node.left_operand,               // u
-                    &derivative(&basis_node.right_operand), // dv
-                ),
-                &MultBasisNode(
-                    &basis_node.right_operand,             // v
-                    &derivative(&basis_node.left_operand), // du
-                ),
-            ),
-            // power rule, n * x^(n-1) : preceding n is discarded
-            BasisOperator::Pow(n, d) => {
-                if matches!(*basis_node.left_operand, Basis::BasisCard(BasisCard::X)) {
-                    return PowBasisNode(n - d, d, &*basis_node.left_operand);
-                }
-                MultBasisNode(
-                    &derivative(&*basis_node.left_operand),
-                    &PowBasisNode(n - d, d, &*basis_node.left_operand),
+            BasisOperator::Div => {
+                let u = &basis_node.operands[0];
+                let v = &basis_node.operands[1];
+                DivBasisNode(
+                    // vdu - udv
+                    &MinusBasisNode(vec![
+                        MultBasisNode(vec![v.clone(), derivative(u)]),
+                        MultBasisNode(vec![u.clone(), derivative(v)]),
+                    ]),
+                    // uu
+                    &MultBasisNode(vec![u.clone(), u.clone()]),
                 )
             }
-            // log rule, dx/x
-            BasisOperator::Log => DivBasisNode(
-                &derivative(&basis_node.left_operand),
-                &*basis_node.left_operand,
-            ),
+            // product rule, udv + vdu
+            // TODO: case for more than 1 multiplicand
+            BasisOperator::Mult => {
+                let u = &basis_node.operands[0];
+                let v = &basis_node.operands[1];
+                AddBasisNode(vec![
+                    MultBasisNode(vec![u.clone(), derivative(v)]),
+                    MultBasisNode(vec![v.clone(), derivative(u)]),
+                ])
+            }
+            // power rule, n * x^(n-1) : preceding n is discarded
+            BasisOperator::Pow(n, d) => {
+                let base = &basis_node.operands[0];
+                if matches!(base, Basis::BasisCard(BasisCard::X)) {
+                    return PowBasisNode(n - d, d, base);
+                }
+                MultBasisNode(vec![derivative(base), PowBasisNode(n - d, d, base)])
+            }
+            // log rule, du/u
+            BasisOperator::Log => {
+                let u = &basis_node.operands[0];
+                DivBasisNode(&derivative(u), u)
+            }
             // inverse rule, d(f-1(x)) = 1/f-1(d(x))
             BasisOperator::Inv => {
+                let base = &basis_node.operands[0];
                 // d/dx arccos(x)|arcsin(x) = -x/sqrt(1-x^2)
                 // * d/dx arccos(f(x))|arcsin(f(x)) = -f'(x)/sqrt(1-f(x)^2)
-                if matches!(
-                    *basis_node.left_operand,
-                    Basis::BasisCard(BasisCard::Cos | BasisCard::Sin)
-                ) {
+                if matches!(base, Basis::BasisCard(BasisCard::Cos | BasisCard::Sin)) {
                     return DivBasisNode(
                         &Basis::BasisCard(BasisCard::X),
                         &SqrtBasisNode(
                             1,
-                            &MinusBasisNode(
-                                &Basis::BasisCard(BasisCard::One),
-                                &Basis::BasisCard(BasisCard::X2),
-                            ),
+                            &MinusBasisNode(vec![
+                                Basis::BasisCard(BasisCard::One),
+                                Basis::BasisCard(BasisCard::X2),
+                            ]),
                         ),
                     );
                 }
 
-                PowBasisNode(
-                    -1,
-                    1,
-                    &inverse::inverse(&derivative(&basis_node.left_operand)),
-                )
+                PowBasisNode(-1, 1, &inverse::inverse(&derivative(base)))
             }
             // chain rule, f'(x) = x' * (f')(x)
-            BasisOperator::Func => MultBasisNode(
-                &derivative(&basis_node.right_operand),
-                &FuncBasisNode(
-                    &derivative(&basis_node.left_operand),
-                    &basis_node.right_operand,
-                ),
-            ),
-            BasisOperator::Int => *basis_node.left_operand.clone(),
+            BasisOperator::Func => {
+                let func = &basis_node.operands[0];
+                let operand = &basis_node.operands[1];
+                MultBasisNode(vec![
+                    derivative(operand),
+                    FuncBasisNode(&derivative(func), operand),
+                ])
+            }
+            BasisOperator::Int => basis_node.operands[0].clone(),
         },
     };
 }

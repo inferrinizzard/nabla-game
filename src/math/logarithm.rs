@@ -15,19 +15,18 @@ pub fn logarithm(basis: &Basis) -> Basis {
             | BasisOperator::Log
             | BasisOperator::Inv
             | BasisOperator::Int => LogBasisNode(basis),
-            BasisOperator::Mult => AddBasisNode(
-                &logarithm(&basis_node.left_operand),
-                &logarithm(&basis_node.right_operand),
-            ),
-            BasisOperator::Div => MinusBasisNode(
-                &logarithm(&basis_node.left_operand),
-                &logarithm(&basis_node.right_operand),
-            ),
-            BasisOperator::Pow(_, _) => logarithm(&*basis_node.left_operand),
+            BasisOperator::Mult => {
+                AddBasisNode(basis_node.operands.iter().map(|op| logarithm(op)).collect())
+            }
+            BasisOperator::Div => {
+                MinusBasisNode(basis_node.operands.iter().map(|op| logarithm(op)).collect())
+            }
+            // TODO: add coefficients
+            BasisOperator::Pow(_, _) => logarithm(&basis_node.operands[0]),
             BasisOperator::Func => {
                 // log(e^f(x)) = f(x)
-                if (*basis_node.left_operand).is_of_card(BasisCard::E) {
-                    return *basis_node.right_operand.clone();
+                if basis_node.operands[0].is_of_card(BasisCard::E) {
+                    return basis_node.operands[1].clone();
                 }
                 // else cos or sin
                 LogBasisNode(basis)

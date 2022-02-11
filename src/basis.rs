@@ -14,23 +14,18 @@ impl Basis {
     pub fn resolve(self) -> Basis {
         match self {
             Basis::BasisCard(_) => self,
-            Basis::BasisNode(BasisNode {
-                operator,
-                left_operand,
-                right_operand,
-            }) => {
-                let left = left_operand.resolve();
-                let right = right_operand.resolve();
+            Basis::BasisNode(BasisNode { operator, operands }) => {
+                let _operands = operands.iter().map(|op| op.clone().resolve()).collect();
                 match operator {
-                    BasisOperator::Add => AddBasisNode(&left, &right),
-                    BasisOperator::Minus => MinusBasisNode(&left, &right),
-                    BasisOperator::Mult => MultBasisNode(&left, &right),
-                    BasisOperator::Div => DivBasisNode(&left, &right),
-                    BasisOperator::Log => LogBasisNode(&left),
-                    BasisOperator::Inv => InvBasisNode(&left),
-                    BasisOperator::Func => FuncBasisNode(&left, &right),
-                    BasisOperator::Pow(n, d) => PowBasisNode(n, d, &left),
-                    BasisOperator::Int => IntBasisNode(&left),
+                    BasisOperator::Add => AddBasisNode(_operands),
+                    BasisOperator::Minus => MinusBasisNode(_operands),
+                    BasisOperator::Mult => MultBasisNode(_operands),
+                    BasisOperator::Div => DivBasisNode(&_operands[0], &_operands[1]), // TODO: fix this
+                    BasisOperator::Log => LogBasisNode(&_operands[0]),
+                    BasisOperator::Inv => InvBasisNode(&_operands[0]),
+                    BasisOperator::Func => FuncBasisNode(&_operands[0], &_operands[1]), // TODO: fix this
+                    BasisOperator::Pow(n, d) => PowBasisNode(n, d, &_operands[0]),
+                    BasisOperator::Int => IntBasisNode(&_operands[0]),
                 }
             }
         }
@@ -75,9 +70,8 @@ impl Display for Basis {
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct BasisNode {
     pub operator: BasisOperator,
-    // Box heap allocates, prevents recursive struct reference
-    pub left_operand: Box<Basis>,
-    pub right_operand: Box<Basis>,
+    // Vec heap allocates, prevents recursive struct reference
+    pub operands: Vec<Basis>,
 }
 
 impl Display for BasisNode {
@@ -85,20 +79,25 @@ impl Display for BasisNode {
         match self.operator {
             BasisOperator::Pow(n, d) => {
                 if d == 1 {
-                    return write!(f, "{}^{}", self.left_operand, n);
+                    return write!(f, "{}^{}", self.operands[0], n);
                 }
-                write!(f, "{}^({}/{})", self.left_operand, n, d)
+                write!(f, "{}^({}/{})", self.operands[0], n, d)
             }
-            BasisOperator::Log => write!(f, "log({})", self.left_operand),
-            BasisOperator::Div => write!(f, "({})/({})", self.left_operand, self.right_operand),
-            BasisOperator::Inv => write!(f, "f-1({})", self.left_operand),
+            BasisOperator::Log => write!(f, "log({})", self.operands[0]),
+            BasisOperator::Div => write!(f, "({})/({})", self.operands[0], self.operands[1]),
+            BasisOperator::Inv => write!(f, "f-1({})", self.operands[0]),
             BasisOperator::Func => {
-                write!(f, "{}({})", self.left_operand, self.right_operand)
+                write!(f, "{}({})", self.operands[0], self.operands[1]) // TODO: fix
             }
             _ => write!(
                 f,
-                "{} {} {}",
-                self.left_operand, self.operator, self.right_operand
+                "{}",
+                self.operands
+                    .iter()
+                    .fold(format!("{}", self.operands[0]), |acc, op| format!(
+                        "{} {} {}",
+                        acc, self.operator, op
+                    ))
             ),
         }
     }
@@ -215,66 +214,86 @@ impl Display for BasisOperator {
 }
 
 #[allow(non_snake_case)]
-pub fn AddBasisNode(left_operand: &Basis, right_operand: &Basis) -> Basis {
+pub fn AddBasisNode(operands: Vec<Basis>) -> Basis {
     // INF + x = INF | x + INF = INF
-    if left_operand.is_of_card(BasisCard::PosInf) || right_operand.is_of_card(BasisCard::PosInf) {
+    if operands.iter().any(|op| op.is_of_card(BasisCard::PosInf)) {
         return Basis::BasisCard(BasisCard::PosInf);
     }
     // -INF + x = -INF | x + -INF = -INF
-    else if left_operand.is_of_card(BasisCard::NegInf)
-        || right_operand.is_of_card(BasisCard::NegInf)
-    {
+    else if operands.iter().any(|op| op.is_of_card(BasisCard::NegInf)) {
         return Basis::BasisCard(BasisCard::NegInf);
     }
-    // x + 0 = x
-    else if left_operand.is_of_card(BasisCard::Zero) {
-        return right_operand.clone();
-    }
-    // 0 + x = x
-    else if right_operand.is_of_card(BasisCard::Zero) {
-        return left_operand.clone();
-    }
+    let _operands = operands
+        .iter()
+        .filter_map(|op| {
+            if op.is_of_card(BasisCard::Zero) {
+                return None;
+            }
+            Some(op.clone())
+        })
+        .collect::<Vec<Basis>>();
     // x + x = 2x, 2 discarded
-    else if left_operand == right_operand {
-        return left_operand.clone();
+    // TODO: dedupe + coefficients
+    // if left_operand == right_operand {
+    //     return left_operand.clone();
+    // }
+
+    if _operands.len() == 1 {
+        return _operands[0].clone();
     }
 
     Basis::BasisNode(BasisNode {
         operator: BasisOperator::Add,
-        left_operand: Box::new(left_operand.clone()),
-        right_operand: Box::new(right_operand.clone()),
+        operands: _operands,
     })
 }
 
 #[allow(non_snake_case)]
-pub fn MinusBasisNode(left_operand: &Basis, right_operand: &Basis) -> Basis {
+pub fn MinusBasisNode(operands: Vec<Basis>) -> Basis {
     // INF - x = INF | x - -INF = INF
-    if left_operand.is_of_card(BasisCard::PosInf) || right_operand.is_of_card(BasisCard::NegInf) {
+    if operands[0].is_of_card(BasisCard::PosInf)
+        || operands
+            .iter()
+            .skip(1)
+            .any(|op| op.is_of_card(BasisCard::NegInf))
+    {
         return Basis::BasisCard(BasisCard::PosInf);
     }
     // -INF - x = -INF | x - INF = -INF
-    else if left_operand.is_of_card(BasisCard::NegInf)
-        || right_operand.is_of_card(BasisCard::PosInf)
+    else if operands[0].is_of_card(BasisCard::NegInf)
+        || operands
+            .iter()
+            .skip(1)
+            .any(|op| op.is_of_card(BasisCard::PosInf))
     {
         return Basis::BasisCard(BasisCard::NegInf);
     }
-    // x - 0 = x
-    else if right_operand.is_of_card(BasisCard::Zero) {
-        return left_operand.clone();
-    }
-    // 0 - x = -x, - discarded
-    else if left_operand.is_of_card(BasisCard::Zero) {
-        return right_operand.clone();
-    }
+    // TODO: add - if leading operand is 0
+    let _operands = operands
+        .iter()
+        .filter_map(|op| {
+            if op.is_of_card(BasisCard::Zero) {
+                return None;
+            }
+            Some(op.clone())
+        })
+        .collect::<Vec<Basis>>();
     // x - x = 0
-    else if left_operand == right_operand {
+    // TODO: dedupe + coefficients
+    // if left_operand == right_operand {
+    //     return Basis::BasisCard(BasisCard::Zero);
+    // }
+
+    if _operands.len() == 0 {
         return Basis::BasisCard(BasisCard::Zero);
+    }
+    if _operands.len() == 1 {
+        return _operands[0].clone();
     }
 
     Basis::BasisNode(BasisNode {
         operator: BasisOperator::Minus,
-        left_operand: Box::new(left_operand.clone()),
-        right_operand: Box::new(right_operand.clone()),
+        operands: _operands,
     })
 }
 
@@ -284,86 +303,92 @@ fn get_x_ponent(basis: &Basis) -> (i32, i32) {
         Basis::BasisCard(BasisCard::X2) => (2, 1),
         Basis::BasisNode(BasisNode {
             operator: BasisOperator::Pow(n, d),
-            left_operand,
+            operands,
             ..
-        }) if (**left_operand).is_of_card(BasisCard::X) => (*n, *d),
+        }) if operands[0].is_of_card(BasisCard::X) => (*n, *d),
         _ => (0, 0),
     }
 }
 
 #[allow(non_snake_case)]
-pub fn MultBasisNode(left_operand: &Basis, right_operand: &Basis) -> Basis {
+pub fn MultBasisNode(operands: Vec<Basis>) -> Basis {
     // -INF * x = -INF | x * -INF = -INF
-    if left_operand.is_of_card(BasisCard::NegInf) ^ right_operand.is_of_card(BasisCard::NegInf) {
+    if operands.iter().any(|op| op.is_of_card(BasisCard::NegInf)) {
         return Basis::BasisCard(BasisCard::NegInf);
     }
     // INF * x = INF | x * INF = INF
-    else if left_operand.is_of_card(BasisCard::PosInf)
-        || right_operand.is_of_card(BasisCard::PosInf)
-    {
+    else if operands.iter().any(|op| op.is_of_card(BasisCard::PosInf)) {
         return Basis::BasisCard(BasisCard::PosInf);
     }
-    // x * 1 = x
-    if left_operand.is_of_card(BasisCard::One) {
-        return right_operand.clone();
+    // 0 * n = 0
+    if operands.iter().any(|op| op.is_of_card(BasisCard::Zero)) {
+        return Basis::BasisCard(BasisCard::Zero);
     }
-    // 1 * x = x
-    else if right_operand.is_of_card(BasisCard::One) {
-        return left_operand.clone();
-    }
+    let _operands = operands
+        .iter()
+        .filter_map(|op| {
+            if op.is_of_card(BasisCard::One) {
+                return None;
+            }
+            Some(op.clone())
+        })
+        .collect::<Vec<Basis>>();
+    // TODO: mult dedupe, coefficients
+    // // if left and right are x^(ln/ld) & x^(rn/rd), return x^((ln/ld)+(rn/rd))
+    // let (left_n, left_d) = get_x_ponent(&left_operand);
+    // let (right_n, right_d) = get_x_ponent(&right_operand);
+    // if left_n > 0 && right_n > 0 {
+    //     return PowBasisNode(
+    //         left_n * right_d + right_n * left_d,
+    //         left_d * right_d,
+    //         &Basis::BasisCard(BasisCard::X),
+    //     );
+    // }
+    // // n * n = n^2
+    // else if left_operand == right_operand {
+    //     return PowBasisNode(2, 1, left_operand);
+    // }
 
-    // if left and right are x^(ln/ld) & x^(rn/rd), return x^((ln/ld)+(rn/rd))
-    let (left_n, left_d) = get_x_ponent(&left_operand);
-    let (right_n, right_d) = get_x_ponent(&right_operand);
-    if left_n > 0 && right_n > 0 {
-        return PowBasisNode(
-            left_n * right_d + right_n * left_d,
-            left_d * right_d,
-            &Basis::BasisCard(BasisCard::X),
-        );
-    }
-    // n * n = n^2
-    else if left_operand == right_operand {
-        return PowBasisNode(2, 1, left_operand);
+    if _operands.len() == 1 {
+        return _operands[0].clone();
     }
 
     Basis::BasisNode(BasisNode {
         operator: BasisOperator::Mult,
-        left_operand: Box::new(left_operand.clone()),
-        right_operand: Box::new(right_operand.clone()),
+        operands: _operands,
     })
 }
 
 #[allow(non_snake_case)]
-pub fn DivBasisNode(left_operand: &Basis, right_operand: &Basis) -> Basis {
+pub fn DivBasisNode(numerator: &Basis, denominator: &Basis) -> Basis {
     // 0 / n = 0
-    if left_operand.is_of_card(BasisCard::Zero) {
+    if numerator.is_of_card(BasisCard::Zero) {
         return Basis::BasisCard(BasisCard::Zero);
     }
     // 1 / n = n^-1
-    else if left_operand.is_of_card(BasisCard::One) {
-        return PowBasisNode(-1, 1, &right_operand);
+    else if numerator.is_of_card(BasisCard::One) {
+        return PowBasisNode(-1, 1, &denominator);
     }
     // n / n = 1
-    else if left_operand == right_operand {
+    else if numerator == denominator {
         return Basis::BasisCard(BasisCard::One);
     }
 
     // INF / x = INF
-    if left_operand.is_of_card(BasisCard::PosInf) {
+    // TODO: match signs
+    if numerator.is_of_card(BasisCard::PosInf) {
         return Basis::BasisCard(BasisCard::PosInf);
-    } else if left_operand.is_of_card(BasisCard::NegInf) {
+    } else if numerator.is_of_card(BasisCard::NegInf) {
         return Basis::BasisCard(BasisCard::NegInf);
     }
     // x / INF = 0
-    else if right_operand.is_of_cards(&[BasisCard::PosInf, BasisCard::NegInf]) {
+    else if denominator.is_of_cards(&[BasisCard::PosInf, BasisCard::NegInf]) {
         return Basis::BasisCard(BasisCard::Zero);
     }
 
     Basis::BasisNode(BasisNode {
         operator: BasisOperator::Div,
-        left_operand: Box::new(left_operand.clone()),
-        right_operand: Box::new(right_operand.clone()),
+        operands: vec![numerator.clone(), denominator.clone()],
     })
 }
 
@@ -386,7 +411,7 @@ fn simplify_fraction(n: i32, d: i32) -> (i32, i32) {
 }
 
 #[allow(non_snake_case)]
-pub fn PowBasisNode(_n: i32, _d: i32, left_operand: &Basis) -> Basis {
+pub fn PowBasisNode(_n: i32, _d: i32, base: &Basis) -> Basis {
     let (mut n, mut d) = simplify_fraction(_n, _d);
 
     // x^0 = 1
@@ -395,18 +420,18 @@ pub fn PowBasisNode(_n: i32, _d: i32, left_operand: &Basis) -> Basis {
     }
     // x^(n/n) = x
     else if n == d {
-        return left_operand.clone();
+        return base.clone();
     }
     // 0^n = 0, 1^n = 1
-    else if left_operand.is_of_cards(&[BasisCard::Zero, BasisCard::One]) {
-        return left_operand.clone();
+    else if base.is_of_cards(&[BasisCard::Zero, BasisCard::One]) {
+        return base.clone();
     }
     // INF^x = INF
-    else if left_operand.is_of_card(BasisCard::PosInf) {
+    else if base.is_of_card(BasisCard::PosInf) {
         return Basis::BasisCard(BasisCard::PosInf);
     }
     // (-INF)^x = INF | -INF
-    else if left_operand.is_of_card(BasisCard::NegInf) {
+    else if base.is_of_card(BasisCard::NegInf) {
         // odd power
         if n % 2 == 1 && d % 2 == 1 {
             return Basis::BasisCard(BasisCard::NegInf);
@@ -415,11 +440,11 @@ pub fn PowBasisNode(_n: i32, _d: i32, left_operand: &Basis) -> Basis {
         return Basis::BasisCard(BasisCard::PosInf);
     }
     // x^2 → X2
-    if left_operand.is_of_card(BasisCard::X) && n / d == 2 {
+    if base.is_of_card(BasisCard::X) && n / d == 2 {
         return Basis::BasisCard(BasisCard::X2);
     }
     // if base inside Pow is also a x^(n/d), then result is x^((n/d)*(i_n/i_d))
-    let (inner_n, inner_d) = get_x_ponent(&left_operand);
+    let (inner_n, inner_d) = get_x_ponent(&base);
     if inner_n != 0 {
         n *= inner_n;
         d *= inner_d;
@@ -427,71 +452,69 @@ pub fn PowBasisNode(_n: i32, _d: i32, left_operand: &Basis) -> Basis {
         let (new_n, new_d) = simplify_fraction(n, d);
         return Basis::BasisNode(BasisNode {
             operator: BasisOperator::Pow(new_n, new_d),
-            left_operand: Box::new(Basis::BasisCard(BasisCard::X)),
-            right_operand: Box::new(Basis::BasisCard(BasisCard::Zero)), // dummy, unused
+            operands: vec![Basis::BasisCard(BasisCard::X)],
         });
     }
 
     Basis::BasisNode(BasisNode {
         operator: BasisOperator::Pow(n, d),
-        left_operand: Box::new(left_operand.clone()),
-        right_operand: Box::new(Basis::BasisCard(BasisCard::Zero)), // dummy, unused
+        operands: vec![base.clone()],
     })
 }
 
 #[allow(non_snake_case)]
-pub fn SqrtBasisNode(n: i32, left_operand: &Basis) -> Basis {
-    if left_operand.is_of_card(BasisCard::X2) {
+pub fn SqrtBasisNode(n: i32, base: &Basis) -> Basis {
+    if base.is_of_card(BasisCard::X2) {
         return Basis::BasisCard(BasisCard::X);
     }
-    PowBasisNode(n, 2, &left_operand)
+    PowBasisNode(n, 2, &base)
 }
 
 #[allow(non_snake_case)]
-pub fn LogBasisNode(left_operand: &Basis) -> Basis {
+pub fn LogBasisNode(base: &Basis) -> Basis {
     // log(e^x) = x
-    if matches!(left_operand, Basis::BasisCard(BasisCard::E)) {
+    if matches!(base, Basis::BasisCard(BasisCard::E)) {
         return Basis::BasisCard(BasisCard::X);
     }
     // log(INF) = INF
-    else if matches!(left_operand, Basis::BasisCard(BasisCard::PosInf)) {
+    else if matches!(base, Basis::BasisCard(BasisCard::PosInf)) {
         return Basis::BasisCard(BasisCard::PosInf);
     }
     // lim|x→0, log(x) = -INF
-    else if matches!(left_operand, Basis::BasisCard(BasisCard::Zero)) {
+    else if matches!(base, Basis::BasisCard(BasisCard::Zero)) {
         return Basis::BasisCard(BasisCard::NegInf);
     }
     // log(e^y) = y
     else if let Basis::BasisNode(BasisNode {
         operator: BasisOperator::Func,
-        left_operand: inner_left_operand,
-        right_operand,
-    }) = left_operand
+        operands: inner_operands,
+    }) = base
     {
-        if (**inner_left_operand).is_of_card(BasisCard::E) {
-            return *right_operand.clone();
+        // TODO: check length
+        if inner_operands[0].is_of_card(BasisCard::E) {
+            return inner_operands[1].clone();
         }
     }
 
     Basis::BasisNode(BasisNode {
         operator: BasisOperator::Log,
-        left_operand: Box::new(left_operand.clone()),
-        right_operand: Box::new(Basis::BasisCard(BasisCard::Zero)), // dummy, unused
+        operands: vec![base.clone()],
     })
 }
 
 #[allow(non_snake_case)]
-pub fn InvBasisNode(left_operand: &Basis) -> Basis {
-    if let Basis::BasisNode(basis_node) = left_operand {
-        if (*basis_node.left_operand).is_of_card(BasisCard::E) {
+pub fn InvBasisNode(base: &Basis) -> Basis {
+    // TODO: use match
+    if let Basis::BasisNode(basis_node) = base {
+        // TODO: ensure this is Func
+        if basis_node.operands[0].is_of_card(BasisCard::E) {
             return LogBasisNode(&Basis::BasisCard(BasisCard::X));
         } else if let Basis::BasisNode(BasisNode {
             operator: BasisOperator::Log,
-            left_operand: inner_left_operand,
-            ..
-        }) = &*basis_node.left_operand
+            operands: inner_operands,
+        }) = &basis_node.operands[0]
         {
-            if (**inner_left_operand).is_of_card(BasisCard::X) {
+            if inner_operands[0].is_of_card(BasisCard::X) {
                 return Basis::BasisCard(BasisCard::E);
             }
         }
@@ -499,37 +522,40 @@ pub fn InvBasisNode(left_operand: &Basis) -> Basis {
 
     Basis::BasisNode(BasisNode {
         operator: BasisOperator::Inv,
-        left_operand: Box::new(left_operand.clone()),
-        right_operand: Box::new(Basis::BasisCard(BasisCard::Zero)), // dummy, unused
+        operands: vec![base.clone()],
     })
 }
 
 #[allow(non_snake_case)]
-pub fn FuncBasisNode(left_operand: &Basis, right_operand: &Basis) -> Basis {
+pub fn FuncBasisNode(operator_func: &Basis, operand: &Basis) -> Basis {
+    if operand.is_of_card((BasisCard::X)) {
+        return operator_func.clone();
+    }
     Basis::BasisNode(BasisNode {
         operator: BasisOperator::Func,
-        left_operand: Box::new(left_operand.clone()), // operator (cos, sin, e)
-        right_operand: Box::new(right_operand.clone()), // operand (inner)
+        operands: vec![
+            operator_func.clone(), // operator (cos, sin, e)
+            operand.clone(),       // operand (inner)
+        ],
     })
 }
 #[allow(non_snake_case)]
-pub fn CosBasisNode(right_operand: &Basis) -> Basis {
-    FuncBasisNode(&Basis::BasisCard(BasisCard::Cos), &right_operand)
+pub fn CosBasisNode(operand: &Basis) -> Basis {
+    FuncBasisNode(&Basis::BasisCard(BasisCard::Cos), &operand)
 }
 #[allow(non_snake_case)]
-pub fn SinBasisNode(right_operand: &Basis) -> Basis {
-    FuncBasisNode(&Basis::BasisCard(BasisCard::Sin), &right_operand)
+pub fn SinBasisNode(operand: &Basis) -> Basis {
+    FuncBasisNode(&Basis::BasisCard(BasisCard::Sin), &operand)
 }
 #[allow(non_snake_case)]
-pub fn EBasisNode(right_operand: &Basis) -> Basis {
-    FuncBasisNode(&Basis::BasisCard(BasisCard::E), &right_operand)
+pub fn EBasisNode(operand: &Basis) -> Basis {
+    FuncBasisNode(&Basis::BasisCard(BasisCard::E), &operand)
 }
 
 #[allow(non_snake_case)]
-pub fn IntBasisNode(left_operand: &Basis) -> Basis {
+pub fn IntBasisNode(integrand: &Basis) -> Basis {
     Basis::BasisNode(BasisNode {
         operator: BasisOperator::Int,
-        left_operand: Box::new(left_operand.clone()),
-        right_operand: Box::new(Basis::BasisCard(BasisCard::Zero)), // dummy, unused
+        operands: vec![integrand.clone()],
     })
 }

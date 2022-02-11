@@ -35,7 +35,7 @@ pub fn apply_multi_card(card: &Card, bases: Vec<Basis>) -> Basis {
         Card::AlgebraicCard(AlgebraicCard::Mult) => {
             let mut out = rev.pop().unwrap();
             while rev.len() > 0 {
-                out = MultBasisNode(&out, &rev.pop().unwrap());
+                out = MultBasisNode(vec![out, rev.pop().unwrap()]);
             }
             out
         }
@@ -44,9 +44,9 @@ pub fn apply_multi_card(card: &Card, bases: Vec<Basis>) -> Basis {
             let mut denominator = rev.pop().unwrap();
             while rev.len() > 0 {
                 if rev.len() % 2 == 1 {
-                    numerator = MultBasisNode(&numerator, &rev.pop().unwrap());
+                    numerator = MultBasisNode(vec![numerator, rev.pop().unwrap()]);
                 } else {
-                    denominator = MultBasisNode(&denominator, &rev.pop().unwrap());
+                    denominator = MultBasisNode(vec![denominator, rev.pop().unwrap()]);
                 }
             }
             DivBasisNode(&numerator, &denominator)
