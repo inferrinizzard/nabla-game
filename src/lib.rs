@@ -48,9 +48,7 @@ pub fn main_js() -> Result<(), JsValue> {
         event_listeners::mousedown_event_listener,
     ));
 
-    render::draw_field();
-    render::draw_hand(1);
-    render::draw_hand(2);
+    render::draw();
 
     Ok(())
 }

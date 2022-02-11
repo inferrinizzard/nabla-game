@@ -1,36 +1,60 @@
-// use wasm_bindgen::prelude::*;
-
 use std::fmt::{Display, Formatter, Result};
 
 use super::basis::*;
 use super::math::derivative::*;
+use super::math::inverse::*;
+use super::math::limits::*;
+use super::math::logarithm::*;
 use super::util::EnumStr;
 
 pub fn apply_card(card: &Card) -> impl Fn(&Basis) -> Basis {
     let card = card.clone();
     return move |basis| match card {
-        Card::DerivativeCard(DerivativeCard::Derivative) => {
-            return derivative(basis);
-        }
+        Card::DerivativeCard(
+            DerivativeCard::Derivative | DerivativeCard::Nabla | DerivativeCard::Laplacian,
+        ) => derivative(basis),
         Card::DerivativeCard(DerivativeCard::Integral) => {
             // TODO: add integration here
             return Basis::BasisCard(BasisCard::Zero);
         }
-        Card::AlgebraicCard(AlgebraicCard::Sqrt) => {
-            return SqrtBasisNode(1, basis);
+        Card::AlgebraicCard(AlgebraicCard::Sqrt) => SqrtBasisNode(1, basis),
+        Card::AlgebraicCard(AlgebraicCard::Inverse) => inverse(basis),
+        Card::AlgebraicCard(AlgebraicCard::Log) => logarithm(&basis),
+        Card::LimitCard(limit_card) => {
+            let basis_limit = limit(&limit_card)(&basis).unwrap_or(
+                Basis::BasisCard(BasisCard::X), // invalid limit placeholder
+            );
+            basis_limit.resolve()
         }
-        Card::AlgebraicCard(AlgebraicCard::Inverse) => {
-            // TODO: add inverse here
-            return Basis::BasisCard(BasisCard::Zero);
-        }
-        Card::AlgebraicCard(AlgebraicCard::Log) => {
-            // TODO: add log here
-            return Basis::BasisCard(BasisCard::Zero);
-        }
-        _ => {
-            return Basis::BasisCard(BasisCard::Zero);
-        }
+        _ => Basis::BasisCard(BasisCard::Zero),
     };
+}
+
+pub fn apply_multi_card(card: &Card, bases: Vec<Basis>) -> Basis {
+    let mut rev = bases.clone();
+    rev.reverse();
+    match card {
+        Card::AlgebraicCard(AlgebraicCard::Mult) => {
+            let mut out = rev.pop().unwrap();
+            while rev.len() > 0 {
+                out = MultBasisNode(&out, &rev.pop().unwrap());
+            }
+            out
+        }
+        Card::AlgebraicCard(AlgebraicCard::Div) => {
+            let mut numerator = rev.pop().unwrap();
+            let mut denominator = rev.pop().unwrap();
+            while rev.len() > 0 {
+                if rev.len() % 2 == 1 {
+                    numerator = MultBasisNode(&numerator, &rev.pop().unwrap());
+                } else {
+                    denominator = MultBasisNode(&denominator, &rev.pop().unwrap());
+                }
+            }
+            DivBasisNode(&numerator, &denominator)
+        }
+        _ => panic!("Unknown MULTISELECT card: {}!", card),
+    }
 }
 
 pub trait CardType {

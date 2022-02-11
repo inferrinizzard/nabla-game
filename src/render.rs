@@ -9,7 +9,21 @@ use super::util::*;
 use super::{basis::*, cards::*};
 use super::{CANVAS, GAME};
 
-pub fn random_hit_colour(hit_region_map: &HashMap<String, String>) -> String {
+pub fn draw() {
+    let canvas = unsafe { CANVAS.as_mut().unwrap() };
+    let context = &canvas.context;
+
+    context.clear_rect(0.0, 0.0, canvas.canvas_bounds.x, canvas.canvas_bounds.y);
+
+    draw_field();
+    draw_hand(1);
+    draw_hand(2);
+    draw_x();
+    draw_multi_done();
+    // build list of eleemnts to draw here
+}
+
+fn random_hit_colour(hit_region_map: &HashMap<String, String>) -> String {
     let mut hex_colour = String::new();
 
     while hex_colour.is_empty() || hit_region_map.contains_key(&hex_colour) {
@@ -23,7 +37,43 @@ pub fn random_hit_colour(hit_region_map: &HashMap<String, String>) -> String {
     format!("#{}", hex_colour)
 }
 
-pub fn draw_field() {
+fn draw_x() {
+    let (canvas, game) = unsafe { (CANVAS.as_mut().unwrap(), GAME.as_mut().unwrap()) };
+    if game.active.selected.is_empty() {
+        return;
+    }
+
+    let context = &canvas.context;
+    let hit_context = &canvas.hit_context;
+    let hit_region_map = &mut canvas.hit_region_map;
+
+    context.stroke_rect(10.0, 10.0, 25.0, 25.0);
+
+    // draw rect onto hit canvas with random colour
+    let hit_colour = random_hit_colour(&hit_region_map);
+    hit_context.set_fill_style(&JsValue::from(&hit_colour));
+    hit_context.fill_rect(10.0, 10.0, 25.0, 25.0);
+    hit_region_map.insert(hit_colour, "x=0".to_string());
+}
+
+fn draw_multi_done() {
+    let (canvas, game) = unsafe { (CANVAS.as_mut().unwrap(), GAME.as_mut().unwrap()) };
+
+    let context = &canvas.context;
+    let bounds = &canvas.canvas_bounds;
+    let hit_context = &canvas.hit_context;
+    let hit_region_map = &mut canvas.hit_region_map;
+
+    context.stroke_rect(bounds.x - 35.0, 10.0, 25.0, 25.0);
+
+    // draw rect onto hit canvas with random colour
+    let hit_colour = random_hit_colour(&hit_region_map);
+    hit_context.set_fill_style(&JsValue::from(&hit_colour));
+    hit_context.fill_rect(bounds.x - 35.0, 10.0, 25.0, 25.0);
+    hit_region_map.insert(hit_colour, "x=1".to_string());
+}
+
+fn draw_field() {
     let (canvas, game) = unsafe { (CANVAS.as_mut().unwrap(), GAME.as_mut().unwrap()) };
     let field = &game.field;
 
@@ -36,7 +86,7 @@ pub fn draw_field() {
     let hit_region_map = &mut canvas.hit_region_map;
 
     for (i, card) in field.iter().enumerate() {
-        if card.is_none() {
+        if card.basis.is_none() {
             context
                 .set_line_dash(&JsValue::from(&Array::fill(
                     &Array::new_with_length(2),
@@ -50,7 +100,6 @@ pub fn draw_field() {
                 .set_line_dash(&JsValue::from(&js_sys::Array::new()))
                 .expect(format!("Cannot set line dash for {:?}", card).as_str());
         }
-        context.begin_path();
         let card_pos = Vector2 {
             x: canvas.canvas_center.x + ((i % 3) as f64) * (rect_width + gutter)
                 - rect_width * 1.5
@@ -70,7 +119,7 @@ pub fn draw_field() {
         context.set_text_baseline("middle");
         context.set_text_align("center");
 
-        if let Some(basis) = card {
+        if let Some(basis) = &card.basis {
             context
                 .fill_text(
                     &basis.to_string(),
@@ -82,7 +131,7 @@ pub fn draw_field() {
     }
 }
 
-pub fn draw_hand(player_num: u32) {
+fn draw_hand(player_num: u32) {
     let (canvas, game) = unsafe { (CANVAS.as_mut().unwrap(), GAME.as_mut().unwrap()) };
     let hand = if player_num == 1 {
         &game.player_1
@@ -99,8 +148,6 @@ pub fn draw_hand(player_num: u32) {
     let hit_region_map = &mut canvas.hit_region_map;
 
     for (i, card) in hand.iter().enumerate() {
-        context.begin_path();
-
         let y_pos = if player_num == 1 {
             canvas.canvas_bounds.y - gutter - rect_height
         } else {

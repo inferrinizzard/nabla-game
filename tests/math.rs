@@ -148,7 +148,7 @@ fn test_mult_derivatives() {
                     &Basis::BasisCard(BasisCard::E),
                 )
             ),
-            &PowBasisNode(2, &Basis::BasisCard(BasisCard::Cos),),
+            &PowBasisNode(2, 1, &Basis::BasisCard(BasisCard::Cos),),
         )
     );
 }
@@ -159,15 +159,15 @@ fn test_exponent_derivatives() {
     // test pow derivative
     assert_eq!(
         // dx(x^4)
-        derivative::derivative(&PowBasisNode(4, &Basis::BasisCard(BasisCard::X))),
+        derivative::derivative(&PowBasisNode(4, 1, &Basis::BasisCard(BasisCard::X))),
         // x^3
-        PowBasisNode(3, &Basis::BasisCard(BasisCard::X))
+        PowBasisNode(3, 1, &Basis::BasisCard(BasisCard::X))
     );
 
     // test trim to X2
     assert_eq!(
         // dx(x^3)
-        derivative::derivative(&PowBasisNode(3, &Basis::BasisCard(BasisCard::X))),
+        derivative::derivative(&PowBasisNode(3, 1, &Basis::BasisCard(BasisCard::X))),
         // x^3
         Basis::BasisCard(BasisCard::X2)
     );
