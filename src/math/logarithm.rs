@@ -10,9 +10,11 @@ pub fn logarithm(basis: &Basis) -> Basis {
             _ => LogBasisNode(basis),
         },
         Basis::BasisNode(basis_node) => match basis_node.operator {
-            BasisOperator::Add | BasisOperator::Minus | BasisOperator::Log | BasisOperator::Inv => {
-                LogBasisNode(basis)
-            }
+            BasisOperator::Add
+            | BasisOperator::Minus
+            | BasisOperator::Log
+            | BasisOperator::Inv
+            | BasisOperator::Int => LogBasisNode(basis),
             BasisOperator::Mult => AddBasisNode(
                 &logarithm(&basis_node.left_operand),
                 &logarithm(&basis_node.right_operand),
@@ -24,7 +26,7 @@ pub fn logarithm(basis: &Basis) -> Basis {
             BasisOperator::Pow(_, _) => logarithm(&*basis_node.left_operand),
             BasisOperator::Func => {
                 // log(e^f(x)) = f(x)
-                if matches!(*basis_node.left_operand, Basis::BasisCard(BasisCard::E)) {
+                if (*basis_node.left_operand).is_of_card(BasisCard::E) {
                     return *basis_node.right_operand.clone();
                 }
                 // else cos or sin

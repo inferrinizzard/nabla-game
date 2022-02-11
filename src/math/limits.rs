@@ -13,29 +13,27 @@ fn limit_arccos_arcsin(
         return Some(Basis::BasisCard(BasisCard::One));
     } else if matches!(limit_card, LimitCard::Liminf) {
         // min(arccos) = 0
-        if matches!(left_operand, Basis::BasisCard(BasisCard::Cos)) {
+        if left_operand.is_of_card(BasisCard::Cos) {
             return Some(Basis::BasisCard(BasisCard::Zero));
         }
         // min(arcsin) = -PI/2
-        if matches!(left_operand, Basis::BasisCard(BasisCard::Sin)) {
+        if left_operand.is_of_card(BasisCard::Sin) {
             return Some(Basis::BasisCard(BasisCard::One));
         }
     }
 
-    if matches!(right_limit, Basis::BasisCard(BasisCard::Zero)) {
+    if right_limit.is_of_card(BasisCard::Zero) {
         // arccos(0) = PI/2
-        if matches!(left_operand, Basis::BasisCard(BasisCard::Cos)) {
+        if left_operand.is_of_card(BasisCard::Cos) {
             return Some(Basis::BasisCard(BasisCard::One));
         }
         // arcsin(0) = 0
-        if matches!(left_operand, Basis::BasisCard(BasisCard::Sin)) {
+        if left_operand.is_of_card(BasisCard::Sin) {
             return Some(Basis::BasisCard(BasisCard::Zero));
         }
     }
     // arccos(-INF)
-    if matches!(right_limit, Basis::BasisCard(BasisCard::NegInf))
-        && matches!(left_operand, Basis::BasisCard(BasisCard::Cos))
-    {
+    if right_limit.is_of_card(BasisCard::NegInf) && left_operand.is_of_card(BasisCard::Cos) {
         return Some(Basis::BasisCard(BasisCard::Zero));
     }
 
@@ -63,10 +61,7 @@ pub fn limit(_limit_card: &LimitCard) -> impl Fn(&Basis) -> Option<Basis> {
             }) => match operator {
                 BasisOperator::Inv => {
                     let right_limit = limit(&limit_card)(&**right_operand)?.resolve();
-                    if matches!(
-                        **left_operand,
-                        Basis::BasisCard(BasisCard::Cos | BasisCard::Sin)
-                    ) {
+                    if (**left_operand).is_of_cards(&[BasisCard::Cos, BasisCard::Sin]) {
                         return limit_arccos_arcsin(&limit_card, &**left_operand, right_limit);
                     }
                     panic!(
@@ -94,36 +89,30 @@ pub fn limit(_limit_card: &LimitCard) -> impl Fn(&Basis) -> Option<Basis> {
                     }
 
                     let right_limit = limit(&limit_card)(&**right_operand)?.resolve();
-                    if matches!(**left_operand, Basis::BasisCard(BasisCard::E)) {
+                    if (**left_operand).is_of_card(BasisCard::E) {
                         // e^INF
-                        if matches!(right_limit, Basis::BasisCard(BasisCard::PosInf)) {
+                        if right_limit.is_of_card(BasisCard::PosInf) {
                             return Some(Basis::BasisCard(BasisCard::PosInf));
                         }
                         // e^-INF
-                        else if matches!(right_limit, Basis::BasisCard(BasisCard::NegInf)) {
+                        else if right_limit.is_of_card(BasisCard::NegInf) {
                             return Some(Basis::BasisCard(BasisCard::Zero));
                         }
                         // e^n
                         return Some(Basis::BasisCard(BasisCard::One));
-                    } else if matches!(
-                        **left_operand,
-                        Basis::BasisCard(BasisCard::Cos | BasisCard::Sin)
-                    ) {
+                    } else if (**left_operand).is_of_cards(&[BasisCard::Cos, BasisCard::Sin]) {
                         if matches!(limit_card, LimitCard::Limsup | LimitCard::Liminf) {
                             return Some(Basis::BasisCard(BasisCard::One));
                         }
                         // cos(INF) | sin(INF)
                         else if matches!(limit_card, LimitCard::LimPosInf | LimitCard::LimNegInf)
-                            || matches!(
-                                right_limit,
-                                Basis::BasisCard(BasisCard::PosInf | BasisCard::NegInf)
-                            )
+                            || right_limit.is_of_cards(&[BasisCard::PosInf, BasisCard::NegInf])
                         {
                             return None;
                         }
                         // sin(0)
-                        if matches!(right_limit, Basis::BasisCard(BasisCard::Zero))
-                            && matches!(**left_operand, Basis::BasisCard(BasisCard::Sin))
+                        if right_limit.is_of_card(BasisCard::Zero)
+                            && (**left_operand).is_of_card(BasisCard::Sin)
                         {
                             return Some(Basis::BasisCard(BasisCard::Zero));
                         }
@@ -137,6 +126,11 @@ pub fn limit(_limit_card: &LimitCard) -> impl Fn(&Basis) -> Option<Basis> {
                     Some(Basis::BasisCard(BasisCard::Zero))
                 }
                 BasisOperator::Pow(-1, 1) if matches!(limit_card, LimitCard::Lim0) => None,
+                BasisOperator::Int => {
+                    // assume that the limits of integration are from 0 to x for INF, x to 0 for -INF, what for 0?
+                    let res = integral_limit(basis);
+                    Some(Basis::BasisCard(BasisCard::Zero))
+                }
                 _ => {
                     let left_limit = limit(&limit_card)(left_operand);
                     let right_limit = limit(&limit_card)(right_operand);
@@ -154,7 +148,11 @@ pub fn limit(_limit_card: &LimitCard) -> impl Fn(&Basis) -> Option<Basis> {
     };
 }
 
-pub fn get_limit_map(card: &LimitCard) -> HashMap<BasisCard, BasisCard> {
+fn integral_limit(basis: &Basis) -> Option<Basis> {
+    None
+}
+
+fn get_limit_map(card: &LimitCard) -> HashMap<BasisCard, BasisCard> {
     let limit_zero_map = HashMap::from([
         (BasisCard::E, BasisCard::One),
         (BasisCard::X, BasisCard::Zero),

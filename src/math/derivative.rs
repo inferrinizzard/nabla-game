@@ -109,6 +109,7 @@ pub fn derivative(basis: &Basis) -> Basis {
                     &basis_node.right_operand,
                 ),
             ),
+            BasisOperator::Int => *basis_node.left_operand.clone(),
         },
     };
 }
