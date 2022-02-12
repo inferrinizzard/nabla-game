@@ -1,8 +1,6 @@
 use std::cmp::{max, min};
 use std::fmt::{Display, Formatter, Result};
 
-use super::util::EnumStr;
-
 // type union of the starter basis or complex basis
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum Basis {
@@ -116,45 +114,20 @@ pub enum BasisCard {
     NegInf,
 }
 
-impl EnumStr<BasisCard> for BasisCard {
-    fn from_str(s: &str) -> Option<BasisCard> {
-        match s {
-            "0" => Some(BasisCard::Zero),
-            "1" => Some(BasisCard::One),
-            "x" => Some(BasisCard::X),
-            "x^2" => Some(BasisCard::X2),
-            "cosx" => Some(BasisCard::Cos),
-            "sinx" => Some(BasisCard::Sin),
-            "e^x" => Some(BasisCard::E),
-            "INF" => Some(BasisCard::PosInf),
-            "+INF" => Some(BasisCard::PosInf),
-            "-INF" => Some(BasisCard::NegInf),
-            _ => None,
-        }
-    }
-
-    fn to_str(&self) -> &'static str {
-        match self {
-            BasisCard::Zero => "0",
-            BasisCard::One => "1",
-            BasisCard::X => "x",
-            BasisCard::X2 => "x^2",
-            BasisCard::Cos => "cosx",
-            BasisCard::Sin => "sinx",
-            BasisCard::E => "e^x",
-            BasisCard::PosInf => "INF",
-            BasisCard::NegInf => "-INF",
-        }
-    }
-}
-
 impl Display for BasisCard {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result {
-        match self {
-            BasisCard::Cos => write!(f, "{}", "cos(x)"),
-            BasisCard::Sin => write!(f, "{}", "sin(x)"),
-            _ => write!(f, "{}", self.to_str()),
-        }
+        let string = match self {
+            BasisCard::Zero => "0",
+            BasisCard::One => "1",
+            BasisCard::X => "X",
+            BasisCard::X2 => "X^2",
+            BasisCard::Cos => "cos",
+            BasisCard::Sin => "sin",
+            BasisCard::E => "e",
+            BasisCard::PosInf => "INF",
+            BasisCard::NegInf => "-INF",
+        };
+        write!(f, "{}", string)
     }
 }
 
@@ -171,31 +144,16 @@ pub enum BasisOperator {
     Int,
 }
 
-impl EnumStr<BasisOperator> for BasisOperator {
-    fn from_str(s: &str) -> Option<BasisOperator> {
-        match s {
-            "+" => Some(BasisOperator::Add),
-            "-" => Some(BasisOperator::Minus),
-            s if s.matches("[^](-?\\d+)/(\\d+)").count() > 0 => Some(BasisOperator::Pow(
-                s[1..2].parse::<i32>().unwrap(),
-                s[2..3].parse::<i32>().unwrap(),
-            )), // convert ^(n/d) to Pow(n, d)
-            "*" => Some(BasisOperator::Mult),
-            "/" => Some(BasisOperator::Div),
-            "Log" => Some(BasisOperator::Log),
-            _ => None,
-        }
-    }
-
-    fn to_str(&self) -> &'static str {
-        match self {
+impl Display for BasisOperator {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result {
+        let string = match self {
             BasisOperator::Add => "+",
             BasisOperator::Minus => "-",
             BasisOperator::Pow(n, d) => {
                 if *d == 1 {
-                    return Box::leak(format!("^{}", d).into_boxed_str()); // TODO: remove box leak
+                    return format!("^{}", d);
                 }
-                Box::leak(format!("^({}/{})", n, d).into_boxed_str()) // TODO: remove box leak
+                format!("^({}/{})", n, d)
             }
             BasisOperator::Mult => "*",
             BasisOperator::Div => "/",
@@ -203,13 +161,8 @@ impl EnumStr<BasisOperator> for BasisOperator {
             BasisOperator::Inv => "Inv",
             BasisOperator::Func => "Func",
             BasisOperator::Int => "I",
-        }
-    }
-}
-
-impl Display for BasisOperator {
-    fn fmt(&self, f: &mut Formatter<'_>) -> Result {
-        write!(f, "{}", self.to_str())
+        };
+        write!(f, "{}", string)
     }
 }
 
