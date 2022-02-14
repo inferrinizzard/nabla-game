@@ -3,7 +3,7 @@ use std::fmt::{Display, Formatter, Result};
 use super::super::cards::*;
 
 // type union of the starter basis or complex basis
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Hash, Eq, PartialEq)]
 pub enum Basis {
     BasisLeaf(BasisLeaf),
     BasisNode(BasisNode),
@@ -29,6 +29,24 @@ impl Basis {
     //         }
     //     }
     // }
+    pub fn coefficient(&self) -> i32 {
+        match self {
+            Basis::BasisLeaf(basis_leaf) => basis_leaf.coefficient,
+            Basis::BasisNode(basis_node) => basis_node.coefficient,
+        }
+    }
+    pub fn decoefficient(&self) -> Basis {
+        match self.clone() {
+            Basis::BasisLeaf(basis_leaf) => Basis::BasisLeaf(BasisLeaf {
+                coefficient: 1,
+                ..basis_leaf
+            }),
+            Basis::BasisNode(basis_node) => Basis::BasisNode(BasisNode {
+                coefficient: 1,
+                ..basis_node
+            }),
+        }
+    }
 
     pub fn from_card(card: BasisCard) -> Basis {
         match card {
@@ -72,11 +90,10 @@ impl Basis {
         matches!(
             self,
             Basis::BasisLeaf(BasisLeaf {
-                coefficient,
                 element: BasisElement::Num,
                 ..
             })
-        )
+        ) && coefficient == self.coefficient()
     }
     pub fn is_x(&self) -> bool {
         matches!(
@@ -88,15 +105,16 @@ impl Basis {
         )
     }
     pub fn is_inf(&self, coefficient: i32) -> bool {
-        // TODO: constraint to -1|1
+        if !(coefficient == 1 || coefficient == -1) {
+            panic!("INF must be -1 or 1 only")
+        }
         matches!(
             self,
             Basis::BasisLeaf(BasisLeaf {
-                coefficient,
                 element: BasisElement::Inf,
                 ..
             })
-        )
+        ) && coefficient == self.coefficient()
     }
 
     pub fn zero() -> Basis {
@@ -114,6 +132,18 @@ impl Basis {
     pub fn inf(coefficient: i32) -> Basis {
         Basis::BasisLeaf(BasisLeaf::inf(coefficient))
     }
+
+    pub fn like(&self, other: &Basis) -> bool {
+        match other {
+            Basis::BasisLeaf(other_basis_leaf) => {
+                if let Basis::BasisLeaf(basis_leaf) = self {
+                    return basis_leaf.like(other_basis_leaf);
+                }
+                false
+            }
+            Basis::BasisNode(other_basis_node) => self.is_node(other_basis_node.operator),
+        }
+    }
 }
 
 impl Display for Basis {
@@ -126,13 +156,13 @@ impl Display for Basis {
 }
 
 // most basic Basis type
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Hash, Eq, PartialEq)]
 pub struct BasisLeaf {
     pub coefficient: i32,
     pub element: BasisElement,
 }
 
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Hash, Eq, PartialEq)]
 pub enum BasisElement {
     Num,
     X,
@@ -153,26 +183,48 @@ impl BasisLeaf {
         }
     }
     pub fn inf(coefficient: i32) -> BasisLeaf {
-        // TODO: constraint to -1|1
+        if !(coefficient == 1 || coefficient == -1) {
+            panic!("INF must be -1 or 1 only")
+        }
         BasisLeaf {
             coefficient,
             element: BasisElement::Inf,
         }
+    }
+
+    pub fn like(&self, other: &BasisLeaf) -> bool {
+        self.element == other.element
     }
 }
 
 impl Display for BasisLeaf {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result {
         match self.element {
-            BasisElement::X => write!(f, "{}", "x"),
+            BasisElement::X => write!(
+                f,
+                "{}{}",
+                if self.coefficient == 1 {
+                    String::new()
+                } else if self.coefficient == 1 {
+                    "-".to_string()
+                } else {
+                    self.coefficient.to_string()
+                },
+                "x"
+            ),
             BasisElement::Num => write!(f, "{}", self.coefficient),
-            BasisElement::Inf => write!(f, "{}{}", self.coefficient, "INF"), // TODO: use sign function here
+            BasisElement::Inf => write!(
+                f,
+                "{}{}",
+                if self.coefficient > 0 { "+" } else { "-" },
+                "INF"
+            ), // TODO: use sign function here
         }
     }
 }
 
 // used for complex bases derived from the starter cards
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Hash, Eq)]
 pub struct BasisNode {
     pub coefficient: i32,
     pub operator: BasisOperator,
@@ -203,16 +255,76 @@ impl Display for BasisNode {
                 "{}",
                 self.operands
                     .iter()
-                    .fold(format!("{}", self.operands[0]), |acc, op| format!(
-                        "{} {} {}",
-                        acc, self.operator, op
-                    ))
+                    .fold(String::new(), |acc, op| if acc == "" {
+                        format!("{}", op)
+                    } else {
+                        format!("{} {} {}", acc, self.operator, op)
+                    })
             ),
         }
     }
 }
 
-#[derive(Copy, Clone, Debug, Eq, PartialEq)]
+impl PartialEq for BasisNode {
+    fn eq(&self, other: &BasisNode) -> bool {
+        if self.coefficient != other.coefficient {
+            return false;
+        }
+        if self.operator != other.operator {
+            return false;
+        }
+        // Basis cannot be sorted so we sort stringwise
+        let (mut self_string_operands, self_node_operands) =
+            self.operands
+                .iter()
+                .fold((vec![], vec![]), |(mut strs, mut nodes), op| {
+                    match op {
+                        Basis::BasisNode(basis_node)
+                            if matches!(
+                                basis_node.operator,
+                                BasisOperator::Mult | BasisOperator::Div
+                            ) =>
+                        {
+                            nodes.push(basis_node)
+                        }
+                        _ => strs.push(op.to_string()),
+                    }
+                    (strs, nodes)
+                });
+        self_string_operands.sort();
+        let (mut other_string_operands, other_node_operands) =
+            other
+                .operands
+                .iter()
+                .fold((vec![], vec![]), |(mut strs, mut nodes), op| {
+                    match op {
+                        Basis::BasisNode(basis_node)
+                            if matches!(
+                                basis_node.operator,
+                                BasisOperator::Mult | BasisOperator::Div
+                            ) =>
+                        {
+                            nodes.push(basis_node)
+                        }
+                        _ => strs.push(op.to_string()),
+                    }
+                    (strs, nodes)
+                });
+        other_string_operands.sort();
+
+        if self_string_operands != other_string_operands {
+            return false;
+        }
+        // assumes no duplicates
+        self_node_operands.iter().all(|self_op| {
+            other_node_operands
+                .iter()
+                .any(|other_op| self_op == other_op)
+        })
+    }
+}
+
+#[derive(Copy, Clone, Debug, Hash, Eq, PartialEq)]
 pub enum BasisOperator {
     Add,
     Minus,
