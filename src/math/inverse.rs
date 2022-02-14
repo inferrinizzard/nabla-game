@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 
-use super::super::basis::*;
+use super::super::basis::builders::*;
+use super::super::basis::structs::*;
 use super::super::cards::*;
 
 pub fn inverse(basis: &Basis) -> Basis {

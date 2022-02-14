@@ -1,6 +1,7 @@
 use std::fmt::{Display, Formatter, Result};
 
-use super::basis::*;
+use super::basis::builders::*;
+use super::basis::structs::*;
 use super::math::derivative::*;
 use super::math::integral::*;
 use super::math::inverse::*;

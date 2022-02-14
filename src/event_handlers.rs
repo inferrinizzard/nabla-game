@@ -4,7 +4,7 @@ use web_sys::*;
 use super::game::*;
 use super::render;
 use super::GAME;
-use super::{basis::*, cards::*};
+use super::{basis::structs::*, cards::*};
 
 pub fn handle_mousedown(id: String) {
     if id.is_empty() {

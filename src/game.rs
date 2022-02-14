@@ -4,7 +4,7 @@ use rand::seq::SliceRandom;
 use rand::thread_rng;
 use std::collections::HashMap;
 
-use super::basis::*;
+use super::basis::structs::*;
 use super::cards::*;
 
 fn get_new_deck() -> Vec<Card> {

@@ -1,4 +1,5 @@
-use super::super::basis::*;
+use super::super::basis::builders::*;
+use super::super::basis::structs::*;
 use super::super::math::integral::*;
 use super::super::math::*;
 
