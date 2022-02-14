@@ -6,7 +6,7 @@ pub fn logarithmic(basis_node: &BasisNode, u: &Basis, dv: &Basis) -> Option<Basi
     if basis_node
         .operands
         .iter()
-        .any(|op| op.is_of_node(BasisOperator::Log))
+        .any(|op| op.is_node(BasisOperator::Log))
     {
         // u should be the log component
         // I(ln(x)f(x)) = ln(x)I(f(x)) - I(I(f(x)/x))
@@ -16,22 +16,15 @@ pub fn logarithmic(basis_node: &BasisNode, u: &Basis, dv: &Basis) -> Option<Basi
 }
 
 pub fn inv_trig(basis_node: &BasisNode) -> Option<Basis> {
-    // left side arccos | arcsin
-    match &basis_node.operands[0] {
-        Basis::BasisNode(BasisNode {
-            operator: BasisOperator::Inv,
-            operands: inner_operands,
-        }) if inner_operands[0].is_of_cards(&[BasisCard::Cos, BasisCard::Sin]) => return None,
-        _ => {}
+    // current temp short circuit
+    if basis_node
+        .operands
+        .iter()
+        .any(|op| op.is_node(BasisOperator::Acos) | op.is_node(BasisOperator::Asin))
+    {
+        return None;
     }
-    // right side arccos | arcsin
-    match &basis_node.operands[1] {
-        Basis::BasisNode(BasisNode {
-            operator: BasisOperator::Inv,
-            operands: inner_operands,
-        }) if inner_operands[0].is_of_cards(&[BasisCard::Cos, BasisCard::Sin]) => return None,
-        _ => {}
-    }
+
     None
 }
 
@@ -39,7 +32,7 @@ pub fn inverse(basis_node: &BasisNode, u: &Basis, dv: &Basis) -> Option<Basis> {
     if basis_node
         .operands
         .iter()
-        .any(|op| op.is_of_node(BasisOperator::Inv))
+        .any(|op| op.is_node(BasisOperator::Inv))
     {
         // u should be the inv component
         // I(f-1(x)f(y)) = f-1(x)I(f(y)) - I(f-1'(x)I(f(y)))
@@ -74,13 +67,17 @@ pub fn algebraic(basis_node: &BasisNode, u: &Basis, dv: &Basis) -> Option<Basis>
 }
 
 pub fn trig(basis_node: &BasisNode, u: &Basis, dv: &Basis) -> Option<Basis> {
+    // TODO: rewrite this
     // f(cos)sin | f(sin)cos
     match &basis_node.operands[0] {
         Basis::BasisNode(BasisNode {
             operator: inner_operator,
             operands: inner_operands,
-        }) if inner_operands[0].is_of_cards(&[BasisCard::Cos, BasisCard::Sin])
-            && basis_node.operands[1].is_of_cards(&[BasisCard::Cos, BasisCard::Sin]) =>
+            ..
+        }) if (inner_operands[0].is_node(BasisOperator::Cos)
+            | inner_operands[0].is_node(BasisOperator::Sin))
+            && (basis_node.operands[1].is_node(BasisOperator::Cos)
+                | basis_node.operands[1].is_node(BasisOperator::Sin)) =>
         {
             let inner_base = &inner_operands[0];
             match inner_operator {
@@ -88,10 +85,7 @@ pub fn trig(basis_node: &BasisNode, u: &Basis, dv: &Basis) -> Option<Basis> {
                 BasisOperator::Log => {
                     return Some(MultBasisNode(vec![
                         inner_base.clone(),
-                        MinusBasisNode(vec![
-                            LogBasisNode(inner_base),
-                            Basis::BasisCard(BasisCard::One),
-                        ]),
+                        MinusBasisNode(vec![LogBasisNode(inner_base), Basis::of_num(1)]),
                     ]))
                 }
                 _ => {}
@@ -103,8 +97,11 @@ pub fn trig(basis_node: &BasisNode, u: &Basis, dv: &Basis) -> Option<Basis> {
         Basis::BasisNode(BasisNode {
             operator: inner_operator,
             operands: inner_operands,
-        }) if inner_operands[0].is_of_cards(&[BasisCard::Cos, BasisCard::Sin])
-            && basis_node.operands[1].is_of_cards(&[BasisCard::Cos, BasisCard::Sin]) =>
+            ..
+        }) if (inner_operands[0].is_node(BasisOperator::Cos)
+            | inner_operands[0].is_node(BasisOperator::Sin))
+            && (basis_node.operands[1].is_node(BasisOperator::Cos)
+                | basis_node.operands[1].is_node(BasisOperator::Sin)) =>
         {
             let inner_base = &inner_operands[0];
             match inner_operator {
@@ -112,10 +109,7 @@ pub fn trig(basis_node: &BasisNode, u: &Basis, dv: &Basis) -> Option<Basis> {
                 BasisOperator::Log => {
                     return Some(MultBasisNode(vec![
                         inner_base.clone(),
-                        MinusBasisNode(vec![
-                            LogBasisNode(inner_base),
-                            Basis::BasisCard(BasisCard::One),
-                        ]),
+                        MinusBasisNode(vec![LogBasisNode(inner_base), Basis::of_num(1)]),
                     ]))
                 }
                 _ => {}
@@ -128,23 +122,17 @@ pub fn trig(basis_node: &BasisNode, u: &Basis, dv: &Basis) -> Option<Basis> {
 
 pub fn exponential(basis_node: &BasisNode, u: &Basis, dv: &Basis) -> Option<Basis> {
     // dv is e
-    if u.is_of_card(BasisCard::Cos) {
+    if u.is_node(BasisOperator::Cos) {
         // TODO: add 1/2 coefficient
         return Some(MultBasisNode(vec![
             dv.clone(),
-            AddBasisNode(vec![
-                Basis::BasisCard(BasisCard::Cos),
-                Basis::BasisCard(BasisCard::Sin),
-            ]),
+            AddBasisNode(vec![CosBasisNode(Basis::x()), SinBasisNode(Basis::x())]),
         ]));
-    } else if u.is_of_card(BasisCard::Sin) {
+    } else if u.is_node(BasisOperator::Sin) {
         // TODO: add 1/2 coefficient
         return Some(MultBasisNode(vec![
             dv.clone(),
-            MinusBasisNode(vec![
-                Basis::BasisCard(BasisCard::Sin),
-                Basis::BasisCard(BasisCard::Cos),
-            ]),
+            MinusBasisNode(vec![SinBasisNode(Basis::x()), CosBasisNode(Basis::x())]),
         ]));
     }
 

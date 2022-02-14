@@ -19,11 +19,12 @@ pub fn apply_card(card: &Card) -> impl Fn(&Basis) -> Basis {
         Card::AlgebraicCard(AlgebraicCard::Log) => logarithm(&basis),
         Card::LimitCard(limit_card) => {
             let basis_limit = limit(&limit_card)(&basis).unwrap_or(
-                Basis::BasisCard(BasisCard::X), // invalid limit placeholder
+                Basis::x(), // invalid limit placeholder
             );
-            basis_limit.resolve()
+            basis_limit
+            // basis_limit.resolve()
         }
-        _ => Basis::BasisCard(BasisCard::Zero),
+        _ => Basis::zero(),
     };
 }
 
@@ -65,7 +66,7 @@ pub enum Card {
 }
 
 impl Card {
-    fn card_type(&self) -> &'static str {
+    pub fn card_type(&self) -> &'static str {
         match self {
             Card::BasisCard(_) => "BASIS_CARD",
             Card::LimitCard(_) => "LIMIT_CARD",
@@ -83,6 +84,31 @@ impl Display for Card {
             Card::AlgebraicCard(algebraic_card) => write!(f, "{}", algebraic_card),
             Card::DerivativeCard(derivative_card) => write!(f, "{}", derivative_card),
         }
+    }
+}
+
+#[derive(Copy, Clone, Debug, Hash, Eq, PartialEq)]
+pub enum BasisCard {
+    Zero,
+    One,
+    X,
+    X2,
+    Cos,
+    Sin,
+    E,
+}
+impl Display for BasisCard {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result {
+        let string = match self {
+            BasisCard::Zero => "0",
+            BasisCard::One => "1",
+            BasisCard::X => "X",
+            BasisCard::X2 => "X^2",
+            BasisCard::Cos => "cos",
+            BasisCard::Sin => "sin",
+            BasisCard::E => "e",
+        };
+        write!(f, "{}", string)
     }
 }
 

@@ -112,7 +112,7 @@ fn select_turn_phase(select_operator: Card, (id_key, id_val): (String, usize)) {
                 && game.field[id_val].basis.is_none()
                 && !matches!(basis_card, BasisCard::Zero)
             {
-                game.field[id_val] = FieldBasis::new(&Basis::BasisCard(basis_card));
+                game.field[id_val] = FieldBasis::new(&Basis::from_card(basis_card));
                 end_turn();
             }
         }
@@ -127,7 +127,7 @@ fn select_turn_phase(select_operator: Card, (id_key, id_val): (String, usize)) {
                     let selected_field_basis = &mut game.field[id_val];
                     let result_basis =
                         apply_card(&operator_card)(selected_field_basis.basis.as_ref().unwrap());
-                    if matches!(result_basis, Basis::BasisCard(BasisCard::Zero)) {
+                    if result_basis.is_num(0) {
                         game.field[id_val] = FieldBasis::none();
                     } else {
                         game.field[id_val] = FieldBasis::new(&result_basis);
@@ -176,7 +176,7 @@ fn handle_derivative_card(card: Card, i: usize) {
         }
     } else {
         let result_basis = apply_card(&card)(selected_field_basis.basis.as_ref().unwrap());
-        if matches!(result_basis, Basis::BasisCard(BasisCard::Zero)) {
+        if result_basis.is_num(0) {
             game.field[i] = FieldBasis::none();
             return;
         } else {
@@ -188,7 +188,7 @@ fn handle_derivative_card(card: Card, i: usize) {
         }
         if is_laplacian {
             let second_derivative = apply_card(&card)(&result_basis);
-            if matches!(second_derivative, Basis::BasisCard(BasisCard::Zero)) {
+            if second_derivative.is_num(0) {
                 game.field[i] = FieldBasis::none();
                 return;
             }
@@ -237,7 +237,7 @@ fn multi_select_phase(multi_operator: Card, id: String, player_num: u32) {
                             // skip the mult_operator
                             return None;
                         } else if let Card::BasisCard(basis_card) = player[sel_val] {
-                            return Some(Basis::BasisCard(basis_card));
+                            return Some(Basis::from_card(basis_card));
                         }
                     }
                     panic!("invalid card selected! {}", sel_id);
