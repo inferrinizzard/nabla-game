@@ -1,40 +1,101 @@
 use std::cmp::{max, min};
+use std::collections::HashMap;
 
 use super::structs::*;
 
+// maybe make a type for pow and implement ops ?
+fn add_fractions(a: (i32, i32), b: (i32, i32)) -> (i32, i32) {
+    if a.0 == 0 || a.1 == 0 {
+        return b;
+    } else if b.0 == 0 || b.1 == 0 {
+        return a;
+    }
+    (a.0 * b.1 + b.0 * a.1, a.1 * b.1)
+}
+fn sub_fractions(a: (i32, i32), b: (i32, i32)) -> (i32, i32) {
+    if a.0 == 0 || a.1 == 0 {
+        return (-b.0, -b.1);
+    } else if b.0 == 0 || b.1 == 0 {
+        return a;
+    }
+    (a.0 * b.1 - b.0 * a.1, a.1 * b.1)
+}
+
 #[allow(non_snake_case)]
 pub fn AddBasisNode(operands: Vec<Basis>) -> Basis {
+    // combine all add and minus ops
+    let addends = operands.iter().fold(Vec::new(), |mut acc: Vec<Basis>, op| {
+        // collect add operands
+        if let Basis::BasisNode(BasisNode {
+            operator: BasisOperator::Add,
+            operands: add_operands,
+            ..
+        }) = op
+        {
+            acc.extend(add_operands.iter().map(|add_op| add_op.clone()));
+        }
+        // collect minus operands
+        else if let Basis::BasisNode(BasisNode {
+            operator: BasisOperator::Minus,
+            operands: minus_operands,
+            ..
+        }) = op
+        {
+            acc.push(minus_operands[0].clone());
+            acc.extend(
+                minus_operands
+                    .iter()
+                    .skip(1)
+                    .map(|minus_op| -minus_op.clone()),
+            );
+        } else {
+            acc.push(op.clone());
+        }
+        acc
+    });
     // INF + x = INF | x + INF = INF
-    if operands.iter().any(|op| op.is_inf(1)) {
+    if addends.iter().any(|op| op.is_inf(1)) {
         return Basis::inf(1);
     }
     // -INF + x = -INF | x + -INF = -INF
-    else if operands.iter().any(|op| op.is_inf(-1)) {
+    else if addends.iter().any(|op| op.is_inf(-1)) {
         return Basis::inf(-1);
     }
-    let _operands = operands
-        .iter()
-        .filter_map(|op| {
-            if op.is_num(0) {
-                return None;
-            }
-            Some(op.clone())
-        })
-        .collect::<Vec<Basis>>();
-    // x + x = 2x, 2 discarded
-    // TODO: dedupe + coefficients
-    // if left_operand == right_operand {
-    //     return left_operand.clone();
-    // }
 
-    if _operands.len() == 1 {
-        return _operands[0].clone();
+    // combine like terms
+    let mut operand_hash: HashMap<Basis, i32> = HashMap::new();
+    addends.iter().for_each(|addend| {
+        let decoefficient = addend.decoefficient();
+
+        let entry = operand_hash.entry(decoefficient);
+        *entry.or_insert(0) += addend.coefficient();
+    });
+
+    let final_operands = operand_hash.iter().fold(vec![], |mut acc, (k, v)| {
+        if k.is_num(0) || *v == 0 {
+            return acc;
+        }
+        match k.clone() {
+            Basis::BasisLeaf(basis_leaf) => acc.push(Basis::BasisLeaf(BasisLeaf {
+                coefficient: *v,
+                ..basis_leaf
+            })),
+            Basis::BasisNode(basis_node) => acc.push(Basis::BasisNode(BasisNode {
+                coefficient: *v,
+                ..basis_node
+            })),
+        }
+        acc
+    });
+
+    if final_operands.len() == 1 {
+        return final_operands[0].clone();
     }
 
     Basis::BasisNode(BasisNode {
         coefficient: 1,
         operator: BasisOperator::Add,
-        operands: _operands,
+        operands: final_operands,
     })
 }
 
@@ -78,53 +139,228 @@ pub fn MinusBasisNode(operands: Vec<Basis>) -> Basis {
     })
 }
 
+fn get_base(basis: &Basis) -> Option<(Basis, i32, i32)> {
+    match basis {
+        Basis::BasisLeaf(_) => Some((basis.clone(), 1, 1)),
+        Basis::BasisNode(BasisNode {
+            operator: BasisOperator::Pow(n, d),
+            operands,
+            ..
+        }) => {
+            // TODO: non leaf base
+            if let Basis::BasisLeaf(_) = &operands[0] {
+                return Some((operands[0].clone(), *n, *d));
+            }
+            None
+        }
+        _ => None,
+    }
+}
+
 #[allow(non_snake_case)]
 pub fn MultBasisNode(operands: Vec<Basis>) -> Basis {
+    let mut final_coefficient = (1, 1);
+    let mut denominator = vec![];
+    let numerator = operands.iter().fold(Vec::new(), |mut acc: Vec<Basis>, op| {
+        if let Basis::BasisNode(BasisNode {
+            coefficient: mult_coefficient,
+            operator: BasisOperator::Mult,
+            operands: mult_operands,
+        }) = op
+        {
+            final_coefficient.0 *= mult_coefficient;
+            acc.extend(mult_operands.clone());
+        } else if let Basis::BasisNode(BasisNode {
+            operator: BasisOperator::Div,
+            operands: div_operands,
+            ..
+        }) = op
+        {
+            if let Basis::BasisNode(BasisNode {
+                coefficient: div_numerator_coefficient,
+                operator: BasisOperator::Mult,
+                operands: div_numerator_operands,
+            }) = &div_operands[0]
+            {
+                final_coefficient.0 *= div_numerator_coefficient;
+                acc.extend(div_numerator_operands.clone());
+            } else {
+                acc.push(div_operands[0].clone());
+            }
+            if let Basis::BasisNode(BasisNode {
+                coefficient: div_denominator_coefficient,
+                operator: BasisOperator::Mult,
+                operands: div_denominator_operands,
+            }) = &div_operands[1]
+            {
+                final_coefficient.1 *= div_denominator_coefficient;
+                denominator.extend(div_denominator_operands.clone());
+            } else {
+                denominator.push(div_operands[1].clone());
+            }
+        } else {
+            if let Basis::BasisLeaf(BasisLeaf {
+                element: BasisElement::Num,
+                coefficient,
+            }) = op
+            {
+                final_coefficient.0 *= coefficient;
+            } else {
+                acc.push(op.clone());
+            }
+        }
+        acc
+    });
+    // 0 * n = 0
+    if numerator
+        .iter()
+        .any(|op| op.is_num(0) || op.coefficient() == 0)
+    {
+        return Basis::zero();
+    }
+    // n / 0, invalid
+    else if denominator
+        .iter()
+        .any(|op| op.is_num(0) || op.coefficient() == 0)
+    {
+        panic!("Divide by zero, {:?}", operands);
+    }
     // -INF * x = -INF | x * -INF = -INF
-    if operands.iter().any(|op| op.is_inf(-1)) {
+    if numerator.iter().any(|op| op.is_inf(-1)) {
+        println!("{:?}", numerator);
         return Basis::inf(-1);
     }
     // INF * x = INF | x * INF = INF
-    else if operands.iter().any(|op| op.is_inf(1)) {
+    else if numerator.iter().any(|op| op.is_inf(1)) {
         return Basis::inf(1);
     }
-    // 0 * n = 0
-    if operands.iter().any(|op| op.is_num(0)) {
+    // n / INF = 0
+    else if denominator.iter().any(|op| op.is_inf(-1) | op.is_inf(1)) {
         return Basis::zero();
     }
-    let _operands = operands
-        .iter()
-        .filter_map(|op| {
-            if op.is_num(1) {
-                return None;
-            }
-            Some(op.clone())
-        })
-        .collect::<Vec<Basis>>();
-    // TODO: mult dedupe, coefficients
-    // // if left and right are x^(ln/ld) & x^(rn/rd), return x^((ln/ld)+(rn/rd))
-    // let (left_n, left_d) = get_x_ponent(&left_operand);
-    // let (right_n, right_d) = get_x_ponent(&right_operand);
-    // if left_n > 0 && right_n > 0 {
-    //     return PowBasisNode(
-    //         left_n * right_d + right_n * left_d,
-    //         left_d * right_d,
-    //         &Basis::BasisLeaf(BasisCard::X),
-    //     );
-    // }
-    // // n * n = n^2
-    // else if left_operand == right_operand {
-    //     return PowBasisNode(2, 1, left_operand);
-    // }
 
-    if _operands.len() == 1 {
-        return _operands[0].clone();
+    // combine like terms
+    let mut numerator_hash: HashMap<Basis, (i32, i32)> = HashMap::new();
+    let mut denominator_hash: HashMap<Basis, (i32, i32)> = HashMap::new();
+    // collect numerator
+    numerator.iter().for_each(|factor| {
+        final_coefficient.0 *= factor.coefficient();
+        // skip integers
+        if factor.is_num(factor.coefficient()) {
+            return;
+        }
+        let element = get_base(factor);
+        if element.is_some() {
+            let (base, n, d) = element.unwrap();
+            let leaf = base.decoefficient();
+            let val = numerator_hash.get(&leaf).unwrap_or(&(0, 0)).clone();
+            numerator_hash.insert(leaf, add_fractions(val, (n, d)));
+        } else {
+            let decoefficient = factor.decoefficient();
+            let val = numerator_hash
+                .get(&decoefficient)
+                .unwrap_or(&(0, 0))
+                .clone();
+            numerator_hash.insert(decoefficient, add_fractions(val, (1, 1)));
+        }
+    });
+    // divide from numerator and collect denominator
+    denominator.iter().for_each(|factor| {
+        final_coefficient.0 /= factor.coefficient();
+        // skip integers
+        if factor.is_num(factor.coefficient()) {
+            return;
+        }
+        let element = get_base(factor);
+        if element.is_some() {
+            let (base, n, d) = element.unwrap();
+            let leaf = base.decoefficient();
+            if numerator_hash.contains_key(&leaf) {
+                let val = numerator_hash[&leaf];
+                numerator_hash.insert(leaf, sub_fractions(val, (n, d)));
+            } else {
+                let val = denominator_hash.get(&leaf).unwrap_or(&(0, 0)).clone();
+                denominator_hash.insert(leaf, add_fractions(val, (n, d)));
+            }
+        } else {
+            let decoefficient = factor.decoefficient();
+            if numerator_hash.contains_key(&decoefficient) {
+                let val = numerator_hash[&decoefficient];
+                numerator_hash.insert(decoefficient, sub_fractions(val, (1, 1)));
+            } else {
+                let val = denominator_hash
+                    .get(&decoefficient)
+                    .unwrap_or(&(0, 0))
+                    .clone();
+                denominator_hash.insert(decoefficient, add_fractions(val, (1, 1)));
+            }
+        }
+    });
+
+    // combine exponents and filter 0
+    let final_numerator = numerator_hash.iter().fold(vec![], |mut acc, (k, (n, d))| {
+        if k.is_num(0) || *n == 0 || *d == 0 {
+            return acc;
+        }
+        if n != d {
+            acc.push(PowBasisNode(*n, *d, k));
+        } else {
+            acc.push(k.clone());
+        }
+        acc
+    });
+    // combine exponents and filter 0
+    let final_denominator = denominator_hash
+        .iter()
+        .fold(vec![], |mut acc, (k, (n, d))| {
+            if k.is_num(0) || *n == 0 || *d == 0 {
+                return acc;
+            }
+            if n != d {
+                acc.push(PowBasisNode(*n, *d, k));
+            } else {
+                acc.push(k.clone());
+            }
+            acc
+        });
+
+    if final_numerator.len() == 1 && final_denominator.len() == 0 {
+        return final_numerator[0].clone();
+    }
+
+    final_coefficient = simplify_fraction(final_coefficient.0, final_coefficient.1);
+
+    if final_denominator.len() > 0 {
+        return Basis::BasisNode(BasisNode {
+            coefficient: 1,
+            operator: BasisOperator::Div,
+            operands: vec![
+                Basis::BasisNode(BasisNode {
+                    coefficient: final_coefficient.0,
+                    operator: BasisOperator::Mult,
+                    operands: if final_numerator.len() > 0 {
+                        final_numerator
+                    } else {
+                        vec![Basis::of_num(1)]
+                    },
+                }),
+                if final_denominator.len() > 1 {
+                    Basis::BasisNode(BasisNode {
+                        coefficient: final_coefficient.1,
+                        operator: BasisOperator::Mult,
+                        operands: final_denominator,
+                    })
+                } else {
+                    final_denominator[0].clone()
+                },
+            ],
+        });
     }
 
     Basis::BasisNode(BasisNode {
-        coefficient: 1,
+        coefficient: final_coefficient.0,
         operator: BasisOperator::Mult,
-        operands: _operands,
+        operands: final_numerator,
     })
 }
 
