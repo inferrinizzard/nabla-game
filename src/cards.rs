@@ -30,27 +30,19 @@ pub fn apply_card(card: &Card) -> impl Fn(&Basis) -> Basis {
 }
 
 pub fn apply_multi_card(card: &Card, bases: Vec<Basis>) -> Basis {
-    let mut rev = bases.clone();
-    rev.reverse();
     match card {
-        Card::AlgebraicCard(AlgebraicCard::Mult) => {
-            let mut out = rev.pop().unwrap();
-            while rev.len() > 0 {
-                out = MultBasisNode(vec![out, rev.pop().unwrap()]);
-            }
-            out
-        }
+        Card::AlgebraicCard(AlgebraicCard::Mult) => MultBasisNode(bases),
         Card::AlgebraicCard(AlgebraicCard::Div) => {
-            let mut numerator = rev.pop().unwrap();
-            let mut denominator = rev.pop().unwrap();
-            while rev.len() > 0 {
-                if rev.len() % 2 == 1 {
-                    numerator = MultBasisNode(vec![numerator, rev.pop().unwrap()]);
+            let mut numerator = vec![];
+            let mut denominator = vec![];
+            for i in (0..bases.len()).rev() {
+                if i % 2 == 1 {
+                    numerator.push(bases[i].clone());
                 } else {
-                    denominator = MultBasisNode(vec![denominator, rev.pop().unwrap()]);
+                    denominator.push(bases[i].clone());
                 }
             }
-            DivBasisNode(&numerator, &denominator)
+            DivBasisNode(&MultBasisNode(numerator), &MultBasisNode(denominator))
         }
         _ => panic!("Unknown MULTISELECT card: {}!", card),
     }

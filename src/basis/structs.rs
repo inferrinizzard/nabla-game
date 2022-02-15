@@ -35,14 +35,14 @@ impl Basis {
             Basis::BasisNode(basis_node) => basis_node.coefficient,
         }
     }
-    pub fn decoefficient(&self) -> Basis {
+    pub fn with_coefficient(&self, coefficient: i32) -> Basis {
         match self.clone() {
             Basis::BasisLeaf(basis_leaf) => Basis::BasisLeaf(BasisLeaf {
-                coefficient: 1,
+                coefficient,
                 ..basis_leaf
             }),
             Basis::BasisNode(basis_node) => Basis::BasisNode(BasisNode {
-                coefficient: 1,
+                coefficient,
                 ..basis_node
             }),
         }

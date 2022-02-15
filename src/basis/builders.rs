@@ -65,7 +65,7 @@ pub fn AddBasisNode(operands: Vec<Basis>) -> Basis {
     // combine like terms
     let mut operand_hash: HashMap<Basis, i32> = HashMap::new();
     addends.iter().for_each(|addend| {
-        let decoefficient = addend.decoefficient();
+        let decoefficient = addend.with_coefficient(1);
 
         let entry = operand_hash.entry(decoefficient);
         *entry.or_insert(0) += addend.coefficient();
@@ -101,42 +101,9 @@ pub fn AddBasisNode(operands: Vec<Basis>) -> Basis {
 
 #[allow(non_snake_case)]
 pub fn MinusBasisNode(operands: Vec<Basis>) -> Basis {
-    // INF - x = INF | x - -INF = INF
-    if operands[0].is_inf(1) || operands.iter().skip(1).any(|op| op.is_inf(-1)) {
-        return Basis::inf(1);
-    }
-    // -INF - x = -INF | x - INF = -INF
-    else if operands[0].is_inf(-1) || operands.iter().skip(1).any(|op| op.is_inf(1)) {
-        return Basis::inf(-1);
-    }
-    // TODO: add - if leading operand is 0
-    let _operands = operands
-        .iter()
-        .filter_map(|op| {
-            if op.is_num(0) {
-                return None;
-            }
-            Some(op.clone())
-        })
-        .collect::<Vec<Basis>>();
-    // x - x = 0
-    // TODO: dedupe + coefficients
-    // if left_operand == right_operand {
-    //     return Basis::zero();
-    // }
-
-    if _operands.len() == 0 {
-        return Basis::zero();
-    }
-    if _operands.len() == 1 {
-        return _operands[0].clone();
-    }
-
-    Basis::BasisNode(BasisNode {
-        coefficient: 1,
-        operator: BasisOperator::Minus,
-        operands: _operands,
-    })
+    let head = operands.iter().take(1).cloned();
+    let tail = operands.iter().skip(1).map(|op| -op.clone());
+    AddBasisNode(head.chain(tail).collect())
 }
 
 fn get_base(basis: &Basis) -> Option<(Basis, i32, i32)> {
@@ -252,11 +219,11 @@ pub fn MultBasisNode(operands: Vec<Basis>) -> Basis {
         let element = get_base(factor);
         if element.is_some() {
             let (base, n, d) = element.unwrap();
-            let leaf = base.decoefficient();
+            let leaf = base.with_coefficient(1);
             let val = numerator_hash.get(&leaf).unwrap_or(&(0, 0)).clone();
             numerator_hash.insert(leaf, add_fractions(val, (n, d)));
         } else {
-            let decoefficient = factor.decoefficient();
+            let decoefficient = factor.with_coefficient(1);
             let val = numerator_hash
                 .get(&decoefficient)
                 .unwrap_or(&(0, 0))
@@ -274,7 +241,7 @@ pub fn MultBasisNode(operands: Vec<Basis>) -> Basis {
         let element = get_base(factor);
         if element.is_some() {
             let (base, n, d) = element.unwrap();
-            let leaf = base.decoefficient();
+            let leaf = base.with_coefficient(1);
             if numerator_hash.contains_key(&leaf) {
                 let val = numerator_hash[&leaf];
                 numerator_hash.insert(leaf, sub_fractions(val, (n, d)));
@@ -283,7 +250,7 @@ pub fn MultBasisNode(operands: Vec<Basis>) -> Basis {
                 denominator_hash.insert(leaf, add_fractions(val, (n, d)));
             }
         } else {
-            let decoefficient = factor.decoefficient();
+            let decoefficient = factor.with_coefficient(1);
             if numerator_hash.contains_key(&decoefficient) {
                 let val = numerator_hash[&decoefficient];
                 numerator_hash.insert(decoefficient, sub_fractions(val, (1, 1)));
@@ -380,16 +347,15 @@ pub fn DivBasisNode(numerator: &Basis, denominator: &Basis) -> Basis {
     }
 
     // INF / x = INF
-    // TODO: match signs
-    if numerator.is_inf(1) {
-        return Basis::inf(1);
-    } else if numerator.is_inf(-1) {
-        return Basis::inf(-1);
+    if numerator.is_inf(1) || numerator.is_inf(-1) {
+        return Basis::inf((numerator.coefficient() / denominator.coefficient()).signum());
     }
     // x / INF = 0
     else if denominator.is_inf(1) || denominator.is_inf(-1) {
         return Basis::zero();
     }
+
+    // TODO: if numerator or denominator include Div
 
     Basis::BasisNode(BasisNode {
         coefficient: 1,
@@ -448,7 +414,7 @@ pub fn PowBasisNode(_n: i32, _d: i32, base: &Basis) -> Basis {
     // if base inside Pow is also a x^(n/d), then result is x^((n/d)*(i_n/i_d))
     match base {
         Basis::BasisNode(BasisNode {
-            coefficient: _,
+            coefficient: base_coefficient,
             operator: BasisOperator::Pow(inner_n, inner_d),
             operands,
         }) if operands[0].is_x() => {
@@ -457,16 +423,22 @@ pub fn PowBasisNode(_n: i32, _d: i32, base: &Basis) -> Basis {
             // (n, d) = simplify_fraction(n, d); // to soon be fixed, Rust 1.59+ ?
             let (new_n, new_d) = simplify_fraction(n, d);
             return Basis::BasisNode(BasisNode {
-                coefficient: 1,
+                coefficient: base_coefficient.pow((new_n / new_d) as u32), // TODO handle roots properly here
                 operator: BasisOperator::Pow(new_n, new_d),
                 operands: vec![Basis::x()],
             });
+        }
+        Basis::BasisNode(BasisNode {
+            operator: BasisOperator::E,
+            ..
+        }) => {
+            return EBasisNode(Basis::x().with_coefficient(n / d));
         }
         _ => {}
     }
 
     Basis::BasisNode(BasisNode {
-        coefficient: 1,
+        coefficient: base.coefficient().pow((n / d) as u32), // TODO handle roots properly here
         operator: BasisOperator::Pow(n, d),
         operands: vec![base.clone()],
     })
@@ -480,8 +452,14 @@ pub fn SqrtBasisNode(n: i32, base: &Basis) -> Basis {
 #[allow(non_snake_case)]
 pub fn LogBasisNode(base: &Basis) -> Basis {
     // log(e^x) = x
-    if base.is_node(BasisOperator::E) {
-        return Basis::x();
+    if let Basis::BasisNode(BasisNode {
+        coefficient: _e_coefficient,
+        operator: BasisOperator::E,
+        operands: e_operands,
+    }) = base
+    {
+        // TODO: AddBasisNode(vec![e_operands[0], log(e_coefficient)])
+        return e_operands[0].clone();
     }
     // log(INF) = INF
     else if base.is_inf(1) {
@@ -491,17 +469,8 @@ pub fn LogBasisNode(base: &Basis) -> Basis {
     else if base.is_num(0) {
         return Basis::inf(-1);
     }
-    // log(e^y) = y
-    else if let Basis::BasisNode(BasisNode {
-        coefficient: 1,
-        operator: BasisOperator::E,
-        operands: inner_operands,
-    }) = base
-    {
-        // TODO: coefficient
-        return inner_operands[1].clone();
-    }
 
+    // TODO: AddBasisNode(vec![base, log(coefficient)])
     Basis::BasisNode(BasisNode {
         coefficient: 1,
         operator: BasisOperator::Log,
@@ -552,24 +521,22 @@ pub fn ASinBasisNode(operand: Basis) -> Basis {
 
 #[allow(non_snake_case)]
 pub fn InvBasisNode(base: &Basis) -> Basis {
-    // TODO: use match
-    if let Basis::BasisNode(basis_node) = base {
-        if basis_node.operands[0].is_node(BasisOperator::E) {
-            return LogBasisNode(&Basis::x());
-        } else if let Basis::BasisNode(BasisNode {
-            coefficient: 1,
-            operator: BasisOperator::Log,
-            operands: inner_operands,
-        }) = &basis_node.operands[0]
-        {
-            if inner_operands[0].is_x() {
+    match base {
+        Basis::BasisNode(basis_node) => {
+            // assumes basic case of e^x
+            if basis_node.operands[0].is_node(BasisOperator::E) {
+                return LogBasisNode(&Basis::x());
+            }
+            // assumes basic case of log(x)
+            else if basis_node.operands[0].is_node(BasisOperator::Log) {
                 return EBasisNode(Basis::x());
             }
         }
+        _ => {}
     }
 
     Basis::BasisNode(BasisNode {
-        coefficient: 1,
+        coefficient: 1, // TODO: add reciprocal coefficient here ?
         operator: BasisOperator::Inv,
         operands: vec![base.clone()],
     })
