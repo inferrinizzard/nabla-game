@@ -1,25 +1,7 @@
-use std::cmp::{max, min};
 use std::collections::HashMap;
 
+use super::super::math::util::*;
 use super::structs::*;
-
-// maybe make a type for pow and implement ops ?
-fn add_fractions(a: (i32, i32), b: (i32, i32)) -> (i32, i32) {
-    if a.0 == 0 || a.1 == 0 {
-        return b;
-    } else if b.0 == 0 || b.1 == 0 {
-        return a;
-    }
-    (a.0 * b.1 + b.0 * a.1, a.1 * b.1)
-}
-fn sub_fractions(a: (i32, i32), b: (i32, i32)) -> (i32, i32) {
-    if a.0 == 0 || a.1 == 0 {
-        return (-b.0, -b.1);
-    } else if b.0 == 0 || b.1 == 0 {
-        return a;
-    }
-    (a.0 * b.1 - b.0 * a.1, a.1 * b.1)
-}
 
 #[allow(non_snake_case)]
 pub fn AddBasisNode(operands: Vec<Basis>) -> Basis {
@@ -365,24 +347,6 @@ pub fn DivBasisNode(numerator: &Basis, denominator: &Basis) -> Basis {
         operator: BasisOperator::Div,
         operands: vec![numerator.clone(), denominator.clone()],
     })
-}
-
-fn simplify_fraction(n: i32, d: i32) -> (i32, i32) {
-    let (abs_n, abs_d) = (n.abs(), d.abs());
-    let (mut a, mut b) = (max(abs_n, abs_d), (min(abs_n, abs_d)));
-    // euclidian algorithm
-    while b > 0 {
-        let c = a;
-        a = b;
-        b = c % b;
-    }
-    let gcd = a;
-
-    let (new_n, new_d) = (n / gcd, d / gcd);
-    if new_d < 0 {
-        return (-1 * new_n, -1 * new_d);
-    }
-    (new_n, new_d)
 }
 
 #[allow(non_snake_case)]

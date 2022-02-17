@@ -4,3 +4,4 @@ pub mod inverse;
 pub mod liate;
 pub mod limits;
 pub mod logarithm;
+pub mod util;
