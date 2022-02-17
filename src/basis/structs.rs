@@ -1,6 +1,7 @@
 use std::fmt::{Display, Formatter, Result};
 
 use super::super::cards::*;
+use super::super::math::fraction::*;
 
 // type union of the starter basis or complex basis
 #[derive(Clone, Debug, Hash, Eq, PartialEq)]
@@ -29,13 +30,16 @@ impl Basis {
     //         }
     //     }
     // }
-    pub fn coefficient(&self) -> i32 {
+    pub fn coefficient(&self) -> Fraction {
         match self {
             Basis::BasisLeaf(basis_leaf) => basis_leaf.coefficient,
             Basis::BasisNode(basis_node) => basis_node.coefficient,
         }
     }
-    pub fn with_coefficient(&self, coefficient: i32) -> Basis {
+    pub fn with_coefficient(&self, i: i32) -> Basis {
+        self.with_frac(Fraction::from(i))
+    }
+    pub fn with_frac(&self, coefficient: Fraction) -> Basis {
         match self.clone() {
             Basis::BasisLeaf(basis_leaf) => Basis::BasisLeaf(BasisLeaf {
                 coefficient,
@@ -46,12 +50,12 @@ impl Basis {
                     || basis_node.operator == BasisOperator::Minus
                 {
                     Basis::BasisNode(BasisNode {
-                        coefficient: 1,
+                        coefficient: Fraction::from(1),
                         operator: basis_node.operator,
                         operands: basis_node
                             .operands
                             .iter()
-                            .map(|op| op.with_coefficient(op.coefficient() * coefficient))
+                            .map(|op| op.with_frac(op.coefficient() * coefficient))
                             .collect(),
                     })
                 } else {
@@ -66,26 +70,26 @@ impl Basis {
 
     pub fn from_card(card: BasisCard) -> Basis {
         match card {
-            BasisCard::Zero => Basis::zero(),
-            BasisCard::One => Basis::of_num(1),
+            BasisCard::Zero => Basis::from(0),
+            BasisCard::One => Basis::from(1),
             BasisCard::X => Basis::x(),
             BasisCard::X2 => Basis::BasisNode(BasisNode {
-                coefficient: 1,
-                operator: BasisOperator::Pow(2, 1),
+                coefficient: Fraction::from(1),
+                operator: BasisOperator::Pow(Fraction { n: 2, d: 1 }),
                 operands: vec![Basis::x()],
             }),
             BasisCard::Cos => Basis::BasisNode(BasisNode {
-                coefficient: 1,
+                coefficient: Fraction::from(1),
                 operator: BasisOperator::Cos,
                 operands: vec![Basis::x()],
             }),
             BasisCard::Sin => Basis::BasisNode(BasisNode {
-                coefficient: 1,
+                coefficient: Fraction::from(1),
                 operator: BasisOperator::Sin,
                 operands: vec![Basis::x()],
             }),
             BasisCard::E => Basis::BasisNode(BasisNode {
-                coefficient: 1,
+                coefficient: Fraction::from(1),
                 operator: BasisOperator::E,
                 operands: vec![Basis::x()],
             }),
@@ -102,14 +106,17 @@ impl Basis {
         }
     }
 
-    pub fn is_num(&self, coefficient: i32) -> bool {
+    pub fn is_num(&self, i: i32) -> bool {
+        self.is_frac(Fraction::from(i))
+    }
+    pub fn is_frac(&self, frac: Fraction) -> bool {
         matches!(
             self,
             Basis::BasisLeaf(BasisLeaf {
                 element: BasisElement::Num,
                 ..
             })
-        ) && coefficient == self.coefficient()
+        ) && self.coefficient() == frac
     }
     pub fn is_x(&self) -> bool {
         matches!(
@@ -120,8 +127,8 @@ impl Basis {
             })
         )
     }
-    pub fn is_inf(&self, coefficient: i32) -> bool {
-        if !(coefficient == 1 || coefficient == -1) {
+    pub fn is_inf(&self, i: i32) -> bool {
+        if !(i == 1 || i == -1) {
             panic!("INF must be -1 or 1 only")
         }
         matches!(
@@ -130,23 +137,14 @@ impl Basis {
                 element: BasisElement::Inf,
                 ..
             })
-        ) && coefficient == self.coefficient()
+        ) && self.coefficient() == i
     }
 
-    pub fn zero() -> Basis {
-        Basis::BasisLeaf(BasisLeaf::zero())
-    }
-    pub fn of_num(coefficient: i32) -> Basis {
-        Basis::BasisLeaf(BasisLeaf {
-            coefficient,
-            element: BasisElement::Num,
-        })
-    }
     pub fn x() -> Basis {
         Basis::BasisLeaf(BasisLeaf::x())
     }
-    pub fn inf(coefficient: i32) -> Basis {
-        Basis::BasisLeaf(BasisLeaf::inf(coefficient))
+    pub fn inf(i: i32) -> Basis {
+        Basis::BasisLeaf(BasisLeaf::inf(i))
     }
 
     pub fn like(&self, other: &Basis) -> bool {
@@ -162,6 +160,25 @@ impl Basis {
     }
 }
 
+impl From<Fraction> for Basis {
+    fn from(frac: Fraction) -> Self {
+        Basis::BasisLeaf(BasisLeaf {
+            coefficient: frac,
+            element: BasisElement::Num,
+        })
+    }
+}
+impl From<(i32, i32)> for Basis {
+    fn from((n, d): (i32, i32)) -> Self {
+        Basis::from(Fraction::from((n, d)))
+    }
+}
+impl From<i32> for Basis {
+    fn from(i: i32) -> Self {
+        Basis::from((i, 1))
+    }
+}
+
 impl Display for Basis {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result {
         match self {
@@ -174,7 +191,7 @@ impl Display for Basis {
 // most basic Basis type
 #[derive(Clone, Debug, Hash, Eq, PartialEq)]
 pub struct BasisLeaf {
-    pub coefficient: i32,
+    pub coefficient: Fraction,
     pub element: BasisElement,
 }
 
@@ -186,24 +203,18 @@ pub enum BasisElement {
 }
 
 impl BasisLeaf {
-    pub fn zero() -> BasisLeaf {
-        BasisLeaf {
-            coefficient: 0,
-            element: BasisElement::Num,
-        }
-    }
     pub fn x() -> BasisLeaf {
         BasisLeaf {
-            coefficient: 1,
+            coefficient: Fraction::from(1),
             element: BasisElement::X,
         }
     }
-    pub fn inf(coefficient: i32) -> BasisLeaf {
-        if !(coefficient == 1 || coefficient == -1) {
+    pub fn inf(i: i32) -> BasisLeaf {
+        if !(i == 1 || i == -1) {
             panic!("INF must be -1 or 1 only")
         }
         BasisLeaf {
-            coefficient,
+            coefficient: Fraction::from(i),
             element: BasisElement::Inf,
         }
     }
@@ -242,7 +253,7 @@ impl Display for BasisLeaf {
 // used for complex bases derived from the starter cards
 #[derive(Clone, Debug, Hash, Eq)]
 pub struct BasisNode {
-    pub coefficient: i32,
+    pub coefficient: Fraction,
     pub operator: BasisOperator,
     // Vec heap allocates, prevents recursive struct reference
     pub operands: Vec<Basis>,
@@ -252,7 +263,7 @@ impl Display for BasisNode {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result {
         match self.operator {
             BasisOperator::Div => write!(f, "({})/({})", self.operands[0], self.operands[1]),
-            BasisOperator::Pow(n, d) => {
+            BasisOperator::Pow(Fraction { n, d }) => {
                 let exponent = if d == 1 {
                     format!("{}", n)
                 } else {
@@ -375,7 +386,7 @@ pub enum BasisOperator {
     Minus,
     Mult,
     Div,
-    Pow(i32, i32), // numerator, denominator,
+    Pow(Fraction),
     E,
     Log,
     Cos,
@@ -393,8 +404,12 @@ impl Display for BasisOperator {
             BasisOperator::Minus => "-",
             BasisOperator::Mult => "*",
             BasisOperator::Div => "/",
-            BasisOperator::Pow(_, d) if *d == 1 => Box::leak(format!("^{}", d).into_boxed_str()),
-            BasisOperator::Pow(n, d) => Box::leak(format!("^({}/{})", n, d).into_boxed_str()),
+            BasisOperator::Pow(Fraction { n, d: 1 }) => {
+                Box::leak(format!("^{}", n).into_boxed_str())
+            }
+            BasisOperator::Pow(Fraction { n, d }) => {
+                Box::leak(format!("^({}/{})", n, d).into_boxed_str())
+            }
             BasisOperator::E => "e",
             BasisOperator::Log => "log",
             BasisOperator::Cos => "cos",

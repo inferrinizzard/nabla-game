@@ -12,8 +12,8 @@ fn test_basic_inverses() {
     let (mut a, mut b);
 
     // test leaf num
-    a = Basis::of_num(2);
-    b = Basis::of_num(2);
+    a = Basis::from(2);
+    b = Basis::from(2);
     println!("f-1({}) = {}", a, b);
     assert_eq!(inverse(&a), b);
 
@@ -60,8 +60,8 @@ fn test_basic_inverses() {
     assert_eq!(inverse(&a), b);
 
     // test addition
-    a = Basis::x() - Basis::of_num(1);
-    b = Basis::x() + Basis::of_num(1);
+    a = Basis::x() - Basis::from(1);
+    b = Basis::x() + Basis::from(1);
     println!("f-1({}) = {}", a, b);
     assert_eq!(inverse(&a), b);
 }

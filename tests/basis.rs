@@ -2,6 +2,7 @@ use nabla_game;
 
 use nabla_game::basis::builders::*;
 use nabla_game::basis::structs::*;
+use nabla_game::math::fraction::Fraction;
 
 // test add operator
 #[test]
@@ -24,7 +25,7 @@ fn test_add() {
     // test collect like terms
     a = AddBasisNode(vec![Basis::x(), Basis::x()]);
     b = Basis::BasisLeaf(BasisLeaf {
-        coefficient: 2,
+        coefficient: Fraction::from(2),
         element: BasisElement::X,
     });
     println!("{} = {}", a, b);
@@ -34,14 +35,14 @@ fn test_add() {
     a = AddBasisNode(vec![
         Basis::x(),
         Basis::BasisLeaf(BasisLeaf {
-            coefficient: 2,
+            coefficient: Fraction::from(2),
             element: BasisElement::X,
         }),
         EBasisNode(Basis::x()),
     ]);
     b = AddBasisNode(vec![
         Basis::BasisLeaf(BasisLeaf {
-            coefficient: 3,
+            coefficient: Fraction::from(3),
             element: BasisElement::X,
         }),
         EBasisNode(Basis::x()),
@@ -56,7 +57,7 @@ fn test_add() {
     ]);
     b = AddBasisNode(vec![
         Basis::BasisLeaf(BasisLeaf {
-            coefficient: 2,
+            coefficient: Fraction::from(2),
             element: BasisElement::X,
         }),
         CosBasisNode(Basis::x()),
@@ -127,7 +128,7 @@ fn test_mult() {
     a = MultBasisNode(vec![
         MultBasisNode(vec![Basis::x(), LogBasisNode(&Basis::x())]),
         Basis::BasisNode(BasisNode {
-            coefficient: 1,
+            coefficient: Fraction::from(1),
             operator: BasisOperator::Div,
             operands: vec![SinBasisNode(Basis::x()), Basis::x()],
         }),
@@ -140,7 +141,7 @@ fn test_mult() {
     a = MultBasisNode(vec![
         MultBasisNode(vec![Basis::x(), EBasisNode(Basis::x())]),
         Basis::BasisNode(BasisNode {
-            coefficient: 1,
+            coefficient: Fraction::from(1),
             operator: BasisOperator::Div,
             operands: vec![
                 MultBasisNode(vec![
@@ -152,7 +153,7 @@ fn test_mult() {
         }),
     ]);
     b = Basis::BasisNode(BasisNode {
-        coefficient: 1,
+        coefficient: Fraction::from(1),
         operator: BasisOperator::Div,
         operands: vec![
             MultBasisNode(vec![

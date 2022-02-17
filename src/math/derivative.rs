@@ -1,3 +1,5 @@
+use crate::math::fraction::Fraction;
+
 use super::super::basis::builders::*;
 use super::super::basis::structs::*;
 use super::util::*;
@@ -6,8 +8,8 @@ pub fn derivative(basis: &Basis) -> Basis {
     return match basis {
         // is standard basis
         Basis::BasisLeaf(basis_leaf) => match basis_leaf.element {
-            BasisElement::X => Basis::of_num(basis_leaf.coefficient),
-            BasisElement::Num => Basis::zero(),
+            BasisElement::X => Basis::from(basis_leaf.coefficient),
+            BasisElement::Num => Basis::from(0),
             BasisElement::Inf => basis.clone(),
         },
 
@@ -40,7 +42,7 @@ pub fn derivative(basis: &Basis) -> Basis {
                     / (u.clone() * u.clone())
             }
             // power rule, n * x^(n-1) : preceding n is discarded
-            BasisOperator::Pow(n, d) => {
+            BasisOperator::Pow(Fraction { n, d }) => {
                 let base = &operands[0];
                 if base.is_x() {
                     return base.clone() ^ (n - d, *d);
@@ -59,11 +61,9 @@ pub fn derivative(basis: &Basis) -> Basis {
             // chain rule, f'(sin(f(y))) = f'(y)cos(f(y))
             BasisOperator::Sin => derivative(&operands[0]) * CosBasisNode(operands[0].clone()),
             // d/dx arccos(f(x))|arcsin(f(x)) = -f'(x)/sqrt(1-f(x)^2)
-            BasisOperator::Acos => {
-                Basis::x().with_coefficient(-1) / ((Basis::of_num(1) - Basis::x() ^ 2) ^ (1, 2))
-            }
+            BasisOperator::Acos => -Basis::x() / ((Basis::from(1) - Basis::x() ^ 2) ^ (1, 2)),
             // d/dx arccos(f(x))|arcsin(f(x)) = -f'(x)/sqrt(1-f(x)^2)
-            BasisOperator::Asin => Basis::x() / ((Basis::of_num(1) - Basis::x() ^ 2) ^ (1, 2)),
+            BasisOperator::Asin => Basis::x() / ((Basis::from(1) - Basis::x() ^ 2) ^ (1, 2)),
             // inverse rule, d(f-1(x)) = 1/f-1(f')(f-1(x))
             BasisOperator::Inv => {
                 let inverse_derivative = !derivative(&operands[0]);

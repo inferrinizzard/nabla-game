@@ -1,8 +1,6 @@
-use std::collections::HashMap;
-
-use super::super::basis::builders::*;
 use super::super::basis::structs::*;
 use super::super::cards::*;
+use crate::math::fraction::Fraction;
 
 fn limit_arccos_arcsin(
     limit_card: &LimitCard,
@@ -11,35 +9,35 @@ fn limit_arccos_arcsin(
 ) -> Option<Basis> {
     // max(arccos) = PI, max(arcsin) = PI/2
     if matches!(limit_card, LimitCard::Limsup) {
-        return Some(Basis::of_num(1));
+        return Some(Basis::from(1));
     } else if matches!(limit_card, LimitCard::Liminf) {
         // min(arccos) = 0
         if operator.is_node(BasisOperator::Cos) {
-            return Some(Basis::zero());
+            return Some(Basis::from(0));
         }
         // min(arcsin) = -PI/2
         if operator.is_node(BasisOperator::Sin) {
-            return Some(Basis::of_num(1));
+            return Some(Basis::from(1));
         }
     }
 
     if operand_limit.is_num(0) {
         // arccos(0) = PI/2
         if operator.is_node(BasisOperator::Cos) {
-            return Some(Basis::of_num(1));
+            return Some(Basis::from(1));
         }
         // arcsin(0) = 0
         if operator.is_node(BasisOperator::Sin) {
-            return Some(Basis::zero());
+            return Some(Basis::from(0));
         }
     }
     // arccos(-INF)
     if operand_limit.is_inf(-1) && operator.is_node(BasisOperator::Cos) {
-        return Some(Basis::zero());
+        return Some(Basis::from(0));
     }
 
     // arccos(INF) | arccos(n) | arcsin(INF | -INF) | arcsin(n) ≃ n → 1
-    Some(Basis::of_num(1))
+    Some(Basis::from(1))
 }
 
 pub fn limit(_limit_card: &LimitCard) -> impl Fn(&Basis) -> Option<Basis> {
@@ -48,7 +46,7 @@ pub fn limit(_limit_card: &LimitCard) -> impl Fn(&Basis) -> Option<Basis> {
         match basis {
             Basis::BasisLeaf(basis_leaf) => match basis_leaf.element {
                 BasisElement::X => Some(match limit_card {
-                    LimitCard::Lim0 => Basis::zero(),
+                    LimitCard::Lim0 => Basis::from(0),
                     LimitCard::Liminf | LimitCard::Limsup | LimitCard::LimPosInf => Basis::inf(1),
                     LimitCard::LimNegInf => Basis::inf(-1),
                 }),
@@ -64,7 +62,7 @@ pub fn limit(_limit_card: &LimitCard) -> impl Fn(&Basis) -> Option<Basis> {
                     return None; // invalid limit (ie. oscillating function)
                 }
                 if matches!(limit_card, LimitCard::Lim0)
-                    && matches!(operator, BasisOperator::Pow(-1, 1))
+                    && matches!(operator, BasisOperator::Pow(Fraction { n: -1, d: 1 }))
                 {
                     return None; // invalid limit (1/0)
                 }
@@ -80,12 +78,12 @@ pub fn limit(_limit_card: &LimitCard) -> impl Fn(&Basis) -> Option<Basis> {
                             "Not yet implemented: {} of {} ({:?})",
                             limit_card, basis, basis
                         );
-                        Some(Basis::zero())
+                        // Some(Basis::from(0))
                     }
                     BasisOperator::Int => {
                         // assume that the limits of integration are from 0 to x for INF, x to 0 for -INF, what for 0?
                         let res = integral_limit(basis);
-                        Some(Basis::zero())
+                        Some(Basis::from(0))
                     }
                     _ => {
                         let operand_limits = operands
@@ -97,7 +95,7 @@ pub fn limit(_limit_card: &LimitCard) -> impl Fn(&Basis) -> Option<Basis> {
                         }
                         // TODO: fix coefficient
                         Some(Basis::BasisNode(BasisNode {
-                            coefficient: 1,
+                            coefficient: Fraction::from(1),
                             operator: *operator,
                             operands: operand_limits
                                 .iter()

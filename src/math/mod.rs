@@ -1,4 +1,5 @@
 pub mod derivative;
+pub mod fraction;
 pub mod integral;
 pub mod inverse;
 pub mod liate;

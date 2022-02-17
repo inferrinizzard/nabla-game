@@ -25,7 +25,7 @@ pub fn apply_card(card: &Card) -> impl Fn(&Basis) -> Basis {
             basis_limit
             // basis_limit.resolve()
         }
-        _ => Basis::zero(),
+        _ => Basis::from(0),
     };
 }
 

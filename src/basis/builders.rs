@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use super::super::math::util::*;
+use super::super::math::fraction::*;
 use super::structs::*;
 
 #[allow(non_snake_case)]
@@ -45,12 +45,12 @@ pub fn AddBasisNode(operands: Vec<Basis>) -> Basis {
     }
 
     // combine like terms
-    let mut operand_hash: HashMap<Basis, i32> = HashMap::new();
+    let mut operand_hash: HashMap<Basis, Fraction> = HashMap::new();
     addends.iter().for_each(|addend| {
         let decoefficient = addend.with_coefficient(1);
 
         let entry = operand_hash.entry(decoefficient);
-        *entry.or_insert(0) += addend.coefficient();
+        *entry.or_insert(Fraction::from(0)) += addend.coefficient();
     });
 
     let final_operands = operand_hash.iter().fold(vec![], |mut acc, (k, v)| {
@@ -75,7 +75,7 @@ pub fn AddBasisNode(operands: Vec<Basis>) -> Basis {
     }
 
     Basis::BasisNode(BasisNode {
-        coefficient: 1,
+        coefficient: Fraction::from(1),
         operator: BasisOperator::Add,
         operands: final_operands,
     })
@@ -92,7 +92,7 @@ fn get_base(basis: &Basis) -> Option<(Basis, i32, i32)> {
     match basis {
         Basis::BasisLeaf(_) => Some((basis.clone(), 1, 1)),
         Basis::BasisNode(BasisNode {
-            operator: BasisOperator::Pow(n, d),
+            operator: BasisOperator::Pow(Fraction { n, d }),
             operands,
             ..
         }) => {
@@ -108,7 +108,7 @@ fn get_base(basis: &Basis) -> Option<(Basis, i32, i32)> {
 
 #[allow(non_snake_case)]
 pub fn MultBasisNode(operands: Vec<Basis>) -> Basis {
-    let mut final_coefficient = (1, 1);
+    let mut final_coefficient = Fraction::from(1);
     let mut denominator = vec![];
     let numerator = operands.iter().fold(Vec::new(), |mut acc: Vec<Basis>, op| {
         if let Basis::BasisNode(BasisNode {
@@ -117,7 +117,7 @@ pub fn MultBasisNode(operands: Vec<Basis>) -> Basis {
             operands: mult_operands,
         }) = op
         {
-            final_coefficient.0 *= mult_coefficient;
+            final_coefficient *= *mult_coefficient;
             acc.extend(mult_operands.clone());
         } else if let Basis::BasisNode(BasisNode {
             operator: BasisOperator::Div,
@@ -131,7 +131,7 @@ pub fn MultBasisNode(operands: Vec<Basis>) -> Basis {
                 operands: div_numerator_operands,
             }) = &div_operands[0]
             {
-                final_coefficient.0 *= div_numerator_coefficient;
+                final_coefficient /= *div_numerator_coefficient;
                 acc.extend(div_numerator_operands.clone());
             } else {
                 acc.push(div_operands[0].clone());
@@ -142,7 +142,7 @@ pub fn MultBasisNode(operands: Vec<Basis>) -> Basis {
                 operands: div_denominator_operands,
             }) = &div_operands[1]
             {
-                final_coefficient.1 *= div_denominator_coefficient;
+                final_coefficient /= *div_denominator_coefficient;
                 denominator.extend(div_denominator_operands.clone());
             } else {
                 denominator.push(div_operands[1].clone());
@@ -153,7 +153,7 @@ pub fn MultBasisNode(operands: Vec<Basis>) -> Basis {
                 coefficient,
             }) = op
             {
-                final_coefficient.0 *= coefficient;
+                final_coefficient *= *coefficient;
             } else {
                 acc.push(op.clone());
             }
@@ -165,7 +165,7 @@ pub fn MultBasisNode(operands: Vec<Basis>) -> Basis {
         .iter()
         .any(|op| op.is_num(0) || op.coefficient() == 0)
     {
-        return Basis::zero();
+        return Basis::from(0);
     }
     // n / 0, invalid
     else if denominator
@@ -185,7 +185,7 @@ pub fn MultBasisNode(operands: Vec<Basis>) -> Basis {
     }
     // n / INF = 0
     else if denominator.iter().any(|op| op.is_inf(-1) | op.is_inf(1)) {
-        return Basis::zero();
+        return Basis::from(0);
     }
 
     // combine like terms
@@ -193,9 +193,9 @@ pub fn MultBasisNode(operands: Vec<Basis>) -> Basis {
     let mut denominator_hash: HashMap<Basis, (i32, i32)> = HashMap::new();
     // collect numerator
     numerator.iter().for_each(|factor| {
-        final_coefficient.0 *= factor.coefficient();
+        final_coefficient *= factor.coefficient();
         // skip integers
-        if factor.is_num(factor.coefficient()) {
+        if factor.is_frac(factor.coefficient()) {
             return;
         }
         let element = get_base(factor);
@@ -203,21 +203,21 @@ pub fn MultBasisNode(operands: Vec<Basis>) -> Basis {
             let (base, n, d) = element.unwrap();
             let leaf = base.with_coefficient(1);
             let val = numerator_hash.get(&leaf).unwrap_or(&(0, 0)).clone();
-            numerator_hash.insert(leaf, add_fractions(val, (n, d)));
+            numerator_hash.insert(leaf, (Fraction::from(val) + (n, d)).into());
         } else {
             let decoefficient = factor.with_coefficient(1);
             let val = numerator_hash
                 .get(&decoefficient)
                 .unwrap_or(&(0, 0))
                 .clone();
-            numerator_hash.insert(decoefficient, add_fractions(val, (1, 1)));
+            numerator_hash.insert(decoefficient, (Fraction::from(val) + (1, 1)).into());
         }
     });
     // divide from numerator and collect denominator
     denominator.iter().for_each(|factor| {
-        final_coefficient.0 /= factor.coefficient();
-        // skip integers
-        if factor.is_num(factor.coefficient()) {
+        final_coefficient /= factor.coefficient(); // TODO: double check this
+                                                   // skip integers
+        if factor.is_frac(factor.coefficient()) {
             return;
         }
         let element = get_base(factor);
@@ -226,22 +226,22 @@ pub fn MultBasisNode(operands: Vec<Basis>) -> Basis {
             let leaf = base.with_coefficient(1);
             if numerator_hash.contains_key(&leaf) {
                 let val = numerator_hash[&leaf];
-                numerator_hash.insert(leaf, sub_fractions(val, (n, d)));
+                numerator_hash.insert(leaf, (Fraction::from(val) - (n, d)).into());
             } else {
                 let val = denominator_hash.get(&leaf).unwrap_or(&(0, 0)).clone();
-                denominator_hash.insert(leaf, add_fractions(val, (n, d)));
+                denominator_hash.insert(leaf, (Fraction::from(val) + (n, d)).into());
             }
         } else {
             let decoefficient = factor.with_coefficient(1);
             if numerator_hash.contains_key(&decoefficient) {
                 let val = numerator_hash[&decoefficient];
-                numerator_hash.insert(decoefficient, sub_fractions(val, (1, 1)));
+                numerator_hash.insert(decoefficient, (Fraction::from(val) - (1, 1)).into());
             } else {
                 let val = denominator_hash
                     .get(&decoefficient)
                     .unwrap_or(&(0, 0))
                     .clone();
-                denominator_hash.insert(decoefficient, add_fractions(val, (1, 1)));
+                denominator_hash.insert(decoefficient, (Fraction::from(val) + (1, 1)).into());
             }
         }
     });
@@ -277,25 +277,23 @@ pub fn MultBasisNode(operands: Vec<Basis>) -> Basis {
         return final_numerator[0].clone();
     }
 
-    final_coefficient = simplify_fraction(final_coefficient.0, final_coefficient.1);
-
     if final_denominator.len() > 0 {
         return Basis::BasisNode(BasisNode {
-            coefficient: 1,
+            coefficient: Fraction::from(1),
             operator: BasisOperator::Div,
             operands: vec![
                 if final_numerator.len() > 0 {
                     Basis::BasisNode(BasisNode {
-                        coefficient: final_coefficient.0,
+                        coefficient: Fraction::from(final_coefficient.n),
                         operator: BasisOperator::Mult,
                         operands: final_numerator,
                     })
                 } else {
-                    Basis::of_num(1)
+                    Basis::from(1)
                 },
                 if final_denominator.len() > 1 {
                     Basis::BasisNode(BasisNode {
-                        coefficient: final_coefficient.1,
+                        coefficient: Fraction::from(final_coefficient.d),
                         operator: BasisOperator::Mult,
                         operands: final_denominator,
                     })
@@ -307,10 +305,10 @@ pub fn MultBasisNode(operands: Vec<Basis>) -> Basis {
     }
 
     if final_numerator.len() == 0 {
-        return Basis::of_num(1);
+        return Basis::from(1);
     }
     Basis::BasisNode(BasisNode {
-        coefficient: final_coefficient.0,
+        coefficient: final_coefficient,
         operator: BasisOperator::Mult,
         operands: final_numerator,
     })
@@ -320,7 +318,7 @@ pub fn MultBasisNode(operands: Vec<Basis>) -> Basis {
 pub fn DivBasisNode(numerator: &Basis, denominator: &Basis) -> Basis {
     // 0 / n = 0
     if numerator.is_num(0) {
-        return Basis::zero();
+        return Basis::from(0);
     }
     // 1 / n = n^-1
     else if numerator.is_num(1) {
@@ -328,37 +326,37 @@ pub fn DivBasisNode(numerator: &Basis, denominator: &Basis) -> Basis {
     }
     // n / n = 1
     else if numerator == denominator {
-        return Basis::of_num(1);
+        return Basis::from(1);
     }
 
     // INF / x = INF
     if numerator.is_inf(1) || numerator.is_inf(-1) {
-        return Basis::inf((numerator.coefficient() / denominator.coefficient()).signum());
+        return Basis::inf(numerator.coefficient().sign());
     }
     // x / INF = 0
     else if denominator.is_inf(1) || denominator.is_inf(-1) {
-        return Basis::zero();
+        return Basis::from(0);
     }
 
     // TODO:B if numerator or denominator include Div
 
     Basis::BasisNode(BasisNode {
-        coefficient: 1,
+        coefficient: Fraction::from(1),
         operator: BasisOperator::Div,
         operands: vec![numerator.clone(), denominator.clone()],
     })
 }
 
 #[allow(non_snake_case)]
-pub fn PowBasisNode(_n: i32, _d: i32, base: &Basis) -> Basis {
-    let (mut n, mut d) = simplify_fraction(_n, _d);
+pub fn PowBasisNode(n: i32, d: i32, base: &Basis) -> Basis {
+    let mut frac = Fraction::from((n, d)).simplify();
 
     // x^0 = 1
-    if n == 0 {
-        return Basis::of_num(1);
+    if frac.n == 0 {
+        return Basis::from(1);
     }
     // x^(n/n) = x
-    else if n == d {
+    else if frac == 1 {
         return base.clone();
     }
     // 0^n = 0, 1^n = 1
@@ -372,7 +370,7 @@ pub fn PowBasisNode(_n: i32, _d: i32, base: &Basis) -> Basis {
     // (-INF)^x = INF | -INF
     else if base.is_inf(-1) {
         // odd power
-        if n % 2 == 1 && d % 2 == 1 {
+        if frac.n % 2 == 1 && frac.d % 2 == 1 {
             return Basis::inf(-1);
         }
         // even power
@@ -382,16 +380,13 @@ pub fn PowBasisNode(_n: i32, _d: i32, base: &Basis) -> Basis {
     match base {
         Basis::BasisNode(BasisNode {
             coefficient: base_coefficient,
-            operator: BasisOperator::Pow(inner_n, inner_d),
+            operator: BasisOperator::Pow(inner_frac),
             operands,
         }) if operands[0].is_x() => {
-            n *= inner_n;
-            d *= inner_d;
-            // (n, d) = simplify_fraction(n, d); // to soon be fixed, Rust 1.59+ ?
-            let (new_n, new_d) = simplify_fraction(n, d);
+            frac *= *inner_frac;
             return Basis::BasisNode(BasisNode {
-                coefficient: base_coefficient.pow((new_n / new_d) as u32), // TODO:C handle roots properly here
-                operator: BasisOperator::Pow(new_n, new_d),
+                coefficient: *base_coefficient ^ frac.n, // TODO:C handle fractional roots
+                operator: BasisOperator::Pow(frac),
                 operands: vec![Basis::x()],
             });
         }
@@ -401,15 +396,14 @@ pub fn PowBasisNode(_n: i32, _d: i32, base: &Basis) -> Basis {
             operator: BasisOperator::E,
             operands: e_operands,
         }) => {
-            return EBasisNode(e_operands[0].with_coefficient(n / d))
-                * e_coefficient.pow((n / d) as u32);
+            return EBasisNode(e_operands[0].with_coefficient(n / d)) * (*e_coefficient ^ frac.n);
         }
         _ => {}
     }
 
     Basis::BasisNode(BasisNode {
-        coefficient: base.coefficient().pow((n / d) as u32), // TODO:C handle roots properly here
-        operator: BasisOperator::Pow(n, d),
+        coefficient: base.coefficient() ^ frac.n, // TODO:C handle fractional roots
+        operator: BasisOperator::Pow(frac),
         operands: vec![base.clone()],
     })
 }
@@ -442,7 +436,7 @@ pub fn LogBasisNode(base: &Basis) -> Basis {
 
     // TODO:D AddBasisNode(vec![base, log(coefficient)])
     Basis::BasisNode(BasisNode {
-        coefficient: 1,
+        coefficient: Fraction::from(1),
         operator: BasisOperator::Log,
         operands: vec![base.clone()],
     })
@@ -450,7 +444,7 @@ pub fn LogBasisNode(base: &Basis) -> Basis {
 #[allow(non_snake_case)]
 pub fn EBasisNode(operand: Basis) -> Basis {
     Basis::BasisNode(BasisNode {
-        coefficient: 1,
+        coefficient: Fraction::from(1),
         operator: BasisOperator::E,
         operands: vec![operand],
     })
@@ -459,7 +453,7 @@ pub fn EBasisNode(operand: Basis) -> Basis {
 #[allow(non_snake_case)]
 pub fn CosBasisNode(operand: Basis) -> Basis {
     Basis::BasisNode(BasisNode {
-        coefficient: 1,
+        coefficient: Fraction::from(1),
         operator: BasisOperator::Cos,
         operands: vec![operand],
     })
@@ -467,7 +461,7 @@ pub fn CosBasisNode(operand: Basis) -> Basis {
 #[allow(non_snake_case)]
 pub fn SinBasisNode(operand: Basis) -> Basis {
     Basis::BasisNode(BasisNode {
-        coefficient: 1,
+        coefficient: Fraction::from(1),
         operator: BasisOperator::Sin,
         operands: vec![operand],
     })
@@ -475,7 +469,7 @@ pub fn SinBasisNode(operand: Basis) -> Basis {
 #[allow(non_snake_case)]
 pub fn ACosBasisNode(operand: Basis) -> Basis {
     Basis::BasisNode(BasisNode {
-        coefficient: 1,
+        coefficient: Fraction::from(1),
         operator: BasisOperator::Acos,
         operands: vec![operand],
     })
@@ -483,7 +477,7 @@ pub fn ACosBasisNode(operand: Basis) -> Basis {
 #[allow(non_snake_case)]
 pub fn ASinBasisNode(operand: Basis) -> Basis {
     Basis::BasisNode(BasisNode {
-        coefficient: 1,
+        coefficient: Fraction::from(1),
         operator: BasisOperator::Asin,
         operands: vec![operand],
     })
@@ -509,7 +503,7 @@ pub fn InvBasisNode(base: &Basis) -> Basis {
     }
 
     Basis::BasisNode(BasisNode {
-        coefficient: 1, // TODO:D add reciprocal coefficient here ?
+        coefficient: Fraction::from(1), // TODO:D add reciprocal coefficient here ?
         operator: BasisOperator::Inv,
         operands: vec![base.clone()],
     })
@@ -518,7 +512,7 @@ pub fn InvBasisNode(base: &Basis) -> Basis {
 #[allow(non_snake_case)]
 pub fn IntBasisNode(integrand: &Basis) -> Basis {
     Basis::BasisNode(BasisNode {
-        coefficient: 1,
+        coefficient: Fraction::from(1),
         operator: BasisOperator::Int,
         operands: vec![integrand.clone()],
     })

@@ -2,6 +2,8 @@ use super::super::basis::builders::*;
 use super::super::basis::structs::*;
 use super::super::math::integral::*;
 
+use crate::math::fraction::Fraction;
+
 pub fn logarithmic(basis_node: &BasisNode, u: &Basis, dv: &Basis) -> Option<Basis> {
     if basis_node
         .operands
@@ -44,7 +46,7 @@ pub fn inverse(basis_node: &BasisNode, u: &Basis, dv: &Basis) -> Option<Basis> {
 pub fn algebraic(_basis_node: &BasisNode, u: &Basis, dv: &Basis) -> Option<Basis> {
     // any fractional exponent is not accepted
     if let Basis::BasisNode(BasisNode {
-        operator: BasisOperator::Pow(n, 1),
+        operator: BasisOperator::Pow(Fraction { n, d: 1 }),
         ..
     }) = u
     {
@@ -75,10 +77,12 @@ pub fn trig(_basis_node: &BasisNode, u: &Basis, dv: &Basis) -> Option<Basis> {
                 1
             };
             match inner_operator {
-                BasisOperator::Pow(n, 1) => return Some((inner_base.clone() ^ (n + 1)) * sign),
+                BasisOperator::Pow(Fraction { n, d: 1 }) => {
+                    return Some((inner_base.clone() ^ (n + 1)) * sign)
+                }
                 BasisOperator::Log => {
                     return Some(
-                        (inner_base.clone() * (LogBasisNode(inner_base) - Basis::of_num(1))) * sign,
+                        (inner_base.clone() * (LogBasisNode(inner_base) - Basis::from(1))) * sign,
                     )
                 }
                 _ => {}
@@ -103,12 +107,12 @@ pub fn exponential(_basis_node: &BasisNode, u: &Basis, dv: &Basis) -> Option<Bas
     }) = dv
     {
         if let Basis::BasisNode(BasisNode {
-            operator: BasisOperator::Pow(n, 1),
+            operator: BasisOperator::Pow(Fraction { n, d: 1 }),
             ..
         }) = dv_operands[0]
         {
             // x^(n-1)e^(x^n)
-            if u.is_node(BasisOperator::Pow(n - 1, 1)) {
+            if u.is_node(BasisOperator::Pow(Fraction { n: n - 1, d: 1 })) {
                 return Some(dv.clone() * u.coefficient() / n);
             }
         }

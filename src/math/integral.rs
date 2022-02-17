@@ -2,16 +2,16 @@ use std::cmp::{max, min};
 
 use super::super::basis::builders::*;
 use super::super::basis::structs::*;
-use super::super::math::derivative::*;
-use super::super::math::*;
+
+use crate::math::derivative::derivative;
+use crate::math::fraction::Fraction;
+use crate::math::liate;
 
 pub fn integral(basis: &Basis) -> Basis {
     match basis {
         Basis::BasisLeaf(basis_leaf) => match basis_leaf.element {
-            BasisElement::Num => Basis::x().with_coefficient(basis_leaf.coefficient),
-            BasisElement::X => {
-                PowBasisNode(2, 1, &Basis::x()).with_coefficient(basis_leaf.coefficient / 2)
-            }
+            BasisElement::Num => Basis::x().with_frac(basis_leaf.coefficient),
+            BasisElement::X => (Basis::x() ^ 2).with_frac(basis_leaf.coefficient / 2),
             BasisElement::Inf => basis.clone(),
         },
         Basis::BasisNode(BasisNode {
@@ -45,13 +45,13 @@ pub fn integral(basis: &Basis) -> Basis {
                 }
                 IntBasisNode(basis) // will never happen
             }
-            BasisOperator::Pow(n, d) => {
+            BasisOperator::Pow(Fraction { n, d }) => {
                 let base = operands[0].clone();
                 if base.is_x() {
-                    return (base ^ (n + d, *d)).with_coefficient(coefficient * d / (n + d));
+                    return (base ^ (n + d, *d)).with_frac(*coefficient * *d / (n + d));
                 }
                 if base.is_node(BasisOperator::Log) {
-                    return integration_by_parts(basis, &Basis::of_num(1));
+                    return integration_by_parts(basis, &Basis::from(1));
                 }
                 IntBasisNode(basis)
             }
@@ -72,7 +72,7 @@ pub fn integral(basis: &Basis) -> Basis {
                 ) =>
             {
                 // I(log(f(x))) = xlog(f(x)) - I(xf'(x)/f(x))
-                integration_by_parts(basis, &Basis::of_num(1))
+                integration_by_parts(basis, &Basis::from(1))
             }
             BasisOperator::Cos if operands[0].is_x() => {
                 // I(cos(x)) = sin(x)
@@ -84,7 +84,7 @@ pub fn integral(basis: &Basis) -> Basis {
             }
             BasisOperator::Inv => {
                 // I(f-1(x)) = xf-1(x) - I(xf-1(x))
-                integration_by_parts(basis, &Basis::of_num(1))
+                integration_by_parts(basis, &Basis::from(1))
             }
             _ => IntBasisNode(basis),
         },
@@ -101,7 +101,7 @@ fn find_basis_weight(basis: &Basis) -> i32 {
             BasisOperator::Acos | BasisOperator::Asin => 41,
             BasisOperator::Inv => 40,
             // consider inner bases ?
-            BasisOperator::Pow(n, d) if operands[0].is_x() => 30 + *n / *d,
+            BasisOperator::Pow(Fraction { n, d }) if operands[0].is_x() => 30 + *n / *d,
             BasisOperator::Cos | BasisOperator::Sin => 20,
             BasisOperator::E => 10,
             _ => 00, // Add/Minus, Mult/Div, Int are invalid here
@@ -197,7 +197,7 @@ fn substitution_integration(basis_node: &BasisNode) -> Basis {
 pub fn tabular_integration(u: &Basis, dv: &Basis) -> Basis {
     if let Basis::BasisNode(BasisNode {
         coefficient,
-        operator: BasisOperator::Pow(n, 1),
+        operator: BasisOperator::Pow(Fraction { n, d: 1 }),
         ..
     }) = u
     {
@@ -207,12 +207,12 @@ pub fn tabular_integration(u: &Basis, dv: &Basis) -> Basis {
             v = integral(&v);
             elements.push(
                 (Basis::x() ^ (n - i))
-                    .with_coefficient(*coefficient * if i % 2 == 1 { -1 } else { 1 }) // alternate minus sign
+                    .with_frac(*coefficient * if i % 2 == 1 { -1 } else { 1 }) // alternate minus sign
                     * v.clone(),
             )
         }
     }
-    Basis::zero()
+    Basis::from(0)
 }
 
 pub fn integration_by_parts(u: &Basis, dv: &Basis) -> Basis {
