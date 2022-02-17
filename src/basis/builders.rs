@@ -302,15 +302,15 @@ pub fn MultBasisNode(operands: Vec<Basis>) -> Basis {
             coefficient: 1,
             operator: BasisOperator::Div,
             operands: vec![
-                Basis::BasisNode(BasisNode {
-                    coefficient: final_coefficient.0,
-                    operator: BasisOperator::Mult,
-                    operands: if final_numerator.len() > 0 {
-                        final_numerator
-                    } else {
-                        vec![Basis::of_num(1)]
-                    },
-                }),
+                if final_numerator.len() > 0 {
+                    Basis::BasisNode(BasisNode {
+                        coefficient: final_coefficient.0,
+                        operator: BasisOperator::Mult,
+                        operands: final_numerator,
+                    })
+                } else {
+                    Basis::of_num(1)
+                },
                 if final_denominator.len() > 1 {
                     Basis::BasisNode(BasisNode {
                         coefficient: final_coefficient.1,
@@ -324,6 +324,9 @@ pub fn MultBasisNode(operands: Vec<Basis>) -> Basis {
         });
     }
 
+    if final_numerator.len() == 0 {
+        return Basis::of_num(1);
+    }
     Basis::BasisNode(BasisNode {
         coefficient: final_coefficient.0,
         operator: BasisOperator::Mult,
@@ -428,11 +431,14 @@ pub fn PowBasisNode(_n: i32, _d: i32, base: &Basis) -> Basis {
                 operands: vec![Basis::x()],
             });
         }
+        // (e^f(x))^n = e^(nf(x))
         Basis::BasisNode(BasisNode {
+            coefficient: e_coefficient,
             operator: BasisOperator::E,
-            ..
+            operands: e_operands,
         }) => {
-            return EBasisNode(Basis::x().with_coefficient(n / d));
+            return EBasisNode(e_operands[0].with_coefficient(n / d))
+                * e_coefficient.pow((n / d) as u32);
         }
         _ => {}
     }
@@ -522,16 +528,19 @@ pub fn ASinBasisNode(operand: Basis) -> Basis {
 #[allow(non_snake_case)]
 pub fn InvBasisNode(base: &Basis) -> Basis {
     match base {
-        Basis::BasisNode(basis_node) => {
+        Basis::BasisNode(BasisNode {
+            operator, operands, ..
+        }) => match operator {
             // assumes basic case of e^x
-            if basis_node.operands[0].is_node(BasisOperator::E) {
+            BasisOperator::E if operands[0].is_x() => {
                 return LogBasisNode(&Basis::x());
             }
             // assumes basic case of log(x)
-            else if basis_node.operands[0].is_node(BasisOperator::Log) {
+            BasisOperator::Log if operands[0].is_x() => {
                 return EBasisNode(Basis::x());
             }
-        }
+            _ => {}
+        },
         _ => {}
     }
 

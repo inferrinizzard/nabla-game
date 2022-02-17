@@ -41,10 +41,26 @@ impl Basis {
                 coefficient,
                 ..basis_leaf
             }),
-            Basis::BasisNode(basis_node) => Basis::BasisNode(BasisNode {
-                coefficient,
-                ..basis_node
-            }),
+            Basis::BasisNode(basis_node) => {
+                if basis_node.operator == BasisOperator::Add
+                    || basis_node.operator == BasisOperator::Minus
+                {
+                    Basis::BasisNode(BasisNode {
+                        coefficient: 1,
+                        operator: basis_node.operator,
+                        operands: basis_node
+                            .operands
+                            .iter()
+                            .map(|op| op.with_coefficient(op.coefficient() * coefficient))
+                            .collect(),
+                    })
+                } else {
+                    Basis::BasisNode(BasisNode {
+                        coefficient,
+                        ..basis_node
+                    })
+                }
+            }
         }
     }
 
@@ -254,7 +270,17 @@ impl Display for BasisNode {
                     _ => write!(f, "{}^{}", self.operands[0], exponent),
                 }
             }
-            BasisOperator::E => write!(f, "e^{}", self.operands[0]),
+            BasisOperator::E => match self.operands[0] {
+                Basis::BasisNode(BasisNode {
+                    operator:
+                        BasisOperator::Add
+                        | BasisOperator::Minus
+                        | BasisOperator::Mult
+                        | BasisOperator::Div,
+                    ..
+                }) => write!(f, "e^({})", self.operands[0]),
+                _ => write!(f, "e^{}", self.operands[0]),
+            },
             BasisOperator::Log
             | BasisOperator::Cos
             | BasisOperator::Sin
@@ -266,13 +292,18 @@ impl Display for BasisNode {
                 write!(
                     f,
                     "{}",
-                    self.operands
-                        .iter()
-                        .fold(String::new(), |acc, op| if acc == "" {
+                    self.operands.iter().fold(
+                        if self.operator == BasisOperator::Mult && self.coefficient != 1 {
+                            self.coefficient.to_string()
+                        } else {
+                            String::new()
+                        },
+                        |acc, op| if acc == "" {
                             format!("{}", op)
                         } else {
                             format!("{} {} {}", acc, self.operator, op)
-                        })
+                        }
+                    )
                 )
             }
         }

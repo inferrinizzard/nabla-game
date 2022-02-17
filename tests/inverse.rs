@@ -4,115 +4,115 @@ use nabla_game;
 
 use nabla_game::basis::builders::*;
 use nabla_game::basis::structs::*;
-use nabla_game::math::*;
+use nabla_game::math::derivative::*;
+use nabla_game::math::inverse::*;
 
 #[test]
 fn test_basic_inverses() {
-    let list = [
-        Basis::BasisCard(BasisCard::X),
-        Basis::BasisCard(BasisCard::E),
-        Basis::BasisCard(BasisCard::X2),
-        LogBasisNode(&Basis::BasisCard(BasisCard::X)),
-        SqrtBasisNode(1, &Basis::BasisCard(BasisCard::X)),
-        Basis::BasisCard(BasisCard::Sin),
-        InvBasisNode(&Basis::BasisCard(BasisCard::Cos)),
-    ];
+    let (mut a, mut b);
 
-    let inverses = [
-        Basis::BasisCard(BasisCard::X),
-        LogBasisNode(&Basis::BasisCard(BasisCard::X)),
-        SqrtBasisNode(1, &Basis::BasisCard(BasisCard::X)),
-        Basis::BasisCard(BasisCard::E),
-        Basis::BasisCard(BasisCard::X2),
-        InvBasisNode(&Basis::BasisCard(BasisCard::Sin)),
-        Basis::BasisCard(BasisCard::Cos),
-    ];
+    // test leaf num
+    a = Basis::of_num(2);
+    b = Basis::of_num(2);
+    println!("f-1({}) = {}", a, b);
+    assert_eq!(inverse(&a), b);
 
-    for (i, basis) in list.iter().enumerate() {
-        println!("f-1({:?}) = {:?}", basis, inverses[i]);
-        assert_eq!(inverse::inverse(&basis), inverses[i]);
-    }
+    // test leaf x
+    a = Basis::x();
+    b = Basis::x();
+    println!("f-1({}) = {}", a, b);
+    assert_eq!(inverse(&a), b);
+
+    // test e → log
+    a = EBasisNode(Basis::x());
+    b = LogBasisNode(&Basis::x());
+    println!("f-1({}) = {}", a, b);
+    assert_eq!(inverse(&a), b);
+
+    // test log → e
+    a = LogBasisNode(&Basis::x());
+    b = EBasisNode(Basis::x());
+    println!("f-1({}) = {}", a, b);
+    assert_eq!(inverse(&a), b);
+
+    // test powers
+    a = Basis::x() ^ 2;
+    b = Basis::x() ^ (1, 2);
+    println!("f-1({}) = {}", a, b);
+    assert_eq!(inverse(&a), b);
+
+    // test root powers
+    a = Basis::x() ^ (3, 2);
+    b = Basis::x() ^ (2, 3);
+    println!("f-1({}) = {}", a, b);
+    assert_eq!(inverse(&a), b);
+
+    // test sin, asin
+    a = SinBasisNode(Basis::x());
+    b = ASinBasisNode(Basis::x());
+    println!("f-1({}) = {}", a, b);
+    assert_eq!(inverse(&a), b);
+
+    // test cos, acos
+    a = ACosBasisNode(Basis::x());
+    b = CosBasisNode(Basis::x());
+    println!("f-1({}) = {}", a, b);
+    assert_eq!(inverse(&a), b);
+
+    // test addition
+    a = Basis::x() - Basis::of_num(1);
+    b = Basis::x() + Basis::of_num(1);
+    println!("f-1({}) = {}", a, b);
+    assert_eq!(inverse(&a), b);
 }
 
 #[test]
 fn test_complex_inverses() {
-    let list = vec![
-        PowBasisNode(2, 1, &Basis::BasisCard(BasisCard::Cos)),
-        PowBasisNode(2, 1, &Basis::BasisCard(BasisCard::E)),
-        PowBasisNode(3, 4, &Basis::BasisCard(BasisCard::X)),
-        LogBasisNode(&Basis::BasisCard(BasisCard::Cos)),
-        // ln(arccos(x))
-        LogBasisNode(&InvBasisNode(&Basis::BasisCard(BasisCard::Cos))),
-        // cos(e^x)
-        FuncBasisNode(
-            &Basis::BasisCard(BasisCard::Cos),
-            &Basis::BasisCard(BasisCard::E),
-        ),
-    ];
+    let (mut a, mut b);
 
-    let inverses = [
-        InvBasisNode(&PowBasisNode(2, 1, &Basis::BasisCard(BasisCard::Cos))),
-        LogBasisNode(&Basis::BasisCard(BasisCard::X)),
-        PowBasisNode(4, 3, &Basis::BasisCard(BasisCard::X)),
-        FuncBasisNode(
-            &InvBasisNode(&Basis::BasisCard(BasisCard::Cos)),
-            &Basis::BasisCard(BasisCard::E),
-        ),
-        FuncBasisNode(
-            &Basis::BasisCard(BasisCard::Cos),
-            &Basis::BasisCard(BasisCard::E),
-        ),
-        LogBasisNode(&InvBasisNode(&Basis::BasisCard(BasisCard::Cos))),
-    ];
+    // cos(x)^2
+    a = CosBasisNode(Basis::x()) ^ 2;
+    b = ACosBasisNode(Basis::x() ^ (1, 2));
+    println!("f-1({}) = {}", a, b);
+    assert_eq!(inverse(&a), b);
 
-    for (i, basis) in list.iter().enumerate() {
-        assert_eq!(inverse::inverse(&basis), inverses[i]);
-    }
+    // e^2x
+    a = EBasisNode(Basis::x()) ^ 2;
+    b = LogBasisNode(&(Basis::x() ^ (1, 2)));
+    println!("f-1({}) = {}", a, b);
+    assert_eq!(inverse(&a), b);
+
+    // ln(cos(x))
+    a = LogBasisNode(&CosBasisNode(Basis::x()));
+    b = ACosBasisNode(EBasisNode(Basis::x()));
+    println!("f-1({}) = {}", a, b);
+    assert_eq!(inverse(&a), b);
+
+    // asin(e^x)
+    a = ASinBasisNode(EBasisNode(Basis::x()));
+    b = LogBasisNode(&SinBasisNode(Basis::x()));
+    println!("f-1({}) = {}", a, b);
+    assert_eq!(inverse(&a), b);
 }
 
+#[ignore]
 #[test]
 fn test_inverse_derivatives() {
-    let list = [
-        // InvBasisNode(&Basis::BasisCard(BasisCard::Sin)),
-        // LogBasisNode(&InvBasisNode(&Basis::BasisCard(BasisCard::Cos))),
-        // inverse::inverse(&PowBasisNode(2, 1, &Basis::BasisCard(BasisCard::Cos))),
-    ];
+    let (mut a, mut b);
 
-    let derivatives = [
-        // DivBasisNode(
-        //     &Basis::BasisCard(BasisCard::One),
-        //     &SqrtBasisNode(
-        //         1,
-        //         &MinusBasisNode(
-        //             &Basis::BasisCard(BasisCard::One),
-        //             &PowBasisNode(2, 1, &Basis::BasisCard(BasisCard::X)),
-        //         ),
-        //     ),
-        // ),
-        // DivBasisNode(
-        //     &Basis::BasisCard(BasisCard::One),
-        //     &MultBasisNode(
-        //         &SqrtBasisNode(
-        //             1,
-        //             &MinusBasisNode(
-        //                 &Basis::BasisCard(BasisCard::One),
-        //                 &PowBasisNode(2, 1, &Basis::BasisCard(BasisCard::X)),
-        //             ),
-        //         ),
-        //         &InvBasisNode(&Basis::BasisCard(BasisCard::Cos)),
-        //     ),
-        // ),
-        // PowBasisNode(
-        //     -1,
-        //     1,
-        //     &InvBasisNode(&MultBasisNode(
-        //         &Basis::BasisCard(BasisCard::Sin),
-        //         &Basis::BasisCard(BasisCard::Cos),
-        //     )),
-        // ),
-    ];
+    a = !(CosBasisNode(Basis::x()) + EBasisNode(Basis::x()));
+    b = Basis::x();
+    println!("d/dx({}) = {}\n", a, derivative(&a));
+    // assert_eq!(derivative(&a), b);
 
-    for (i, basis) in list.iter().enumerate() {
-        assert_eq!(derivative::derivative(&basis), derivatives[i]);
-    }
+    a = !(Basis::x() * LogBasisNode(&Basis::x()));
+    b = Basis::x();
+    let da = derivative(&a);
+    println!("d/dx({}) = {}\n", a, da);
+    // assert_eq!(derivative(&a), b);
+
+    a = !(IntBasisNode(&(EBasisNode(Basis::x()) * Basis::x())));
+    b = Basis::x();
+    println!("d/dx({}) = {}\n", a, derivative(&a));
+    // assert_eq!(derivative(&a), b);
 }

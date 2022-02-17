@@ -61,7 +61,7 @@ impl Neg for Basis {
     type Output = Basis;
 
     fn neg(self) -> Basis {
-        self.with_coefficient(-1 * self.coefficient())
+        self.with_coefficient(-self.coefficient())
     }
 }
 

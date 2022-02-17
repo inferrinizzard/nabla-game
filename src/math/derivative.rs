@@ -63,9 +63,32 @@ pub fn derivative(basis: &Basis) -> Basis {
             }
             // d/dx arccos(f(x))|arcsin(f(x)) = -f'(x)/sqrt(1-f(x)^2)
             BasisOperator::Asin => Basis::x() / ((Basis::of_num(1) - Basis::x() ^ 2) ^ (1, 2)),
-            // inverse rule, d(f-1(x)) = 1/d(x)(f-1(x))
-            BasisOperator::Inv => !derivative(&operands[0]) ^ -1, // TODO: fix
+            // inverse rule, d(f-1(x)) = 1/f-1(f')(f-1(x))
+            BasisOperator::Inv => {
+                let inverse_derivative = !derivative(&operands[0]);
+                function_composition(&inverse_derivative, &operands[0]) ^ -1
+            }
             BasisOperator::Int => operands[0].clone(),
         },
     };
+}
+
+fn function_composition(f: &Basis, g: &Basis) -> Basis {
+    match f.clone() {
+        Basis::BasisLeaf(basis_leaf) => {
+            if basis_leaf.element == BasisElement::X {
+                g.clone() * basis_leaf.coefficient
+            } else {
+                f.clone()
+            }
+        }
+        Basis::BasisNode(basis_node) => Basis::BasisNode(BasisNode {
+            operands: basis_node
+                .operands
+                .iter()
+                .map(|op| function_composition(op, g))
+                .collect(),
+            ..basis_node
+        }),
+    }
 }
