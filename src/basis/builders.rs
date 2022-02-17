@@ -114,7 +114,7 @@ fn get_base(basis: &Basis) -> Option<(Basis, i32, i32)> {
             operands,
             ..
         }) => {
-            // TODO: non leaf base
+            // TODO:C non leaf base
             if let Basis::BasisLeaf(_) = &operands[0] {
                 return Some((operands[0].clone(), *n, *d));
             }
@@ -355,7 +355,7 @@ pub fn DivBasisNode(numerator: &Basis, denominator: &Basis) -> Basis {
         return Basis::zero();
     }
 
-    // TODO: if numerator or denominator include Div
+    // TODO:B if numerator or denominator include Div
 
     Basis::BasisNode(BasisNode {
         coefficient: 1,
@@ -423,7 +423,7 @@ pub fn PowBasisNode(_n: i32, _d: i32, base: &Basis) -> Basis {
             // (n, d) = simplify_fraction(n, d); // to soon be fixed, Rust 1.59+ ?
             let (new_n, new_d) = simplify_fraction(n, d);
             return Basis::BasisNode(BasisNode {
-                coefficient: base_coefficient.pow((new_n / new_d) as u32), // TODO handle roots properly here
+                coefficient: base_coefficient.pow((new_n / new_d) as u32), // TODO:C handle roots properly here
                 operator: BasisOperator::Pow(new_n, new_d),
                 operands: vec![Basis::x()],
             });
@@ -438,7 +438,7 @@ pub fn PowBasisNode(_n: i32, _d: i32, base: &Basis) -> Basis {
     }
 
     Basis::BasisNode(BasisNode {
-        coefficient: base.coefficient().pow((n / d) as u32), // TODO handle roots properly here
+        coefficient: base.coefficient().pow((n / d) as u32), // TODO:C handle roots properly here
         operator: BasisOperator::Pow(n, d),
         operands: vec![base.clone()],
     })
@@ -458,7 +458,7 @@ pub fn LogBasisNode(base: &Basis) -> Basis {
         operands: e_operands,
     }) = base
     {
-        // TODO: AddBasisNode(vec![e_operands[0], log(e_coefficient)])
+        // TODO:D AddBasisNode(vec![e_operands[0], log(e_coefficient)])
         return e_operands[0].clone();
     }
     // log(INF) = INF
@@ -470,7 +470,7 @@ pub fn LogBasisNode(base: &Basis) -> Basis {
         return Basis::inf(-1);
     }
 
-    // TODO: AddBasisNode(vec![base, log(coefficient)])
+    // TODO:D AddBasisNode(vec![base, log(coefficient)])
     Basis::BasisNode(BasisNode {
         coefficient: 1,
         operator: BasisOperator::Log,
@@ -536,7 +536,7 @@ pub fn InvBasisNode(base: &Basis) -> Basis {
     }
 
     Basis::BasisNode(BasisNode {
-        coefficient: 1, // TODO: add reciprocal coefficient here ?
+        coefficient: 1, // TODO:D add reciprocal coefficient here ?
         operator: BasisOperator::Inv,
         operands: vec![base.clone()],
     })

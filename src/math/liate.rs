@@ -1,7 +1,6 @@
 use super::super::basis::builders::*;
 use super::super::basis::structs::*;
 use super::super::math::integral::*;
-use super::super::math::*;
 
 pub fn logarithmic(basis_node: &BasisNode, u: &Basis, dv: &Basis) -> Option<Basis> {
     if basis_node
@@ -42,81 +41,49 @@ pub fn inverse(basis_node: &BasisNode, u: &Basis, dv: &Basis) -> Option<Basis> {
     None
 }
 
-pub fn algebraic(basis_node: &BasisNode, u: &Basis, dv: &Basis) -> Option<Basis> {
+pub fn algebraic(_basis_node: &BasisNode, u: &Basis, dv: &Basis) -> Option<Basis> {
     // any fractional exponent is not accepted
     if let Basis::BasisNode(BasisNode {
         operator: BasisOperator::Pow(n, 1),
         ..
-    }) = basis_node.operands[0]
+    }) = u
     {
         // skip if too complex
-        if n < 4 {
-            return Some(tabular_integration(n, dv));
-        }
-    } else if let Basis::BasisNode(BasisNode {
-        operator: BasisOperator::Pow(n, 1),
-        ..
-    }) = basis_node.operands[1]
-    {
-        // skip if too complex
-        if n < 4 {
-            return Some(tabular_integration(n, dv));
+        if *n < 4 {
+            return Some(tabular_integration(u, dv));
         }
     }
 
     None
 }
 
-pub fn trig(basis_node: &BasisNode, u: &Basis, dv: &Basis) -> Option<Basis> {
-    // TODO: rewrite this
+pub fn trig(_basis_node: &BasisNode, u: &Basis, dv: &Basis) -> Option<Basis> {
     // f(cos)sin | f(sin)cos
-    match &basis_node.operands[0] {
-        Basis::BasisNode(BasisNode {
-            operator: inner_operator,
-            operands: inner_operands,
-            ..
-        }) if (inner_operands[0].is_node(BasisOperator::Cos)
-            | inner_operands[0].is_node(BasisOperator::Sin))
-            && (basis_node.operands[1].is_node(BasisOperator::Cos)
-                | basis_node.operands[1].is_node(BasisOperator::Sin)) =>
+    if let Basis::BasisNode(BasisNode {
+        operator: inner_operator,
+        operands: inner_operands,
+        ..
+    }) = u
+    {
+        let inner_base = &inner_operands[0];
+        if (inner_base.is_node(BasisOperator::Cos) && dv.is_node(BasisOperator::Sin))
+            || (inner_base.is_node(BasisOperator::Sin) && dv.is_node(BasisOperator::Cos))
         {
-            let inner_base = &inner_operands[0];
+            let sign = if inner_base.is_node(BasisOperator::Cos) {
+                -1
+            } else {
+                1
+            };
             match inner_operator {
-                BasisOperator::Pow(n, 1) => return Some(PowBasisNode(n + 1, 1, inner_base)),
+                BasisOperator::Pow(n, 1) => return Some((inner_base.clone() ^ (n + 1)) * sign),
                 BasisOperator::Log => {
-                    return Some(MultBasisNode(vec![
-                        inner_base.clone(),
-                        MinusBasisNode(vec![LogBasisNode(inner_base), Basis::of_num(1)]),
-                    ]))
+                    return Some(
+                        (inner_base.clone() * (LogBasisNode(inner_base) - Basis::of_num(1))) * sign,
+                    )
                 }
                 _ => {}
             }
         }
-        _ => {}
-    }
-    match &basis_node.operands[1] {
-        Basis::BasisNode(BasisNode {
-            operator: inner_operator,
-            operands: inner_operands,
-            ..
-        }) if (inner_operands[0].is_node(BasisOperator::Cos)
-            | inner_operands[0].is_node(BasisOperator::Sin))
-            && (basis_node.operands[1].is_node(BasisOperator::Cos)
-                | basis_node.operands[1].is_node(BasisOperator::Sin)) =>
-        {
-            let inner_base = &inner_operands[0];
-            match inner_operator {
-                BasisOperator::Pow(n, 1) => return Some(PowBasisNode(n + 1, 1, inner_base)),
-                BasisOperator::Log => {
-                    return Some(MultBasisNode(vec![
-                        inner_base.clone(),
-                        MinusBasisNode(vec![LogBasisNode(inner_base), Basis::of_num(1)]),
-                    ]))
-                }
-                _ => {}
-            }
-        }
-        _ => {}
     }
     None
 }
@@ -124,17 +91,27 @@ pub fn trig(basis_node: &BasisNode, u: &Basis, dv: &Basis) -> Option<Basis> {
 pub fn exponential(basis_node: &BasisNode, u: &Basis, dv: &Basis) -> Option<Basis> {
     // dv is e
     if u.is_node(BasisOperator::Cos) {
-        // TODO: add 1/2 coefficient
-        return Some(MultBasisNode(vec![
-            dv.clone(),
-            AddBasisNode(vec![CosBasisNode(Basis::x()), SinBasisNode(Basis::x())]),
-        ]));
+        return Some((dv.clone() * (CosBasisNode(Basis::x()) + SinBasisNode(Basis::x()))) / 2);
     } else if u.is_node(BasisOperator::Sin) {
-        // TODO: add 1/2 coefficient
-        return Some(MultBasisNode(vec![
-            dv.clone(),
-            MinusBasisNode(vec![SinBasisNode(Basis::x()), CosBasisNode(Basis::x())]),
-        ]));
+        return Some((dv.clone() * (SinBasisNode(Basis::x()) - CosBasisNode(Basis::x()))) / 2);
+    }
+
+    if let Basis::BasisNode(BasisNode {
+        operator: BasisOperator::E,
+        operands: dv_operands,
+        ..
+    }) = dv
+    {
+        if let Basis::BasisNode(BasisNode {
+            operator: BasisOperator::Pow(n, 1),
+            ..
+        }) = dv_operands[0]
+        {
+            // x^(n-1)e^(x^n)
+            if u.is_node(BasisOperator::Pow(n - 1, 1)) {
+                return Some(dv.clone() * u.coefficient() / n);
+            }
+        }
     }
 
     None

@@ -1,77 +1,36 @@
 use std::cmp::{max, min};
-use std::collections::HashMap;
 
 use super::super::basis::builders::*;
 use super::super::basis::structs::*;
-use super::super::cards::*;
+use super::super::math::derivative::*;
 use super::super::math::*;
-
-use super::super::util::*;
-
-fn atomic_integral(basis: &BasisCard) -> Basis {
-    let integral_lookup = HashMap::from([
-        (BasisCard::E, Basis::from_card(BasisCard::E)),
-        (BasisCard::X, Basis::from_card(BasisCard::X2)),
-        (
-            BasisCard::X2,
-            PowBasisNode(3, 1, &Basis::from_card(BasisCard::X)),
-        ),
-        (BasisCard::Sin, Basis::from_card(BasisCard::Cos)),
-        (BasisCard::Cos, Basis::from_card(BasisCard::Sin)),
-        (BasisCard::One, Basis::from_card(BasisCard::X)),
-        (BasisCard::Zero, Basis::from_card(BasisCard::Zero)),
-    ]);
-    return integral_lookup[basis].clone();
-}
 
 pub fn integral(basis: &Basis) -> Basis {
     match basis {
-        // atomic_integral(&basis_card),
         Basis::BasisLeaf(basis_leaf) => match basis_leaf.element {
-            BasisElement::Num => Basis::x(), // TODO: add coefficient
-            BasisElement::X => PowBasisNode(2, 1, &Basis::x()), // TODO: add coefficient
+            BasisElement::Num => Basis::x().with_coefficient(basis_leaf.coefficient),
+            BasisElement::X => {
+                PowBasisNode(2, 1, &Basis::x()).with_coefficient(basis_leaf.coefficient / 2)
+            }
             BasisElement::Inf => basis.clone(),
         },
-        Basis::BasisNode(basis_node) => match basis_node.operator {
-            BasisOperator::Add => {
-                AddBasisNode(basis_node.operands.iter().map(|op| integral(&op)).collect())
-            }
+        Basis::BasisNode(BasisNode {
+            coefficient,
+            operator,
+            operands,
+        }) => match operator {
+            BasisOperator::Add => AddBasisNode(operands.iter().map(|op| integral(&op)).collect()),
             BasisOperator::Minus => {
-                MinusBasisNode(basis_node.operands.iter().map(|op| integral(&op)).collect())
-            }
-            BasisOperator::Pow(n, d) => {
-                let base = &basis_node.operands[0];
-                if base.is_x() {
-                    return PowBasisNode(n + d, d, base);
-                }
-                IntBasisNode(basis)
-                // match base {
-                //     // cos^n(x) | sin^n(x)
-                //     Basis::BasisNode(BasisNode {
-                //         operator: BasisOperator::Cos | BasisOperator::Sin,
-                //         ..
-                //     }) => IntBasisNode(basis),
-                //     // log^n(x)
-                //     Basis::BasisNode(BasisNode {
-                //         operator: BasisOperator::Log,
-                //         operands: inner_operands,
-                //         ..
-                //     }) if inner_operands[0].is_x() && d == 1 => {
-                //         // tabular
-                //         // integration_by_parts(basis, &Basis::BasisCard(BasisCard::One))
-                //         IntBasisNode(basis)
-                //     }
-                //     _ => IntBasisNode(basis),
-                // }
+                MinusBasisNode(operands.iter().map(|op| integral(&op)).collect())
             }
             BasisOperator::Mult | BasisOperator::Div => {
-                // TODO: edge cases
+                // TODO: support multi op
                 // cosx/x^n | sinx/x^n
-                if matches!(basis_node.operator, BasisOperator::Div)
-                    && (basis_node.operands[0].is_node(BasisOperator::Cos)
-                        | basis_node.operands[0].is_node(BasisOperator::Sin))
+                if matches!(operator, BasisOperator::Div)
+                    && (operands[0].is_node(BasisOperator::Cos)
+                        | operands[0].is_node(BasisOperator::Sin))
                 {
-                    match &basis_node.operands[1] {
+                    match &operands[1] {
                         base if base.is_x() => return IntBasisNode(basis),
                         Basis::BasisNode(BasisNode {
                             operator: BasisOperator::Pow(..),
@@ -81,55 +40,51 @@ pub fn integral(basis: &Basis) -> Basis {
                         _ => {}
                     }
                 }
-                substitution_integration(basis_node)
+                if let Basis::BasisNode(basis_node) = basis {
+                    substitution_integration(basis_node);
+                }
+                IntBasisNode(basis) // will never happen
             }
-            BasisOperator::E => {
-                if basis_node.operands[0].is_x() {
-                    return basis.clone();
+            BasisOperator::Pow(n, d) => {
+                let base = operands[0].clone();
+                if base.is_x() {
+                    return (base ^ (n + d, *d)).with_coefficient(coefficient * d / (n + d));
+                }
+                if base.is_node(BasisOperator::Log) {
+                    return integration_by_parts(basis, &Basis::of_num(1));
                 }
                 IntBasisNode(basis)
             }
-            BasisOperator::Log => {
-                let base = &basis_node.operands[0];
-                match base {
-                    // I(log(x)) = xlog(x) - x
-                    // integration_by_parts(basis, &Basis::BasisCard(BasisCard::One))
-                    base if base.is_x() => MinusBasisNode(vec![
-                        MultBasisNode(vec![Basis::x(), basis.clone()]),
-                        Basis::x(),
-                    ]),
-                    // I(log(f(x))) = xlog(f(x)) - I(xf'(x)/f(x))
-                    _ => MinusBasisNode(vec![
-                        MultBasisNode(vec![Basis::x(), base.clone()]),
-                        integral(&DivBasisNode(
-                            &MultBasisNode(vec![Basis::x(), derivative::derivative(base)]),
-                            base,
-                        )),
-                    ]),
-                }
+            BasisOperator::E if operands[0].is_x() => {
+                // I(e^nx) = (e^nx)/n
+                basis.clone() // TODO: add coefficient, basis.clone().with_coefficient(1/operands[0].coefficient())
+            }
+            BasisOperator::Log
+                if !matches!(
+                    operands[0],
+                    Basis::BasisNode(BasisNode {
+                        operator: BasisOperator::Cos
+                            | BasisOperator::Sin
+                            | BasisOperator::Acos
+                            | BasisOperator::Asin,
+                        ..
+                    })
+                ) =>
+            {
+                // I(log(f(x))) = xlog(f(x)) - I(xf'(x)/f(x))
+                integration_by_parts(basis, &Basis::of_num(1))
+            }
+            BasisOperator::Cos if operands[0].is_x() => {
+                // I(cos(x)) = sin(x)
+                SinBasisNode(Basis::x()) / operands[0].coefficient()
+            }
+            BasisOperator::Sin if operands[0].is_x() => {
+                // I(sin(x)) = -cos(x)
+                -CosBasisNode(Basis::x()) / operands[0].coefficient()
             }
             BasisOperator::Inv => {
-                let base = &basis_node.operands[0];
-                // I(arccos(x)|arcsin(x)) = x(arccos(x)|arcsin(x)) + sqrt(1-x^2)
-                if base.is_node(BasisOperator::Cos) | base.is_node(BasisOperator::Sin) {
-                    return AddBasisNode(vec![
-                        MultBasisNode(vec![Basis::x(), basis.clone()]),
-                        SqrtBasisNode(
-                            1,
-                            &MinusBasisNode(vec![
-                                Basis::of_num(1),
-                                PowBasisNode(2, 1, &Basis::x()),
-                            ]),
-                        ),
-                    ]);
-                }
-                // I(f-1(x)) = xf-1(x) - I(f)(f-1(x))
-                // TODO: fix this
-                // MinusBasisNode(vec![
-                //     MultBasisNode(vec![Basis::x(), basis.clone()]),
-                //     integral(&FuncBasisNode(&integral(base), basis)),
-                // ])
-                IntBasisNode(basis)
+                // I(f-1(x)) = xf-1(x) - I(xf-1(x))
+                integration_by_parts(basis, &Basis::of_num(1))
             }
             _ => IntBasisNode(basis),
         },
@@ -137,14 +92,13 @@ pub fn integral(basis: &Basis) -> Basis {
 }
 
 fn find_basis_weight(basis: &Basis) -> i32 {
+    // TODO: redo weight system
     match basis {
         Basis::BasisNode(BasisNode {
-            coefficient,
-            operator,
-            operands,
+            operator, operands, ..
         }) => match operator {
             BasisOperator::Log => 50,
-            BasisOperator::Acos | BasisOperator::Sin => 41,
+            BasisOperator::Acos | BasisOperator::Asin => 41,
             BasisOperator::Inv => 40,
             // consider inner bases ?
             BasisOperator::Pow(n, d) if operands[0].is_x() => 30 + *n / *d,
@@ -161,7 +115,7 @@ fn get_u_dv(
     right_operand: &Basis,
     operator: BasisOperator,
 ) -> (Basis, Basis) {
-    // TODO: support multi operators here
+    // TODO:C support multi operators here
     let left_weight = find_basis_weight(&left_operand);
     let right_weight = find_basis_weight(&right_operand);
     // choose appropriate u and v here
@@ -190,7 +144,6 @@ fn get_u_dv(
 
 fn substitution_integration(basis_node: &BasisNode) -> Basis {
     let operator = basis_node.operator;
-    // TODO: edge cases
     /*
      * x^nlogx, cosx*logx, e^x*logx → by parts
      * any arccosx|arcsinx → skip
@@ -238,39 +191,43 @@ fn substitution_integration(basis_node: &BasisNode) -> Basis {
     }
 
     panic!("Not yet implemented for basis: {}", basis_node);
-    IntBasisNode(&Basis::BasisNode(*basis_node))
+    // IntBasisNode(&Basis::BasisNode(*basis_node))
 }
 
-pub fn tabular_integration(n: i32, dv: &Basis) -> Basis {
-    let mut elements: Vec<Basis> = vec![];
-    let mut v = dv.clone();
-    for i in 0..n {
-        v = integral(&v);
-        // account for cos sin signs here later
-        elements.push(MultBasisNode(vec![
-            PowBasisNode(n - i, 1, &Basis::x()),
-            v.clone(),
-        ]))
+pub fn tabular_integration(u: &Basis, dv: &Basis) -> Basis {
+    if let Basis::BasisNode(BasisNode {
+        coefficient,
+        operator: BasisOperator::Pow(n, 1),
+        ..
+    }) = u
+    {
+        let mut elements: Vec<Basis> = vec![];
+        let mut v = dv.clone();
+        for i in 0..*n {
+            v = integral(&v);
+            elements.push(
+                (Basis::x() ^ (n - i))
+                    .with_coefficient(*coefficient * if i % 2 == 1 { -1 } else { 1 }) // alternate minus sign
+                    * v.clone(),
+            )
+        }
     }
     Basis::zero()
 }
 
 pub fn integration_by_parts(u: &Basis, dv: &Basis) -> Basis {
     let v = &integral(dv);
-    MinusBasisNode(vec![
-        MultBasisNode(vec![u.clone(), v.clone()]),
-        integral(&MultBasisNode(vec![derivative::derivative(u), v.clone()])),
-    ])
+    u.clone() * v.clone() - integral(&(derivative(u) * v.clone()))
 }
 
 fn polynomial_integration_by_parts(operands: Vec<Basis>) -> Basis {
-    // TODO: make this general
+    panic!("Not yet implemented: {:?}", operands);
+    // TODO:B make this general
     // let elements: Vec<Basis> = vec![];
     // let pointer = left_operand;
     // while matches!(pointer, Basis::BasisNode(basis_node)) {
-    //     // TODO: collect terms here
     //     break;
     // }
 
-    Basis::zero()
+    // Basis::zero()
 }

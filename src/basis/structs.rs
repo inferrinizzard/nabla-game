@@ -218,7 +218,7 @@ impl Display for BasisLeaf {
                 "{}{}",
                 if self.coefficient > 0 { "+" } else { "-" },
                 "INF"
-            ), // TODO: use sign function here
+            ),
         }
     }
 }
@@ -237,10 +237,22 @@ impl Display for BasisNode {
         match self.operator {
             BasisOperator::Div => write!(f, "({})/({})", self.operands[0], self.operands[1]),
             BasisOperator::Pow(n, d) => {
-                if d == 1 {
-                    return write!(f, "{}^{}", self.operands[0], n);
+                let exponent = if d == 1 {
+                    format!("{}", n)
+                } else {
+                    format!("({}/{})", n, d)
+                };
+                match self.operands[0] {
+                    Basis::BasisNode(BasisNode {
+                        operator:
+                            BasisOperator::Add
+                            | BasisOperator::Minus
+                            | BasisOperator::Mult
+                            | BasisOperator::Div,
+                        ..
+                    }) => write!(f, "({})^{}", self.operands[0], exponent),
+                    _ => write!(f, "{}^{}", self.operands[0], exponent),
                 }
-                write!(f, "{}^({}/{})", self.operands[0], n, d)
             }
             BasisOperator::E => write!(f, "e^{}", self.operands[0]),
             BasisOperator::Log
@@ -250,17 +262,19 @@ impl Display for BasisNode {
             | BasisOperator::Asin => write!(f, "{}({})", self.operator, self.operands[0]),
             BasisOperator::Inv => write!(f, "f-1({})", self.operands[0]),
             BasisOperator::Int => write!(f, "I({})", self.operands[0]),
-            _ => write!(
-                f,
-                "{}",
-                self.operands
-                    .iter()
-                    .fold(String::new(), |acc, op| if acc == "" {
-                        format!("{}", op)
-                    } else {
-                        format!("{} {} {}", acc, self.operator, op)
-                    })
-            ),
+            _ => {
+                write!(
+                    f,
+                    "{}",
+                    self.operands
+                        .iter()
+                        .fold(String::new(), |acc, op| if acc == "" {
+                            format!("{}", op)
+                        } else {
+                            format!("{} {} {}", acc, self.operator, op)
+                        })
+                )
+            }
         }
     }
 }

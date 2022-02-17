@@ -1,6 +1,5 @@
 use super::super::basis::builders::*;
 use super::super::basis::structs::*;
-use super::super::cards::*;
 
 pub fn logarithm(basis: &Basis) -> Basis {
     match basis {
@@ -22,8 +21,7 @@ pub fn logarithm(basis: &Basis) -> Basis {
             BasisOperator::Div => {
                 MinusBasisNode(basis_node.operands.iter().map(|op| logarithm(op)).collect())
             }
-            // TODO: add coefficients
-            BasisOperator::Pow(_, _) => logarithm(&basis_node.operands[0]),
+            BasisOperator::Pow(n, d) => logarithm(&basis_node.operands[0]) * n / d,
             BasisOperator::E => basis_node.operands[0].clone(),
             _ => LogBasisNode(basis),
         },
