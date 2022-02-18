@@ -274,7 +274,7 @@ pub fn MultBasisNode(operands: Vec<Basis>) -> Basis {
         });
 
     if final_numerator.len() == 1 && final_denominator.len() == 0 {
-        return final_numerator[0].clone();
+        return final_numerator[0].clone() * final_coefficient;
     }
 
     if final_denominator.len() > 0 {
@@ -289,7 +289,7 @@ pub fn MultBasisNode(operands: Vec<Basis>) -> Basis {
                         operands: final_numerator,
                     })
                 } else {
-                    Basis::from(1)
+                    Basis::from(final_coefficient.n)
                 },
                 if final_denominator.len() > 1 {
                     Basis::BasisNode(BasisNode {
@@ -298,14 +298,14 @@ pub fn MultBasisNode(operands: Vec<Basis>) -> Basis {
                         operands: final_denominator,
                     })
                 } else {
-                    final_denominator[0].clone()
+                    final_denominator[0].clone() * final_coefficient.d
                 },
             ],
         });
     }
 
     if final_numerator.len() == 0 {
-        return Basis::from(1);
+        return Basis::from(final_coefficient);
     }
     Basis::BasisNode(BasisNode {
         coefficient: final_coefficient,
@@ -396,7 +396,7 @@ pub fn PowBasisNode(n: i32, d: i32, base: &Basis) -> Basis {
             operator: BasisOperator::E,
             operands: e_operands,
         }) => {
-            return EBasisNode(e_operands[0].with_coefficient(n / d)) * (*e_coefficient ^ frac.n);
+            return EBasisNode(e_operands[0].clone() * frac) * (*e_coefficient ^ frac.n);
         }
         _ => {}
     }

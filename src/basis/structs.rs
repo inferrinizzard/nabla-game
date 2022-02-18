@@ -261,6 +261,20 @@ pub struct BasisNode {
 
 impl Display for BasisNode {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result {
+        if !matches!(
+            self.operator,
+            BasisOperator::Add | BasisOperator::Minus | BasisOperator::Div
+        ) {
+            // write coefficient if applicable
+            let coefficient = match self.coefficient {
+                Fraction { n: 1, d: 1 } => String::default(),
+                Fraction { n: -1, d: 1 } => String::from("-"),
+                Fraction { n, d: 1 } => format!("{}", n),
+                _ => format!("({}) * ", self.coefficient),
+            };
+            write!(f, "{}", coefficient);
+        }
+
         match self.operator {
             BasisOperator::Div => write!(f, "({})/({})", self.operands[0], self.operands[1]),
             BasisOperator::Pow(Fraction { n, d }) => {
@@ -303,18 +317,13 @@ impl Display for BasisNode {
                 write!(
                     f,
                     "{}",
-                    self.operands.iter().fold(
-                        if self.operator == BasisOperator::Mult && self.coefficient != 1 {
-                            self.coefficient.to_string()
-                        } else {
-                            String::new()
-                        },
-                        |acc, op| if acc == "" {
+                    self.operands
+                        .iter()
+                        .fold(String::new(), |acc, op| if acc == "" {
                             format!("{}", op)
                         } else {
                             format!("{} {} {}", acc, self.operator, op)
-                        }
-                    )
+                        })
                 )
             }
         }
@@ -338,7 +347,10 @@ impl PartialEq for BasisNode {
                         Basis::BasisNode(basis_node)
                             if matches!(
                                 basis_node.operator,
-                                BasisOperator::Mult | BasisOperator::Div
+                                BasisOperator::Mult
+                                    | BasisOperator::Div
+                                    | BasisOperator::Add
+                                    | BasisOperator::Minus
                             ) =>
                         {
                             nodes.push(basis_node)
@@ -357,7 +369,10 @@ impl PartialEq for BasisNode {
                         Basis::BasisNode(basis_node)
                             if matches!(
                                 basis_node.operator,
-                                BasisOperator::Mult | BasisOperator::Div
+                                BasisOperator::Mult
+                                    | BasisOperator::Div
+                                    | BasisOperator::Add
+                                    | BasisOperator::Minus
                             ) =>
                         {
                             nodes.push(basis_node)
@@ -368,9 +383,6 @@ impl PartialEq for BasisNode {
                 });
         other_string_operands.sort();
 
-        if self_string_operands != other_string_operands {
-            return false;
-        }
         // assumes no duplicates
         self_node_operands.iter().all(|self_op| {
             other_node_operands

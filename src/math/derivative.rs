@@ -1,5 +1,3 @@
-use crate::math::fraction::Fraction;
-
 use super::super::basis::builders::*;
 use super::super::basis::structs::*;
 use super::util::*;
@@ -15,7 +13,7 @@ pub fn derivative(basis: &Basis) -> Basis {
 
         // is complex basis
         Basis::BasisNode(BasisNode {
-            coefficient: _coefficient,
+            coefficient,
             operator,
             operands,
         }) => match operator {
@@ -25,51 +23,58 @@ pub fn derivative(basis: &Basis) -> Basis {
                 MinusBasisNode(operands.iter().map(|op| derivative(&op)).collect())
             }
             // product rule, udv + vdu
-            // TODO:D case for more than 1 multiplicand
             BasisOperator::Mult => {
                 let u = &operands[0];
-                let v = &operands[1];
-                AddBasisNode(vec![
-                    MultBasisNode(vec![u.clone(), derivative(v)]),
-                    MultBasisNode(vec![v.clone(), derivative(u)]),
-                ])
+                let v = MultBasisNode(operands[1..].to_vec()); // expensive
+
+                (u.clone() * derivative(&v)) + (v.clone() * derivative(u))
             }
             // quotient rule, (vdu - udv) / uu
             BasisOperator::Div => {
                 let u = &operands[0];
                 let v = &operands[1];
-                ((v.clone() * derivative(&u)) - (u.clone() * derivative(&v)))
-                    / (u.clone() * u.clone())
+                ((v.clone() * derivative(&u) * coefficient.n)
+                    - (u.clone() * derivative(&v) * coefficient.n))
+                    / (v.clone() * v.clone() * coefficient.d)
             }
             // power rule, n * x^(n-1) : preceding n is discarded
-            BasisOperator::Pow(Fraction { n, d }) => {
-                let base = &operands[0];
-                if base.is_x() {
-                    return base.clone() ^ (n - d, *d);
-                }
-                derivative(base) * (base.clone() ^ (n - d, *d))
+            BasisOperator::Pow(n) => {
+                derivative(&operands[0]) * (operands[0].clone() ^ (*n - 1)) * *n * *coefficient
             }
             // chain rule, f'(e^f(y)) = f'(y)e^f(y)
-            BasisOperator::E => derivative(&operands[0]) * EBasisNode(operands[0].clone()),
+            BasisOperator::E => {
+                derivative(&operands[0]) * EBasisNode(operands[0].clone()) * *coefficient
+            }
             // log rule, du/u
             BasisOperator::Log => {
                 let u = operands[0].clone();
-                derivative(&u) / u
+                (derivative(&u) * coefficient.n) / (u * coefficient.d)
             }
             // chain rule, f'(cos(f(y))) = -f'(y)sin(f(y))
-            BasisOperator::Cos => derivative(&operands[0]) * -SinBasisNode(operands[0].clone()),
+            BasisOperator::Cos => {
+                derivative(&operands[0]) * -SinBasisNode(operands[0].clone()) * *coefficient
+            }
             // chain rule, f'(sin(f(y))) = f'(y)cos(f(y))
-            BasisOperator::Sin => derivative(&operands[0]) * CosBasisNode(operands[0].clone()),
+            BasisOperator::Sin => {
+                derivative(&operands[0]) * CosBasisNode(operands[0].clone()) * *coefficient
+            }
             // d/dx arccos(f(x))|arcsin(f(x)) = -f'(x)/sqrt(1-f(x)^2)
-            BasisOperator::Acos => -Basis::x() / ((Basis::from(1) - Basis::x() ^ 2) ^ (1, 2)),
+            BasisOperator::Acos => {
+                (-operands[0].clone() * coefficient.n)
+                    / (((Basis::from(1) - (operands[0].clone() ^ 2)) ^ (1, 2)) * coefficient.d)
+            }
             // d/dx arccos(f(x))|arcsin(f(x)) = -f'(x)/sqrt(1-f(x)^2)
-            BasisOperator::Asin => Basis::x() / ((Basis::from(1) - Basis::x() ^ 2) ^ (1, 2)),
+            BasisOperator::Asin => {
+                (operands[0].clone() * coefficient.n)
+                    / (((Basis::from(1) - (operands[0].clone() ^ 2)) ^ (1, 2)) * coefficient.d)
+            }
             // inverse rule, d(f-1(x)) = 1/f-1(f')(f-1(x))
             BasisOperator::Inv => {
                 let inverse_derivative = !derivative(&operands[0]);
-                function_composition(&inverse_derivative, &operands[0]) ^ -1
+                function_composition(&inverse_derivative, &operands[0]) / coefficient.d
+                    * coefficient.n
             }
-            BasisOperator::Int => operands[0].clone(),
+            BasisOperator::Int => operands[0].clone() * *coefficient,
         },
     };
 }
