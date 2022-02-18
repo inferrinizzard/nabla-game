@@ -77,8 +77,6 @@ fn test_basic_liminfsup() {
         (Basis::x(), Basis::inf(1)),
         (Basis::from(1), Basis::from(1)),
         (Basis::from(0), Basis::from(0)),
-        (CosBasisNode(Basis::x()), Basis::from(1)),
-        (SinBasisNode(Basis::x()), Basis::from(1)),
     ]);
 
     for (key, value) in liminfsup_map.iter() {
@@ -87,6 +85,29 @@ fn test_basic_liminfsup() {
         println!("limsup, x→INF({}) = {}", key, value);
         assert_eq!(limsup_function(&key).unwrap(), *value);
     }
+    let (mut a, mut b);
+
+    // test cos limsup
+    a = CosBasisNode(Basis::x());
+    b = Basis::from(1);
+    println!("limsup, x→INF({}) = {}", a, b);
+    assert_eq!(limsup_function(&a).unwrap(), b);
+
+    // test cos liminf
+    b = Basis::from(-1);
+    println!("liminf, x→INF({}) = {}", a, b);
+    assert_eq!(liminf_function(&a).unwrap(), b);
+
+    // test sin limsup
+    a = SinBasisNode(Basis::x());
+    b = Basis::from(1);
+    println!("limsup, x→INF({}) = {}", a, b);
+    assert_eq!(limsup_function(&a).unwrap(), b);
+
+    // test sin liminf
+    b = Basis::from(-1);
+    println!("liminf, x→INF({}) = {}", a, b);
+    assert_eq!(liminf_function(&a).unwrap(), b);
 }
 
 #[test]

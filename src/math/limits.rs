@@ -1,6 +1,6 @@
-use super::super::basis::structs::*;
-use super::super::cards::*;
-use crate::math::fraction::Fraction;
+use super::super::cards::LimitCard;
+use crate::basis::builders::{AddBasisNode, MinusBasisNode, MultBasisNode, PowBasisNode};
+use crate::basis::structs::*;
 
 fn limit_arccos_arcsin(
     limit_card: &LimitCard,
@@ -52,40 +52,14 @@ pub fn limit(_limit_card: &LimitCard) -> impl Fn(&Basis) -> Option<Basis> {
                 }),
                 _ => Some(basis.clone()),
             },
-            // TODO: coefficients
             Basis::BasisNode(BasisNode {
-                operator, operands, ..
+                coefficient,
+                operator,
+                operands,
             }) => {
-                if matches!(limit_card, LimitCard::LimPosInf | LimitCard::LimNegInf)
-                    && matches!(operator, BasisOperator::Cos | BasisOperator::Sin)
-                {
-                    return None; // invalid limit (ie. oscillating function)
-                }
-                if matches!(limit_card, LimitCard::Lim0)
-                    && matches!(operator, BasisOperator::Pow(Fraction { n: -1, d: 1 }))
-                {
-                    return None; // invalid limit (1/0)
-                }
+                let base_limit = limit(&limit_card)(&operands[0]);
                 match operator {
-                    BasisOperator::Acos | BasisOperator::Asin => {
-                        let operand_limit =
-                            // limit(&limit_card)(&Basis::BasisCard(BasisCard::X))?.resolve();
-                            limit(&limit_card)(&Basis::x()).unwrap();
-                        return limit_arccos_arcsin(&limit_card, &operands[0], operand_limit);
-                    }
-                    BasisOperator::Inv => {
-                        panic!(
-                            "Not yet implemented: {} of {} ({:?})",
-                            limit_card, basis, basis
-                        );
-                        // Some(Basis::from(0))
-                    }
-                    BasisOperator::Int => {
-                        // assume that the limits of integration are from 0 to x for INF, x to 0 for -INF, what for 0?
-                        let res = integral_limit(basis);
-                        Some(Basis::from(0))
-                    }
-                    _ => {
+                    BasisOperator::Add | BasisOperator::Minus | BasisOperator::Mult => {
                         let operand_limits = operands
                             .iter()
                             .map(|op| limit(&limit_card)(op))
@@ -93,15 +67,120 @@ pub fn limit(_limit_card: &LimitCard) -> impl Fn(&Basis) -> Option<Basis> {
                         if operand_limits.iter().any(|op| op.is_none()) {
                             return None; // bubble up invalid limit
                         }
-                        // TODO: fix coefficient
-                        Some(Basis::BasisNode(BasisNode {
-                            coefficient: Fraction::from(1),
-                            operator: *operator,
-                            operands: operand_limits
-                                .iter()
-                                .map(|op| op.as_ref().unwrap().clone())
-                                .collect(),
-                        }))
+
+                        // short circuit 0 or INF or -INF
+                        let try_inf = operand_limits.iter().find(|op| {
+                            op.as_ref().unwrap().is_inf(1)
+                                || op.as_ref().unwrap().is_inf(-1)
+                                || (*operator == BasisOperator::Mult
+                                    && op.as_ref().unwrap().is_num(0))
+                        });
+                        if try_inf.is_some() {
+                            return Some(try_inf.unwrap().as_ref().unwrap().clone());
+                        }
+
+                        let unwrapped_operands = operand_limits
+                            .iter()
+                            .map(|op| op.as_ref().unwrap().clone())
+                            .collect();
+                        Some(
+                            match operator {
+                                BasisOperator::Mult => MultBasisNode(unwrapped_operands),
+                                BasisOperator::Add => AddBasisNode(unwrapped_operands),
+                                _ => unreachable!("Tried: limit {} of {}", limit_card, operator),
+                            } * *coefficient,
+                        )
+                    }
+                    BasisOperator::Div => {
+                        let denominator_limit = limit(&limit_card)(&operands[1]);
+                        if denominator_limit.as_ref().unwrap().is_num(0)
+                            || denominator_limit.is_none()
+                        {
+                            return None; // invalid limit, (1/0)
+                        } else if denominator_limit.as_ref().unwrap().is_inf(1)
+                            || denominator_limit.as_ref().unwrap().is_inf(-1)
+                        {
+                            return Some(Basis::from(0));
+                        } else if base_limit.is_none() {
+                            return None;
+                        } else if base_limit.as_ref().unwrap().is_inf(-1)
+                            || base_limit.as_ref().unwrap().is_inf(-1)
+                            || base_limit.as_ref().unwrap().is_num(0)
+                        {
+                            return base_limit;
+                        }
+                        Some(Basis::from(
+                            *coefficient * base_limit.unwrap().coefficient()
+                                / denominator_limit.unwrap().coefficient(),
+                        ))
+                    }
+                    BasisOperator::Pow(frac) => {
+                        if base_limit.is_none()
+                            || base_limit.as_ref().unwrap().is_num(0) && frac.n < 0
+                        {
+                            return None; // invalid limit (1/0)
+                        }
+                        if base_limit.as_ref().unwrap().is_inf(1)
+                            || base_limit.as_ref().unwrap().is_inf(-1)
+                        {
+                            return Some(PowBasisNode(frac.n, frac.d, &base_limit.unwrap()));
+                        }
+                        Some(Basis::from(*coefficient)) // should be coefficient * e^(some constant)
+                    }
+                    BasisOperator::E => {
+                        if base_limit.is_none() {
+                            return None;
+                        }
+                        if base_limit.as_ref().unwrap().is_inf(1) {
+                            return Some(Basis::inf(1));
+                        } else if base_limit.as_ref().unwrap().is_inf(-1) {
+                            return Some(Basis::from(0));
+                        }
+                        Some(Basis::from(*coefficient)) // should be coefficient * e^(some constant)
+                    }
+                    BasisOperator::Log => {
+                        if base_limit.is_none() || base_limit.as_ref().unwrap().is_inf(-1) {
+                            return None; // invalid limit (log(-INF))
+                        } else if base_limit.as_ref().unwrap().is_inf(1) {
+                            return Some(Basis::inf(1));
+                        } else if base_limit.as_ref().unwrap().is_num(0) {
+                            return Some(Basis::inf(-1));
+                        }
+                        Some(Basis::from(*coefficient)) // should be coefficient * log(some constant)
+                    }
+                    BasisOperator::Cos | BasisOperator::Sin => {
+                        if matches!(limit_card, LimitCard::LimPosInf | LimitCard::LimNegInf) {
+                            return None; // invalid limit (oscillating function)
+                        } else if matches!(limit_card, LimitCard::Limsup) {
+                            return Some(Basis::from(*coefficient));
+                        } else if matches!(limit_card, LimitCard::Liminf) {
+                            return Some(Basis::from(-*coefficient));
+                        } else if base_limit.as_ref().unwrap().is_num(0) {
+                            if *operator == BasisOperator::Cos {
+                                return Some(Basis::from(*coefficient));
+                            } else {
+                                return Some(Basis::from(0));
+                            }
+                        }
+                        Some(Basis::from(*coefficient)) // coefficient * some cos(n) | sin(n)
+                    }
+                    BasisOperator::Acos | BasisOperator::Asin => {
+                        // find nested limit
+                        let operand_limit = limit(&limit_card)(&Basis::x()).unwrap();
+                        return limit_arccos_arcsin(&limit_card, &operands[0], operand_limit);
+                    }
+                    BasisOperator::Inv => {
+                        unimplemented!(
+                            "Not yet implemented: {} of {} ({:?})",
+                            limit_card,
+                            basis,
+                            basis
+                        );
+                    }
+                    BasisOperator::Int => {
+                        // assume that the limits of integration are from 0 to x for INF, x to 0 for -INF, what for 0?
+                        let res = integral_limit(basis);
+                        Some(Basis::from(0))
                     }
                 }
             }

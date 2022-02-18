@@ -10,8 +10,8 @@ use crate::math::liate;
 pub fn integral(basis: &Basis) -> Basis {
     match basis {
         Basis::BasisLeaf(basis_leaf) => match basis_leaf.element {
-            BasisElement::Num => Basis::x().with_frac(basis_leaf.coefficient),
-            BasisElement::X => (Basis::x() ^ 2).with_frac(basis_leaf.coefficient / 2),
+            BasisElement::Num => Basis::x() * basis_leaf.coefficient,
+            BasisElement::X => (Basis::x() ^ 2) * (basis_leaf.coefficient / 2),
             BasisElement::Inf => basis.clone(),
         },
         Basis::BasisNode(BasisNode {
@@ -20,8 +20,10 @@ pub fn integral(basis: &Basis) -> Basis {
             operands,
         }) => match operator {
             BasisOperator::Add => AddBasisNode(operands.iter().map(|op| integral(&op)).collect()),
+            //  AddBasisNode(operands.iter().map(|op| coefficient * integral(&op)).collect()),
             BasisOperator::Minus => {
                 MinusBasisNode(operands.iter().map(|op| integral(&op)).collect())
+                // MinusBasisNode(operands.iter().map(|op| coefficient * integral(&op)).collect())
             }
             BasisOperator::Mult | BasisOperator::Div => {
                 // TODO: support multi op
@@ -43,7 +45,7 @@ pub fn integral(basis: &Basis) -> Basis {
                 if let Basis::BasisNode(basis_node) = basis {
                     substitution_integration(basis_node);
                 }
-                IntBasisNode(basis) // will never happen
+                unreachable!("Tried: integral of {:?} with operator {}", basis, operator)
             }
             BasisOperator::Pow(Fraction { n, d }) => {
                 let base = operands[0].clone();
@@ -53,11 +55,11 @@ pub fn integral(basis: &Basis) -> Basis {
                 if base.is_node(BasisOperator::Log) {
                     return integration_by_parts(basis, &Basis::from(1));
                 }
-                IntBasisNode(basis)
+                IntBasisNode(basis) * *coefficient
             }
             BasisOperator::E if operands[0].is_x() => {
                 // I(e^nx) = (e^nx)/n
-                basis.clone() // TODO: add coefficient, basis.clone().with_coefficient(1/operands[0].coefficient())
+                basis.clone() / operands[0].coefficient() * *coefficient
             }
             BasisOperator::Log
                 if !matches!(
@@ -76,17 +78,17 @@ pub fn integral(basis: &Basis) -> Basis {
             }
             BasisOperator::Cos if operands[0].is_x() => {
                 // I(cos(x)) = sin(x)
-                SinBasisNode(Basis::x()) / operands[0].coefficient()
+                SinBasisNode(operands[0].clone()) / operands[0].coefficient()
             }
             BasisOperator::Sin if operands[0].is_x() => {
                 // I(sin(x)) = -cos(x)
-                -CosBasisNode(Basis::x()) / operands[0].coefficient()
+                -CosBasisNode(operands[0].clone()) / operands[0].coefficient()
             }
             BasisOperator::Inv => {
                 // I(f-1(x)) = xf-1(x) - I(xf-1(x))
                 integration_by_parts(basis, &Basis::from(1))
             }
-            _ => IntBasisNode(basis),
+            _ => IntBasisNode(basis) * *coefficient,
         },
     }
 }
@@ -157,10 +159,11 @@ fn substitution_integration(basis_node: &BasisNode) -> Basis {
         .operands
         .iter()
         .any(|op| op.is_node(BasisOperator::Mult) || op.is_node(BasisOperator::Div))
+        || basis_node.operands.len() > 2
     {
-        // maybe just skip here
-        // return IntBasisNode(&Basis::BasisNode(*basis_node));
-        return polynomial_integration_by_parts(basis_node.operands.clone());
+        return IntBasisNode(&Basis::BasisNode(basis_node.clone()));
+        // turn on with flag
+        // return polynomial_integration_by_parts(basis_node.operands.clone());
     }
 
     let (u, dv) = get_u_dv(&basis_node.operands[0], &basis_node.operands[1], operator);
@@ -190,8 +193,8 @@ fn substitution_integration(basis_node: &BasisNode) -> Basis {
         return exponential.unwrap();
     }
 
-    panic!("Not yet implemented for basis: {}", basis_node);
-    // IntBasisNode(&Basis::BasisNode(*basis_node))
+    println!("Not yet implemented for basis: {:?}", basis_node);
+    IntBasisNode(&Basis::BasisNode(basis_node.clone()))
 }
 
 pub fn tabular_integration(u: &Basis, dv: &Basis) -> Basis {
@@ -221,7 +224,7 @@ pub fn integration_by_parts(u: &Basis, dv: &Basis) -> Basis {
 }
 
 fn polynomial_integration_by_parts(operands: Vec<Basis>) -> Basis {
-    panic!("Not yet implemented: {:?}", operands);
+    unimplemented!("Not yet implemented: {:?}", operands);
     // TODO:B make this general
     // let elements: Vec<Basis> = vec![];
     // let pointer = left_operand;

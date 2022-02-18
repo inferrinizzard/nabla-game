@@ -19,6 +19,7 @@ pub fn logarithmic(basis_node: &BasisNode, u: &Basis, dv: &Basis) -> Option<Basi
 
 pub fn inv_trig(basis_node: &BasisNode) -> Option<Basis> {
     // current temp short circuit
+    // turn on with flag
     if basis_node
         .operands
         .iter()
@@ -51,6 +52,7 @@ pub fn algebraic(_basis_node: &BasisNode, u: &Basis, dv: &Basis) -> Option<Basis
     }) = u
     {
         // skip if too complex
+        // turn on with flag
         if *n < 4 {
             return Some(tabular_integration(u, dv));
         }
