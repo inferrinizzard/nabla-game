@@ -112,7 +112,7 @@ fn select_turn_phase(select_operator: Card, (id_key, id_val): (String, usize)) {
                 && game.field[id_val].basis.is_none()
                 && !matches!(basis_card, BasisCard::Zero)
             {
-                game.field[id_val] = FieldBasis::new(&Basis::from_card(basis_card));
+                game.field[id_val] = FieldBasis::new(&Basis::from(basis_card));
                 end_turn();
             }
         }
@@ -237,7 +237,7 @@ fn multi_select_phase(multi_operator: Card, id: String, player_num: u32) {
                             // skip the mult_operator
                             return None;
                         } else if let Card::BasisCard(basis_card) = player[sel_val] {
-                            return Some(Basis::from_card(basis_card));
+                            return Some(Basis::from(basis_card));
                         }
                     }
                     panic!("invalid card selected! {}", sel_id);

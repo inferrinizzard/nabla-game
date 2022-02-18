@@ -32,14 +32,20 @@ impl Mul<Basis> for i32 {
     type Output = Basis;
 
     fn mul(self, right: Basis) -> Basis {
-        right.with_frac(right.coefficient() * self)
+        right.mul(self)
     }
 }
 impl Mul<i32> for Basis {
     type Output = Self;
-
     fn mul(self, right: i32) -> Self {
-        self.with_frac(self.coefficient() * right)
+        match self {
+            Basis::BasisNode(BasisNode {
+                operator, operands, ..
+            }) if matches!(operator, BasisOperator::Add | BasisOperator::Minus) => {
+                AddBasisNode(operands.iter().map(|op| op.clone() * right).collect())
+            }
+            _ => self.with_frac(self.coefficient() * right),
+        }
     }
 }
 impl Mul<(i32, i32)> for Basis {

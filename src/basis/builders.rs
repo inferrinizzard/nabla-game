@@ -24,12 +24,7 @@ pub fn AddBasisNode(operands: Vec<Basis>) -> Basis {
         }) = op
         {
             acc.push(minus_operands[0].clone());
-            acc.extend(
-                minus_operands
-                    .iter()
-                    .skip(1)
-                    .map(|minus_op| -minus_op.clone()),
-            );
+            acc.extend(minus_operands[1..].iter().map(|minus_op| -minus_op.clone()));
         } else {
             acc.push(op.clone());
         }
@@ -70,6 +65,9 @@ pub fn AddBasisNode(operands: Vec<Basis>) -> Basis {
         acc
     });
 
+    if final_operands.len() == 0 {
+        return Basis::from(0);
+    }
     if final_operands.len() == 1 {
         return final_operands[0].clone();
     }

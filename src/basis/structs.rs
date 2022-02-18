@@ -11,25 +11,6 @@ pub enum Basis {
 }
 
 impl Basis {
-    // pub fn resolve(self) -> Basis {
-    //     match self {
-    //         Basis::BasisLeaf(_) => self,
-    //         Basis::BasisNode(BasisNode { operator, operands }) => {
-    //             let _operands = operands.iter().map(|op| op.clone().resolve()).collect();
-    //             match operator {
-    //                 BasisOperator::Add => AddBasisNode(_operands),
-    //                 BasisOperator::Minus => MinusBasisNode(_operands),
-    //                 BasisOperator::Mult => MultBasisNode(_operands),
-    //                 BasisOperator::Div => DivBasisNode(&_operands[0], &_operands[1]), // TODO: fix this
-    //                 BasisOperator::Log => LogBasisNode(&_operands[0]),
-    //                 BasisOperator::Inv => InvBasisNode(&_operands[0]),
-    //                 BasisOperator::Func => FuncBasisNode(&_operands[0], &_operands[1]), // TODO: fix this
-    //                 BasisOperator::Pow(n, d) => PowBasisNode(n, d, &_operands[0]),
-    //                 BasisOperator::Int => IntBasisNode(&_operands[0]),
-    //             }
-    //         }
-    //     }
-    // }
     pub fn coefficient(&self) -> Fraction {
         match self {
             Basis::BasisLeaf(basis_leaf) => basis_leaf.coefficient,
@@ -65,34 +46,6 @@ impl Basis {
                     })
                 }
             }
-        }
-    }
-
-    pub fn from_card(card: BasisCard) -> Basis {
-        match card {
-            BasisCard::Zero => Basis::from(0),
-            BasisCard::One => Basis::from(1),
-            BasisCard::X => Basis::x(),
-            BasisCard::X2 => Basis::BasisNode(BasisNode {
-                coefficient: Fraction::from(1),
-                operator: BasisOperator::Pow(Fraction { n: 2, d: 1 }),
-                operands: vec![Basis::x()],
-            }),
-            BasisCard::Cos => Basis::BasisNode(BasisNode {
-                coefficient: Fraction::from(1),
-                operator: BasisOperator::Cos,
-                operands: vec![Basis::x()],
-            }),
-            BasisCard::Sin => Basis::BasisNode(BasisNode {
-                coefficient: Fraction::from(1),
-                operator: BasisOperator::Sin,
-                operands: vec![Basis::x()],
-            }),
-            BasisCard::E => Basis::BasisNode(BasisNode {
-                coefficient: Fraction::from(1),
-                operator: BasisOperator::E,
-                operands: vec![Basis::x()],
-            }),
         }
     }
 
@@ -160,6 +113,35 @@ impl Basis {
     }
 }
 
+impl From<BasisCard> for Basis {
+    fn from(card: BasisCard) -> Self {
+        match card {
+            BasisCard::Zero => Basis::from(0),
+            BasisCard::One => Basis::from(1),
+            BasisCard::X => Basis::x(),
+            BasisCard::X2 => Basis::BasisNode(BasisNode {
+                coefficient: Fraction::from(1),
+                operator: BasisOperator::Pow(Fraction { n: 2, d: 1 }),
+                operands: vec![Basis::x()],
+            }),
+            BasisCard::Cos => Basis::BasisNode(BasisNode {
+                coefficient: Fraction::from(1),
+                operator: BasisOperator::Cos,
+                operands: vec![Basis::x()],
+            }),
+            BasisCard::Sin => Basis::BasisNode(BasisNode {
+                coefficient: Fraction::from(1),
+                operator: BasisOperator::Sin,
+                operands: vec![Basis::x()],
+            }),
+            BasisCard::E => Basis::BasisNode(BasisNode {
+                coefficient: Fraction::from(1),
+                operator: BasisOperator::E,
+                operands: vec![Basis::x()],
+            }),
+        }
+    }
+}
 impl From<Fraction> for Basis {
     fn from(frac: Fraction) -> Self {
         Basis::BasisLeaf(BasisLeaf {
