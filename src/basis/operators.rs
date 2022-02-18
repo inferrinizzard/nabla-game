@@ -28,6 +28,13 @@ impl Mul<Basis> for Basis {
         MultBasisNode(vec![self, right])
     }
 }
+impl Mul<Basis> for i32 {
+    type Output = Basis;
+
+    fn mul(self, right: Basis) -> Basis {
+        right.with_frac(right.coefficient() * self)
+    }
+}
 impl Mul<i32> for Basis {
     type Output = Basis;
 

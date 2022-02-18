@@ -1,11 +1,9 @@
-use std::collections::HashMap;
-
 use nabla_game;
 
 use nabla_game::basis::builders::*;
 use nabla_game::basis::structs::*;
-use nabla_game::math::derivative::*;
-use nabla_game::math::inverse::*;
+use nabla_game::math::derivative::derivative;
+use nabla_game::math::inverse::inverse;
 
 #[test]
 fn test_basic_inverses() {
@@ -103,16 +101,16 @@ fn test_inverse_derivatives() {
     a = !(CosBasisNode(Basis::x()) + EBasisNode(Basis::x()));
     b = Basis::x();
     println!("d/dx({}) = {}\n", a, derivative(&a));
-    // assert_eq!(derivative(&a), b);
+    assert_eq!(derivative(&a), b);
 
     a = !(Basis::x() * LogBasisNode(&Basis::x()));
     b = Basis::x();
     let da = derivative(&a);
     println!("d/dx({}) = {}\n", a, da);
-    // assert_eq!(derivative(&a), b);
+    assert_eq!(derivative(&a), b);
 
     a = !(IntBasisNode(&(EBasisNode(Basis::x()) * Basis::x())));
     b = Basis::x();
     println!("d/dx({}) = {}\n", a, derivative(&a));
-    // assert_eq!(derivative(&a), b);
+    assert_eq!(derivative(&a), b);
 }

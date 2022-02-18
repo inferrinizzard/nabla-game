@@ -1,43 +1,34 @@
-use std::collections::HashMap;
-
 use nabla_game;
 
 use nabla_game::basis::builders::*;
-use nabla_game::basis::structs::*;
-use nabla_game::math::*;
+use nabla_game::basis::structs::Basis;
+use nabla_game::math::logarithm::logarithm;
 
 #[test]
 fn test_logarithm() {
-    assert_eq!(
-        logarithm::logarithm(&Basis::BasisCard(BasisCard::E)),
-        Basis::BasisCard(BasisCard::X)
-    );
-    assert_eq!(
-        logarithm::logarithm(&Basis::BasisCard(BasisCard::X2)),
-        LogBasisNode(&Basis::BasisCard(BasisCard::X))
-    );
+    let (mut a, mut b);
 
-    let mult_test = MultBasisNode(vec![
-        Basis::BasisCard(BasisCard::X),
-        Basis::BasisCard(BasisCard::E),
-    ]);
-    assert_eq!(
-        logarithm::logarithm(&mult_test),
-        AddBasisNode(vec![
-            LogBasisNode(&Basis::BasisCard(BasisCard::X)),
-            Basis::BasisCard(BasisCard::X)
-        ])
-    );
+    // test cancel E
+    a = EBasisNode(Basis::x());
+    b = Basis::x();
+    println!("log({}) = {}", a, b);
+    assert_eq!(logarithm(&a), b);
 
-    let div_test = DivBasisNode(
-        &Basis::BasisCard(BasisCard::Cos),
-        &Basis::BasisCard(BasisCard::X2),
-    );
-    assert_eq!(
-        logarithm::logarithm(&div_test),
-        MinusBasisNode(vec![
-            LogBasisNode(&Basis::BasisCard(BasisCard::Cos)),
-            LogBasisNode(&Basis::BasisCard(BasisCard::X))
-        ])
-    );
+    // test pow rule
+    a = Basis::x() ^ 2;
+    b = 2 * LogBasisNode(&Basis::x());
+    println!("log({}) = {}", a, b);
+    assert_eq!(logarithm(&a), b);
+
+    // test mult rule
+    a = Basis::x() * EBasisNode(Basis::x());
+    b = LogBasisNode(&Basis::x()) + Basis::x();
+    println!("log({}) = {}", a, b);
+    assert_eq!(logarithm(&a), b);
+
+    // test div rule
+    a = CosBasisNode(Basis::x()) / (Basis::x() ^ 2);
+    b = LogBasisNode(&CosBasisNode(Basis::x())) - (2 * LogBasisNode(&Basis::x()));
+    println!("log({}) = {}", a, b);
+    assert_eq!(logarithm(&a), b);
 }
