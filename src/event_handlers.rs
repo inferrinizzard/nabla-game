@@ -1,3 +1,5 @@
+use std::cmp::min;
+
 use wasm_bindgen::prelude::*;
 use web_sys::*;
 
@@ -80,10 +82,11 @@ fn idle_turn_phase(card: Card) {
             }
         }
         Card::DerivativeCard(derivative_card)
-            if matches!(
-                derivative_card,
-                DerivativeCard::Laplacian | DerivativeCard::Nabla
-            ) =>
+            if (game.turn.number == 1 && matches!(derivative_card, DerivativeCard::Nabla))
+                || matches!(
+                    derivative_card,
+                    DerivativeCard::Laplacian | DerivativeCard::Nabla
+                ) =>
         {
             // field select
             next_phase(TurnPhase::FIELD_SELECT(Card::DerivativeCard(
@@ -127,7 +130,7 @@ fn select_turn_phase(select_operator: Card, (id_key, id_val): (String, usize)) {
                     let selected_field_basis = &mut game.field[id_val];
                     let result_basis =
                         apply_card(&operator_card)(selected_field_basis.basis.as_ref().unwrap());
-                    if result_basis.is_num(0) {
+                    if result_basis.is_num(0) || result_basis.is_inf(1) || result_basis.is_inf(-1) {
                         game.field[id_val] = FieldBasis::none();
                     } else {
                         game.field[id_val] = FieldBasis::new(&result_basis);
@@ -293,10 +296,8 @@ fn end_turn() {
 
     let deck = &mut game.deck;
     // replenish from deck if possible
-    for _ in player.len()..7 {
-        if deck.len() > 0 {
-            player.push(deck.pop().unwrap());
-        }
+    for _ in player.len()..min(deck.len(), 7) {
+        player.push(deck.pop().unwrap());
     }
     next_turn();
 }
