@@ -1,6 +1,9 @@
-use super::super::cards::LimitCard;
-use crate::basis::builders::{AddBasisNode, MultBasisNode};
-use crate::basis::structs::*;
+use crate::cards::LimitCard;
+
+use crate::basis::{
+    builders::{AddBasisNode, MultBasisNode},
+    structs::*,
+};
 
 fn limit_arccos_arcsin(
     limit_card: &LimitCard,

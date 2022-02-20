@@ -1,7 +1,7 @@
 use std::fmt::{Display, Formatter, Result};
 
-use super::super::cards::*;
-use super::super::math::fraction::*;
+use crate::cards::BasisCard;
+use crate::math::fraction::Fraction;
 
 // type union of the starter basis or complex basis
 #[derive(Clone, Debug, Hash, Eq, PartialEq)]
@@ -254,7 +254,7 @@ impl Display for BasisNode {
                 Fraction { n, d: 1 } => format!("{}", n),
                 _ => format!("({}) * ", self.coefficient),
             };
-            write!(f, "{}", coefficient);
+            write!(f, "{}", coefficient).ok();
         }
 
         match self.operator {

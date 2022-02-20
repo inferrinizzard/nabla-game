@@ -1,4 +1,4 @@
-use super::super::basis::structs::*;
+use crate::basis::structs::*;
 
 pub fn function_composition(f: &Basis, g: &Basis) -> Basis {
     match f.clone() {

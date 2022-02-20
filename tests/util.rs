@@ -1,5 +1,4 @@
-use nabla_game::basis::builders::*;
-use nabla_game::basis::structs::*;
+use nabla_game::basis::{builders::*, structs::*};
 
 pub fn sin_x() -> Basis {
     sin(&Basis::x())

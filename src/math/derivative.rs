@@ -1,5 +1,5 @@
-use super::super::basis::builders::*;
-use super::super::basis::structs::*;
+use crate::basis::{builders::*, structs::*};
+
 use super::util::*;
 
 pub fn derivative(basis: &Basis) -> Basis {

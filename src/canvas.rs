@@ -1,5 +1,5 @@
 use gloo::events::EventListener;
-use wasm_bindgen::{prelude::*, JsCast};
+use wasm_bindgen::JsCast;
 use web_sys::*;
 
 use std::collections::HashMap;

@@ -1,8 +1,9 @@
-use crate::math::logarithm::logarithm;
 use std::collections::HashMap;
 
-use super::super::math::fraction::*;
 use super::structs::*;
+
+use crate::math::fraction::Fraction;
+use crate::math::logarithm::logarithm;
 
 #[allow(non_snake_case)]
 pub fn AddBasisNode(operands: Vec<Basis>) -> Basis {

@@ -1,7 +1,5 @@
 use nabla_game;
-
-use nabla_game::basis::builders::*;
-use nabla_game::basis::structs::*;
+use nabla_game::basis::{builders::*, structs::*};
 use nabla_game::math::fraction::Fraction;
 
 pub mod util;

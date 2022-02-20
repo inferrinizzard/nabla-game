@@ -1,12 +1,10 @@
 use js_sys::Array;
-use wasm_bindgen::{prelude::*, JsCast};
-use web_sys::*;
+use wasm_bindgen::prelude::*;
 
 use rand::Rng;
 use std::collections::HashMap;
 
 use super::util::*;
-use super::{basis::*, cards::*};
 use super::{CANVAS, GAME};
 
 pub fn draw() {

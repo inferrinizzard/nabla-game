@@ -1,7 +1,6 @@
 use std::cmp::{max, min};
 
-use super::super::basis::builders::*;
-use super::super::basis::structs::*;
+use crate::basis::{builders::*, structs::*};
 
 use crate::math::derivative::derivative;
 use crate::math::fraction::Fraction;

@@ -1,7 +1,7 @@
 use std::ops::{Add, BitXor, Div, Mul, Neg, Not, Sub};
 
-use super::builders::*;
-use super::structs::*;
+use super::{builders::*, structs::*};
+
 use crate::math::fraction::Fraction;
 use crate::math::inverse::inverse;
 

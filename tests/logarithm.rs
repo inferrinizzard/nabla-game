@@ -1,5 +1,4 @@
 use nabla_game;
-
 use nabla_game::basis::structs::Basis;
 use nabla_game::math::logarithm::logarithm;
 

@@ -1,12 +1,10 @@
 use std::fmt::{Display, Formatter, Result};
 
-use super::basis::builders::*;
-use super::basis::structs::*;
-use super::math::derivative::*;
-use super::math::integral::*;
-use super::math::inverse::*;
-use super::math::limits::*;
-use super::math::logarithm::*;
+use crate::basis::{builders::*, structs::*};
+use crate::math::{
+    derivative::derivative, integral::integral, inverse::inverse, limits::limit,
+    logarithm::logarithm,
+};
 
 pub fn apply_card(card: &Card) -> impl Fn(&Basis) -> Basis {
     let card = card.clone();

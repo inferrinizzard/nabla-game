@@ -1,6 +1,5 @@
 use gloo::events::EventListener;
 use wasm_bindgen::prelude::*;
-use web_sys::*;
 
 pub mod basis;
 pub mod cards;

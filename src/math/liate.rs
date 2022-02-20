@@ -1,8 +1,7 @@
-use super::super::basis::builders::*;
-use super::super::basis::structs::*;
-use super::super::math::integral::*;
+use crate::basis::{builders::*, structs::*};
 
 use crate::math::fraction::Fraction;
+use crate::math::integral::*;
 
 pub fn logarithmic(basis_node: &BasisNode, u: &Basis, dv: &Basis) -> Option<Basis> {
     if basis_node
