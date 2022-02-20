@@ -365,6 +365,10 @@ impl PartialEq for BasisNode {
                 });
         other_string_operands.sort();
 
+        if self_string_operands != other_string_operands {
+            return false;
+        }
+
         // assumes no duplicates
         self_node_operands.iter().all(|self_op| {
             other_node_operands

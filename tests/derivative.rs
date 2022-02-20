@@ -2,9 +2,11 @@ use std::collections::HashMap;
 
 use nabla_game;
 
-use nabla_game::basis::builders::*;
 use nabla_game::basis::structs::*;
 use nabla_game::math::derivative::derivative;
+
+pub mod util;
+use util::*;
 
 // test basic derivatives
 #[test]
@@ -14,10 +16,10 @@ fn test_basic_derivatives() {
         (Basis::from(1), Basis::from(0)),
         (Basis::x(), Basis::from(1)),
         (Basis::x() ^ 2, 2 * Basis::x()),
-        (EBasisNode(Basis::x()), EBasisNode(Basis::x())),
-        (LogBasisNode(&Basis::x()), Basis::x() ^ -1),
-        (CosBasisNode(Basis::x()), -SinBasisNode(Basis::x())),
-        (SinBasisNode(Basis::x()), CosBasisNode(Basis::x())),
+        (e_x(), e_x()),
+        (log_x(), Basis::x() ^ -1),
+        (cos_x(), -sin_x()),
+        (sin_x(), cos_x()),
     ]);
 
     for (key, value) in derivative_lookup.into_iter() {
@@ -32,26 +34,26 @@ fn test_add_derivatives() {
     let (mut a, mut b);
 
     // test first derivative
-    a = Basis::x() + EBasisNode(Basis::x());
-    b = Basis::from(1) + EBasisNode(Basis::x());
+    a = Basis::x() + e_x();
+    b = Basis::from(1) + e_x();
     println!("d/dx({}) = {}", a, b);
     assert_eq!(derivative(&a), b,);
 
     // test second derivative
-    a = CosBasisNode(Basis::x()) + (Basis::x() ^ 2);
-    b = -CosBasisNode(Basis::x()) + Basis::from(2);
+    a = cos_x() + (Basis::x() ^ 2);
+    b = -cos_x() + Basis::from(2);
     println!("d/dx(d/dx({})) = {}", a, b);
     assert_eq!(derivative(&derivative(&a)), b,);
 
     // test trinomial (nested BasisNode)
-    a = SinBasisNode(Basis::x()) + (Basis::x() ^ 2) + Basis::x();
-    b = CosBasisNode(Basis::x()) + (Basis::x() * 2) + Basis::from(1);
+    a = sin_x() + (Basis::x() ^ 2) + Basis::x();
+    b = cos_x() + (Basis::x() * 2) + Basis::from(1);
     println!("d/dx({}) = {}", a, b);
     assert_eq!(derivative(&a), b,);
 
     // test trim 0
-    a = CosBasisNode(Basis::x()) + Basis::from(1);
-    b = -SinBasisNode(Basis::x());
+    a = cos_x() + Basis::from(1);
+    b = -sin_x();
     println!("d/dx({}) = {}", a, b);
     assert_eq!(derivative(&a), b,);
 }
@@ -62,23 +64,20 @@ fn test_mult_derivatives() {
     let (mut a, mut b);
 
     // test mult derivative
-    a = (Basis::x() ^ 2) * CosBasisNode(Basis::x());
-    b = ((Basis::x() ^ 2) * -SinBasisNode(Basis::x()))
-        + (CosBasisNode(Basis::x()) * Basis::x() * 2);
+    a = (Basis::x() ^ 2) * cos_x();
+    b = ((Basis::x() ^ 2) * -sin_x()) + (cos_x() * Basis::x() * 2);
     println!("d/dx({}) = {}", a, b);
     assert_eq!(derivative(&a), b,);
 
     // test trim 1
-    a = Basis::x() * EBasisNode(Basis::x());
-    b = (Basis::x() * EBasisNode(Basis::x())) + EBasisNode(Basis::x());
+    a = Basis::x() * e_x();
+    b = (Basis::x() * e_x()) + e_x();
     println!("d/dx({}) = {}", a, b);
     assert_eq!(derivative(&a), b,);
 
     // test div derivative
-    a = CosBasisNode(Basis::x()) / EBasisNode(Basis::x());
-    b = ((-SinBasisNode(Basis::x()) * EBasisNode(Basis::x()))
-        - (CosBasisNode(Basis::x()) * EBasisNode(Basis::x())))
-        / (EBasisNode(Basis::x()) ^ 2);
+    a = cos_x() / e_x();
+    b = ((-sin_x() * e_x()) - (cos_x() * e_x())) / (e_x() ^ 2);
     println!("d/dx({}) = {}", a, b);
     assert_eq!(derivative(&a), b,);
 }
@@ -101,14 +100,16 @@ fn test_exponent_derivatives() {
     assert_eq!(derivative(&a), b,);
 
     // test sin pow derivative
-    a = CosBasisNode(Basis::x()) ^ 2;
-    b = -2 * SinBasisNode(Basis::x()) * CosBasisNode(Basis::x());
+    a = cos_x() ^ 2;
+    b = -2 * sin_x() * cos_x();
     println!("d/dx({}) = {}", a, b);
     assert_eq!(derivative(&a), b,);
 
     // test e pow derivative
-    a = EBasisNode(Basis::x()) ^ (1, 2);
-    b = EBasisNode(Basis::x() / 2) / 2;
+    a = e_x() ^ (1, 2);
+    b = e(&(Basis::x() / 2)) / 2;
     println!("d/dx({}) = {}", a, b);
     assert_eq!(derivative(&a), b,);
 }
+
+// TODO: add tests for log

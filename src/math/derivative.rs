@@ -33,13 +33,13 @@ pub fn derivative(basis: &Basis) -> Basis {
             BasisOperator::Div => {
                 let u = &operands[0];
                 let v = &operands[1];
-                ((v.clone() * derivative(&u) * coefficient.n)
-                    - (u.clone() * derivative(&v) * coefficient.n))
+                (((v.clone() * derivative(&u)) - (u.clone() * derivative(&v))) * coefficient.n)
                     / (v.clone() * v.clone() * coefficient.d)
             }
-            // power rule, n * x^(n-1) : preceding n is discarded
+            // power rule, n * x^(n-1)
             BasisOperator::Pow(n) => {
-                derivative(&operands[0]) * (operands[0].clone() ^ (*n - 1)) * *n * *coefficient
+                let u = operands[0].clone();
+                derivative(&u) * (u ^ (*n - 1)) * (*n * *coefficient)
             }
             // chain rule, f'(e^f(y)) = f'(y)e^f(y)
             BasisOperator::E => derivative(&operands[0]) * EBasisNode(&operands[0]) * *coefficient,

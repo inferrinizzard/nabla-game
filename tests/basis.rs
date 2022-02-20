@@ -4,11 +4,13 @@ use nabla_game::basis::builders::*;
 use nabla_game::basis::structs::*;
 use nabla_game::math::fraction::Fraction;
 
+pub mod util;
+use util::*;
+
 // test add operator
 #[test]
 fn test_add() {
-    let mut a;
-    let mut b;
+    let (mut a, mut b);
 
     // test return 1 operand
     a = AddBasisNode(vec![Basis::x()]);
@@ -17,13 +19,13 @@ fn test_add() {
     assert_eq!(a, b);
 
     // test INF short circuit
-    a = AddBasisNode(vec![Basis::x(), Basis::inf(1)]);
+    a = Basis::x() + Basis::inf(1);
     b = Basis::inf(1);
     println!("{} = {}", a, b);
     assert_eq!(a, b);
 
     // test collect like terms
-    a = AddBasisNode(vec![Basis::x(), Basis::x()]);
+    a = Basis::x() + Basis::x();
     b = Basis::BasisLeaf(BasisLeaf {
         coefficient: Fraction::from(2),
         element: BasisElement::X,
@@ -32,45 +34,20 @@ fn test_add() {
     assert_eq!(a, b);
 
     // test multiple elements
-    a = AddBasisNode(vec![
-        Basis::x(),
-        Basis::BasisLeaf(BasisLeaf {
-            coefficient: Fraction::from(2),
-            element: BasisElement::X,
-        }),
-        EBasisNode(Basis::x()),
-    ]);
-    b = AddBasisNode(vec![
-        Basis::BasisLeaf(BasisLeaf {
-            coefficient: Fraction::from(3),
-            element: BasisElement::X,
-        }),
-        EBasisNode(Basis::x()),
-    ]);
+    a = AddBasisNode(vec![Basis::x(), Basis::x() * 2, e_x()]);
+    b = (Basis::x() * 3) + e_x();
     println!("{} = {}", a, b);
     assert_eq!(a, b);
 
     // test nested add nodes
-    a = AddBasisNode(vec![
-        Basis::x(),
-        AddBasisNode(vec![Basis::x(), CosBasisNode(Basis::x())]),
-    ]);
-    b = AddBasisNode(vec![
-        Basis::BasisLeaf(BasisLeaf {
-            coefficient: Fraction::from(2),
-            element: BasisElement::X,
-        }),
-        CosBasisNode(Basis::x()),
-    ]);
+    a = Basis::x() + AddBasisNode(vec![Basis::x(), cos_x()]);
+    b = (Basis::x() * 2) + cos_x();
     println!("{} = {}", a, b);
     assert_eq!(a, b);
 
     // test nested minus nodes
-    a = AddBasisNode(vec![
-        AddBasisNode(vec![Basis::x(), LogBasisNode(&Basis::x())]),
-        MinusBasisNode(vec![SinBasisNode(Basis::x()), Basis::x()]),
-    ]);
-    b = AddBasisNode(vec![SinBasisNode(Basis::x()), LogBasisNode(&Basis::x())]);
+    a = AddBasisNode(vec![Basis::x(), log_x()]) + MinusBasisNode(vec![sin_x(), Basis::x()]);
+    b = sin_x() + log_x();
     println!("{} = {}", a, b);
     assert_eq!(a, b);
 }
@@ -78,8 +55,7 @@ fn test_add() {
 // test mult operator
 #[test]
 fn test_mult() {
-    let mut a;
-    let mut b;
+    let (mut a, mut b);
 
     // test return 1 operand
     a = MultBasisNode(vec![Basis::x()]);
@@ -88,82 +64,103 @@ fn test_mult() {
     assert_eq!(a, b);
 
     // test INF short circuit
-    a = MultBasisNode(vec![Basis::x(), Basis::inf(1)]);
+    a = Basis::x() * Basis::inf(1);
     b = Basis::inf(1);
     println!("{} = {}", a, b);
     assert_eq!(a, b);
 
     // test collect like terms
-    a = MultBasisNode(vec![Basis::x(), Basis::x()]);
-    b = PowBasisNode(2, 1, &Basis::x());
+    a = Basis::x() * Basis::x();
+    b = Basis::x() ^ 2;
     println!("{} = {}", a, b);
     assert_eq!(a, b);
 
     // test multiple elements
-    a = MultBasisNode(vec![
-        Basis::x(),
-        PowBasisNode(2, 1, &Basis::x()),
-        EBasisNode(Basis::x()),
-    ]);
-    b = MultBasisNode(vec![
-        EBasisNode(Basis::x()),
-        PowBasisNode(3, 1, &Basis::x()),
-    ]);
+    a = MultBasisNode(vec![Basis::x(), Basis::x() ^ 2, e_x()]);
+    b = e_x() * (Basis::x() ^ 3);
     println!("{} = {}", a, b);
     assert_eq!(a, b);
 
     // test nested mult nodes
-    a = MultBasisNode(vec![
-        MultBasisNode(vec![Basis::x(), CosBasisNode(Basis::x())]),
-        Basis::x(),
-    ]);
-    b = MultBasisNode(vec![
-        PowBasisNode(2, 1, &Basis::x()),
-        CosBasisNode(Basis::x()),
-    ]);
+    a = MultBasisNode(vec![Basis::x(), cos_x()]) * Basis::x();
+    b = (Basis::x() ^ 2) * cos_x();
     println!("{} = {}", a, b);
     assert_eq!(a, b);
 
     // test simple div node
     a = MultBasisNode(vec![
-        MultBasisNode(vec![Basis::x(), LogBasisNode(&Basis::x())]),
-        Basis::BasisNode(BasisNode {
-            coefficient: Fraction::from(1),
-            operator: BasisOperator::Div,
-            operands: vec![SinBasisNode(Basis::x()), Basis::x()],
-        }),
+        MultBasisNode(vec![Basis::x(), log_x()]),
+        sin_x() / Basis::x(),
     ]);
-    b = MultBasisNode(vec![SinBasisNode(Basis::x()), LogBasisNode(&Basis::x())]);
+    b = sin_x() * log_x();
     println!("{} = {}", a, b);
     assert_eq!(a, b);
 
     // test nested div node
-    a = MultBasisNode(vec![
-        MultBasisNode(vec![Basis::x(), EBasisNode(Basis::x())]),
-        Basis::BasisNode(BasisNode {
-            coefficient: Fraction::from(1),
-            operator: BasisOperator::Div,
-            operands: vec![
-                MultBasisNode(vec![
-                    PowBasisNode(3, 2, &Basis::x()),
-                    CosBasisNode(Basis::x()),
-                ]),
-                MultBasisNode(vec![EBasisNode(Basis::x()), SinBasisNode(Basis::x())]),
-            ],
-        }),
-    ]);
-    b = Basis::BasisNode(BasisNode {
-        coefficient: Fraction::from(1),
-        operator: BasisOperator::Div,
-        operands: vec![
-            MultBasisNode(vec![
-                CosBasisNode(Basis::x()),
-                PowBasisNode(5, 2, &Basis::x()),
-            ]),
-            SinBasisNode(Basis::x()),
-        ],
-    });
+    a = Basis::x() * e_x() * (((Basis::x() ^ (3, 2)) * cos_x()) / (e_x() * sin_x()));
+    b = (cos_x() * (Basis::x() ^ (5, 2))) / sin_x();
 
+    println!("{} = {}", a, b);
+    assert_eq!(a, b);
+}
+
+// test div operator
+#[test]
+fn test_div() {
+    let (mut a, mut b);
+
+    // test return 1 operand with coefficient
+    a = Basis::x() / Basis::from((1, 2));
+    b = Basis::x() * 2;
+    println!("{} = {}", a, b);
+    assert_eq!(a, b);
+
+    // test divide by INF
+    a = Basis::x() / Basis::inf(1);
+    b = Basis::from(0);
+    println!("{} = {}", a, b);
+    assert_eq!(a, b);
+
+    // test reduce like terms
+    a = (Basis::x() ^ 2) / Basis::x();
+    b = Basis::x();
+    println!("{} = {}", a, b);
+    assert_eq!(a, b);
+
+    // test div numerator
+    a = (Basis::x() / (Basis::x() ^ 2)) / e_x();
+    b = Basis::from(1) / (e_x() * Basis::x());
+    println!("{} = {}", a, b);
+    assert_eq!(a, b);
+
+    // test mult denominator
+    a = Basis::x() / ((Basis::x() ^ -2) * log_x());
+    b = (Basis::x() ^ 3) / log_x();
+    println!("{} = {}", a, b);
+    assert_eq!(a, b);
+
+    // test div denominator
+    a = cos_x() / (sin_x() / cos_x());
+    b = (cos_x() ^ 2) / sin_x();
+    println!("{} = {}", a, b);
+    assert_eq!(a, b);
+
+    // test mult numerator
+    a = (Basis::x() * e_x()) / (Basis::x() ^ (3, 2));
+    b = e_x() * (Basis::x() ^ (-1, 2));
+
+    println!("{} = {}", a, b);
+    assert_eq!(a, b);
+
+    // test div numerator and denominator
+    a = (Basis::x() / log_x()) / (Basis::x() / e_x());
+    b = e_x() / log_x();
+    println!("{} = {}", a, b);
+    assert_eq!(a, b);
+
+    // test mult numerator and denominator
+    a = (Basis::x() * sin_x() * cos_x()) / (cos_x() * e_x() * log_x());
+    b = (Basis::x() * sin_x()) / (e_x() * log_x());
     println!("{} = {}", a, b);
     assert_eq!(a, b);
 }

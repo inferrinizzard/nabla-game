@@ -2,10 +2,12 @@ use std::collections::HashMap;
 
 use nabla_game;
 
-use nabla_game::basis::builders::*;
 use nabla_game::basis::structs::Basis;
 use nabla_game::cards::LimitCard;
 use nabla_game::math::limits::limit;
+
+pub mod util;
+use util::*;
 
 #[test]
 fn test_basic_limit_zero() {
@@ -14,9 +16,9 @@ fn test_basic_limit_zero() {
         (Basis::from(0), Basis::from(0)),
         (Basis::from(1), Basis::from(1)),
         (Basis::x(), Basis::from(0)),
-        (CosBasisNode(Basis::x()), Basis::from(1)),
-        (SinBasisNode(Basis::x()), Basis::from(0)),
-        (EBasisNode(Basis::x()), Basis::from(1)),
+        (cos_x(), Basis::from(1)),
+        (sin_x(), Basis::from(0)),
+        (e_x(), Basis::from(1)),
     ]);
 
     for (key, value) in limit_zero_map.iter() {
@@ -46,7 +48,7 @@ fn test_basic_limit_inf() {
     let (mut a, mut b);
 
     // test e INF
-    a = EBasisNode(Basis::x());
+    a = e_x();
     b = Basis::inf(1);
     println!("lim, x→INF({}) = {}", a, b);
     assert_eq!(limit_pos_inf_function(&a).unwrap(), b);
@@ -73,7 +75,7 @@ fn test_basic_liminfsup() {
     let liminf_function = limit(&LimitCard::Liminf);
     let limsup_function = limit(&LimitCard::Limsup);
     let liminfsup_map = HashMap::from([
-        (EBasisNode(Basis::x()), Basis::inf(1)),
+        (e_x(), Basis::inf(1)),
         (Basis::x(), Basis::inf(1)),
         (Basis::from(1), Basis::from(1)),
         (Basis::from(0), Basis::from(0)),
@@ -88,7 +90,7 @@ fn test_basic_liminfsup() {
     let (mut a, mut b);
 
     // test cos limsup
-    a = CosBasisNode(Basis::x());
+    a = cos_x();
     b = Basis::from(1);
     println!("limsup, x→INF({}) = {}", a, b);
     assert_eq!(limsup_function(&a).unwrap(), b);
@@ -99,7 +101,7 @@ fn test_basic_liminfsup() {
     assert_eq!(liminf_function(&a).unwrap(), b);
 
     // test sin limsup
-    a = SinBasisNode(Basis::x());
+    a = sin_x();
     b = Basis::from(1);
     println!("limsup, x→INF({}) = {}", a, b);
     assert_eq!(limsup_function(&a).unwrap(), b);
@@ -115,25 +117,25 @@ fn test_complex_basis_limits() {
     let (mut a, mut b);
 
     // test add limit
-    a = EBasisNode(Basis::x()) + Basis::x();
+    a = e_x() + Basis::x();
     b = Basis::from(1);
     println!("lim, x→0({}) = {}", a, b);
     assert_eq!(limit(&LimitCard::Lim0)(&a).unwrap(), b);
 
     // test minus limit
-    a = SinBasisNode(Basis::x()) - CosBasisNode(Basis::x());
+    a = sin_x() - cos_x();
     b = Basis::from(0);
     println!("limsup, x→INF({}) = {}", a, b);
     assert_eq!(limit(&LimitCard::Limsup)(&a).unwrap(), b);
 
     // test mult limit
-    a = EBasisNode(Basis::x()) * (Basis::x() ^ 2);
+    a = e_x() * (Basis::x() ^ 2);
     b = Basis::inf(1);
     println!("lim, x→INF({}) = {}", a, b);
     assert_eq!(limit(&LimitCard::LimPosInf)(&a).unwrap(), b);
 
     // test invalid limit
-    a = Basis::x() * SinBasisNode(Basis::x());
+    a = Basis::x() * sin_x();
     println!("lim, x→INF({}) = None", a);
     assert_eq!(limit(&LimitCard::LimPosInf)(&a), None);
 }
