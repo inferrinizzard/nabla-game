@@ -78,11 +78,11 @@ pub fn integral(basis: &Basis) -> Basis {
             }
             BasisOperator::Cos if operands[0].is_x() => {
                 // I(cos(x)) = sin(x)
-                SinBasisNode(operands[0].clone()) / operands[0].coefficient()
+                SinBasisNode(&operands[0]) / operands[0].coefficient()
             }
             BasisOperator::Sin if operands[0].is_x() => {
                 // I(sin(x)) = -cos(x)
-                -CosBasisNode(operands[0].clone()) / operands[0].coefficient()
+                -CosBasisNode(&operands[0]) / operands[0].coefficient()
             }
             BasisOperator::Inv => {
                 // I(f-1(x)) = xf-1(x) - I(xf-1(x))

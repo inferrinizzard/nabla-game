@@ -1,3 +1,4 @@
+use crate::math::logarithm::logarithm;
 use std::collections::HashMap;
 
 use super::super::math::fraction::*;
@@ -94,9 +95,14 @@ fn get_base(basis: &Basis) -> Option<(Basis, i32, i32)> {
             operands,
             ..
         }) => {
-            // TODO:C non leaf base
             if let Basis::BasisLeaf(_) = &operands[0] {
                 return Some((operands[0].clone(), *n, *d));
+            }
+
+            let inner_base = get_base(&operands[0]);
+            if inner_base.is_some() {
+                let (i_base, i_n, i_d) = inner_base.unwrap();
+                return Some((i_base, i_n * n, i_d * d));
             }
             None
         }
@@ -213,8 +219,8 @@ pub fn MultBasisNode(operands: Vec<Basis>) -> Basis {
     });
     // divide from numerator and collect denominator
     denominator.iter().for_each(|factor| {
-        final_coefficient /= factor.coefficient(); // TODO: double check this
-                                                   // skip integers
+        final_coefficient /= factor.coefficient();
+        // skip integers
         if factor.is_frac(factor.coefficient()) {
             return;
         }
@@ -250,7 +256,7 @@ pub fn MultBasisNode(operands: Vec<Basis>) -> Basis {
             return acc;
         }
         if n != d {
-            acc.push(PowBasisNode(*n, *d, k));
+            acc.push(k.clone() ^ (*n, *d));
         } else {
             acc.push(k.clone());
         }
@@ -264,7 +270,7 @@ pub fn MultBasisNode(operands: Vec<Basis>) -> Basis {
                 return acc;
             }
             if n != d {
-                acc.push(PowBasisNode(*n, *d, k));
+                acc.push(k.clone() ^ (*n, *d));
             } else {
                 acc.push(k.clone());
             }
@@ -320,7 +326,7 @@ pub fn DivBasisNode(numerator: &Basis, denominator: &Basis) -> Basis {
     }
     // 1 / n = n^-1
     else if numerator.is_num(1) {
-        return PowBasisNode(-1, 1, &denominator);
+        return denominator.clone() ^ -1;
     }
     // n / n = 1
     else if numerator == denominator {
@@ -336,7 +342,23 @@ pub fn DivBasisNode(numerator: &Basis, denominator: &Basis) -> Basis {
         return Basis::from(0);
     }
 
-    // TODO:B if numerator or denominator include Div
+    if let Basis::BasisNode(BasisNode {
+        operator: BasisOperator::Div,
+        operands,
+        ..
+    }) = denominator
+    {
+        // multiply by reciprocal
+        return numerator.clone() * (operands[1].clone() / operands[0].clone());
+    } else if let Basis::BasisNode(BasisNode {
+        operator: BasisOperator::Div,
+        operands,
+        ..
+    }) = numerator
+    {
+        // (a/b)/c = ac/b
+        return (operands[0].clone() * denominator.clone()) / operands[1].clone();
+    }
 
     Basis::BasisNode(BasisNode {
         coefficient: Fraction::from(1),
@@ -394,7 +416,7 @@ pub fn PowBasisNode(n: i32, d: i32, base: &Basis) -> Basis {
             operator: BasisOperator::E,
             operands: e_operands,
         }) => {
-            return EBasisNode(e_operands[0].clone() * frac) * (*e_coefficient ^ frac.n);
+            return EBasisNode(&(e_operands[0].clone() * frac)) * (*e_coefficient ^ frac.n);
         }
         _ => {}
     }
@@ -415,13 +437,12 @@ pub fn SqrtBasisNode(n: i32, base: &Basis) -> Basis {
 pub fn LogBasisNode(base: &Basis) -> Basis {
     // log(e^x) = x
     if let Basis::BasisNode(BasisNode {
-        coefficient: _e_coefficient,
+        coefficient: e_coefficient,
         operator: BasisOperator::E,
         operands: e_operands,
     }) = base
     {
-        // TODO:D AddBasisNode(vec![e_operands[0], log(e_coefficient)])
-        return e_operands[0].clone();
+        return e_operands[0].clone() + logarithm(&Basis::from(*e_coefficient)); // could use a log node here
     }
     // log(INF) = INF
     else if base.is_inf(1) {
@@ -432,52 +453,56 @@ pub fn LogBasisNode(base: &Basis) -> Basis {
         return Basis::inf(-1);
     }
 
-    // TODO:D AddBasisNode(vec![base, log(coefficient)])
+    // TODO:D base.clone() + logarithm(base.coefficient())]) // could use a log node here
     Basis::BasisNode(BasisNode {
         coefficient: Fraction::from(1),
         operator: BasisOperator::Log,
         operands: vec![base.clone()],
     })
 }
+
 #[allow(non_snake_case)]
-pub fn EBasisNode(operand: Basis) -> Basis {
+pub fn EBasisNode(operand: &Basis) -> Basis {
     Basis::BasisNode(BasisNode {
         coefficient: Fraction::from(1),
         operator: BasisOperator::E,
-        operands: vec![operand],
+        operands: vec![operand.clone()],
     })
 }
 
 #[allow(non_snake_case)]
-pub fn CosBasisNode(operand: Basis) -> Basis {
+pub fn CosBasisNode(operand: &Basis) -> Basis {
     Basis::BasisNode(BasisNode {
         coefficient: Fraction::from(1),
         operator: BasisOperator::Cos,
-        operands: vec![operand],
+        operands: vec![operand.clone()],
     })
 }
+
 #[allow(non_snake_case)]
-pub fn SinBasisNode(operand: Basis) -> Basis {
+pub fn SinBasisNode(operand: &Basis) -> Basis {
     Basis::BasisNode(BasisNode {
         coefficient: Fraction::from(1),
         operator: BasisOperator::Sin,
-        operands: vec![operand],
+        operands: vec![operand.clone()],
     })
 }
+
 #[allow(non_snake_case)]
-pub fn ACosBasisNode(operand: Basis) -> Basis {
+pub fn ACosBasisNode(operand: &Basis) -> Basis {
     Basis::BasisNode(BasisNode {
         coefficient: Fraction::from(1),
         operator: BasisOperator::Acos,
-        operands: vec![operand],
+        operands: vec![operand.clone()],
     })
 }
+
 #[allow(non_snake_case)]
-pub fn ASinBasisNode(operand: Basis) -> Basis {
+pub fn ASinBasisNode(operand: &Basis) -> Basis {
     Basis::BasisNode(BasisNode {
         coefficient: Fraction::from(1),
         operator: BasisOperator::Asin,
-        operands: vec![operand],
+        operands: vec![operand.clone()],
     })
 }
 
@@ -493,7 +518,7 @@ pub fn InvBasisNode(base: &Basis) -> Basis {
             }
             // assumes basic case of log(x)
             BasisOperator::Log if operands[0].is_x() => {
-                return EBasisNode(Basis::x());
+                return EBasisNode(&Basis::x());
             }
             _ => {}
         },

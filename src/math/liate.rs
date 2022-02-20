@@ -97,9 +97,9 @@ pub fn trig(_basis_node: &BasisNode, u: &Basis, dv: &Basis) -> Option<Basis> {
 pub fn exponential(_basis_node: &BasisNode, u: &Basis, dv: &Basis) -> Option<Basis> {
     // dv is e
     if u.is_node(BasisOperator::Cos) {
-        return Some((dv.clone() * (CosBasisNode(Basis::x()) + SinBasisNode(Basis::x()))) / 2);
+        return Some((dv.clone() * (CosBasisNode(&Basis::x()) + SinBasisNode(&Basis::x()))) / 2);
     } else if u.is_node(BasisOperator::Sin) {
-        return Some((dv.clone() * (SinBasisNode(Basis::x()) - CosBasisNode(Basis::x()))) / 2);
+        return Some((dv.clone() * (SinBasisNode(&Basis::x()) - CosBasisNode(&Basis::x()))) / 2);
     }
 
     if let Basis::BasisNode(BasisNode {

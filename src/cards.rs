@@ -42,7 +42,7 @@ pub fn apply_multi_card(card: &Card, bases: Vec<Basis>) -> Basis {
                     denominator.push(bases[i].clone());
                 }
             }
-            DivBasisNode(&MultBasisNode(numerator), &MultBasisNode(denominator))
+            MultBasisNode(numerator) / MultBasisNode(denominator)
         }
         _ => panic!("Unknown MULTISELECT card: {}!", card),
     }

@@ -1,5 +1,5 @@
 use super::super::cards::LimitCard;
-use crate::basis::builders::{AddBasisNode, MinusBasisNode, MultBasisNode, PowBasisNode};
+use crate::basis::builders::{AddBasisNode, MultBasisNode};
 use crate::basis::structs::*;
 
 fn limit_arccos_arcsin(
@@ -123,7 +123,7 @@ pub fn limit(_limit_card: &LimitCard) -> impl Fn(&Basis) -> Option<Basis> {
                         if base_limit.as_ref().unwrap().is_inf(1)
                             || base_limit.as_ref().unwrap().is_inf(-1)
                         {
-                            return Some(PowBasisNode(frac.n, frac.d, &base_limit.unwrap()));
+                            return Some(base_limit.unwrap() ^ (frac.n, frac.d));
                         }
                         Some(Basis::from(*coefficient)) // should be coefficient * e^(some constant)
                     }

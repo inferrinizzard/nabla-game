@@ -9,8 +9,7 @@ pub fn logarithm(basis: &Basis) -> Basis {
                 if basis_leaf.coefficient == 1 {
                     return Basis::from(0);
                 }
-                // TODO: log(n) → 1
-                Basis::from(1)
+                Basis::from(basis_leaf.coefficient) // actually log(coefficient)
             }
             BasisElement::X => LogBasisNode(&basis),
             BasisElement::Inf => basis.clone(),
