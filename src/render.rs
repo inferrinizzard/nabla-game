@@ -1,8 +1,9 @@
-use js_sys::Array;
-use wasm_bindgen::prelude::*;
+use std::collections::HashMap;
 
 use rand::Rng;
-use std::collections::HashMap;
+
+use js_sys::Array;
+use wasm_bindgen::prelude::*;
 
 use super::util::*;
 use super::{CANVAS, GAME};

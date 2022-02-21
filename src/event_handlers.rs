@@ -3,7 +3,8 @@ use std::cmp::min;
 use wasm_bindgen::prelude::*;
 use web_sys::*;
 
-use super::game::*;
+use super::game::field::*;
+use super::game::structs::*;
 use super::render;
 use super::GAME;
 use super::{basis::structs::*, cards::*};
