@@ -12,6 +12,7 @@ mod event_listeners;
 mod canvas;
 mod render;
 
+mod externs;
 mod util;
 
 // When the `wee_alloc` feature is enabled, this uses `wee_alloc` as the global
@@ -48,6 +49,8 @@ pub fn main_js() -> Result<(), JsValue> {
     ));
 
     render::draw();
+
+    externs::run();
 
     Ok(())
 }

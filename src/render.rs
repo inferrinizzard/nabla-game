@@ -88,7 +88,7 @@ fn draw_field() {
             context
                 .set_line_dash(&JsValue::from(&Array::fill(
                     &Array::new_with_length(2),
-                    &JsValue::from(10),
+                    &JsValue::from(10i32),
                     0,
                     2,
                 )))

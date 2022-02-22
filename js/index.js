@@ -1,1 +1,2 @@
-import("../pkg/index.js").catch(console.error);
+import('./katex.js');
+import('../pkg/index.js').catch(console.error);
