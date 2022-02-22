@@ -84,7 +84,7 @@ fn draw_field() {
     let hit_context = &canvas.hit_context;
     let hit_region_map = &mut canvas.hit_region_map;
 
-    for (i, card) in field.iter().enumerate() {
+    for (i, card) in field.basis.iter().enumerate() {
         if card.basis.is_none() {
             context
                 .set_line_dash(&JsValue::from(&Array::fill(

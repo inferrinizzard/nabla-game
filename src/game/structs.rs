@@ -2,7 +2,6 @@ use rand::seq::SliceRandom;
 use rand::thread_rng;
 
 use super::field::*;
-use crate::basis::structs::*;
 use crate::cards::*;
 
 fn get_new_deck() -> Vec<Card> {
@@ -54,9 +53,9 @@ fn create_players(deck: &mut Vec<Card>) -> (Vec<Card>, Vec<Card>) {
 
 #[derive(Debug)]
 pub struct Game {
-    pub turn: Turn,             // turn counter
-    pub field: [FieldBasis; 6], // [0-2] for player_1, [3-5] for player_2
-    pub player_1: Vec<Card>,    // up to 7 cards in hand (<7 if deck running low)
+    pub turn: Turn, // turn counter
+    pub field: Field,
+    pub player_1: Vec<Card>, // up to 7 cards in hand (<7 if deck running low)
     pub player_2: Vec<Card>,
     pub deck: Vec<Card>,
     pub active: ActiveCards,
@@ -73,14 +72,7 @@ impl Game {
                 number: 0,
                 phase: TurnPhase::IDLE,
             },
-            field: [
-                FieldBasis::new(&Basis::from(BasisCard::One)),
-                FieldBasis::new(&Basis::from(BasisCard::X)),
-                FieldBasis::new(&Basis::from(BasisCard::X2)),
-                FieldBasis::new(&Basis::from(BasisCard::One)),
-                FieldBasis::new(&Basis::from(BasisCard::X)),
-                FieldBasis::new(&Basis::from(BasisCard::X2)),
-            ],
+            field: Field::new(),
             player_1: player_1,
             player_2: player_2,
             deck: deck,
