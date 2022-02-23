@@ -11,9 +11,7 @@ mod event_listeners;
 
 mod canvas;
 mod render;
-mod render_constants;
 
-pub mod katex;
 mod util;
 
 // When the `wee_alloc` feature is enabled, this uses `wee_alloc` as the global
@@ -49,7 +47,7 @@ pub fn main_js() -> Result<(), JsValue> {
         event_listeners::mousedown_event_listener,
     ));
 
-    render::draw();
+    render::render::draw();
 
     Ok(())
 }

@@ -5,11 +5,12 @@ use web_sys::*;
 use rand::Rng;
 use std::collections::HashMap;
 
+use super::katex::*;
 use super::render_constants::*;
-use super::util::*;
-use super::{CANVAS, GAME};
-use crate::katex::*;
+use crate::util::*;
+use crate::{CANVAS, GAME};
 
+/// main render function, iterates through all items to render
 pub fn draw() {
     let canvas = unsafe { CANVAS.as_mut().unwrap() };
     let context = &canvas.context;
@@ -29,6 +30,7 @@ pub fn draw() {
     render_item("x=1".to_string());
 }
 
+/// id-based render, dispatches to component render fns based on id
 fn render_item(id: String) {
     let kvp = id.split("=").collect::<Vec<&str>>();
     let key = kvp[0];
@@ -44,6 +46,7 @@ fn render_item(id: String) {
     }
 }
 
+/// generates a random 6 digit Hex color code for Hit Region mapping
 fn random_hit_colour(hit_region_map: &HashMap<String, String>) -> String {
     let mut hex_colour = String::new();
 
@@ -58,6 +61,7 @@ fn random_hit_colour(hit_region_map: &HashMap<String, String>) -> String {
     format!("#{}", hex_colour)
 }
 
+// draws a rectangle of given size and sets hit region for id
 fn draw_rect(x: f64, y: f64, width: f64, height: f64, id: String) {
     let canvas = unsafe { CANVAS.as_mut().unwrap() };
 
@@ -74,6 +78,7 @@ fn draw_rect(x: f64, y: f64, width: f64, height: f64, id: String) {
     hit_region_map.insert(hit_colour, id);
 }
 
+/// draws the escape button for SELECT phase
 fn draw_x() {
     let game = unsafe { GAME.as_mut().unwrap() };
     if game.active.selected.is_empty() {
@@ -83,6 +88,7 @@ fn draw_x() {
     draw_rect(10.0, 10.0, 25.0, 25.0, "x=0".to_string());
 }
 
+/// draws the button that ends MULTI_SELECT phase
 fn draw_multi_done() {
     let canvas = unsafe { CANVAS.as_mut().unwrap() };
 
@@ -90,6 +96,7 @@ fn draw_multi_done() {
     draw_rect(bounds.x - 35.0, 10.0, 25.0, 25.0, "x=1".to_string());
 }
 
+/// applies line dash style to context, or clears if dash_num is 0
 fn set_line_dash(context: &CanvasRenderingContext2d, dash_num: u32, dash_size: f64) {
     let dash_array = if dash_num > 0 {
         // fill array from 0 to dash_num of dash_size
@@ -103,6 +110,7 @@ fn set_line_dash(context: &CanvasRenderingContext2d, dash_num: u32, dash_size: f
         .expect("Cannot set line dash");
 }
 
+/// renders KaTeX item at pos with given size & id
 fn draw_katex<T>(item: &T, id: String, size: &str, pos: Vector2)
 where
     T: ToLatex,
@@ -116,6 +124,7 @@ where
         .expect(format!("Cannot set style for {:?}", item).as_str());
 }
 
+/// renders 6 field basis slots
 fn draw_field(val: usize, id: String) {
     let (canvas, game) = unsafe { (CANVAS.as_mut().unwrap(), GAME.as_mut().unwrap()) };
     let field = &game.field;
@@ -159,6 +168,7 @@ fn draw_field(val: usize, id: String) {
     }
 }
 
+/// renders player hands
 fn draw_hand(player_num: u32, val: usize, id: String) {
     let (canvas, game) = unsafe { (CANVAS.as_mut().unwrap(), GAME.as_mut().unwrap()) };
     let hand = if player_num == 1 {

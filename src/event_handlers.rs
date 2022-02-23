@@ -2,9 +2,9 @@ use wasm_bindgen::prelude::*;
 use web_sys::*;
 
 use super::game::*;
-use super::render;
 use super::GAME;
 use super::{basis::structs::*, cards::*};
+use crate::render::render;
 
 pub fn handle_mousedown(id: String) {
     if id.is_empty() {
