@@ -1,18 +1,24 @@
 import katex from 'katex';
 
-export function test_katex(str) {
-	let latex = katex.renderToString(str, { throwOnError: false, displayMode: true });
+export const js_render_katex = str => {
+	let element = document.createElement('div');
+	element.className = 'katex-item';
 
-	let x = document.createElement('div');
-	x.innerHTML = latex;
-	document.body.appendChild(x);
-	console.log(x);
+	katex.render(str, element, { throwOnError: false, displayMode: true });
+	document.getElementById('katex').appendChild(element);
 
-	let y = document.createElement('div');
-	katex.render('x = \\int_{-\\infty}^\\infty\\xi\\,e^{2 \\pi i \\xi x}\\,d\\xi', y, {
-		throwOnError: false,
-		displayMode: true,
-	});
-	document.body.appendChild(y);
-	console.log(y);
-}
+	return element;
+};
+
+export const js_render_katex_element = (str, id) => {
+	let element = document.getElementById(id);
+	if (!element) {
+		element = document.createElement('div');
+		element.className += 'katex-item';
+		element.id = id;
+		document.getElementById('katex').appendChild(element);
+	}
+
+	katex.render(str, element, { throwOnError: false, displayMode: true });
+	return element;
+};

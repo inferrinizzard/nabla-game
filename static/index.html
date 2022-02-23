@@ -12,6 +12,7 @@
 		/>
 	</head>
 	<body>
+		<div id="katex"></div>
 		<canvas id="canvas"></canvas>
 		<canvas id="hitCanvas" hidden></canvas>
 		<script src="index.js"></script>
@@ -20,6 +21,7 @@
 				let canvas = document.getElementById(canvasId);
 				canvas.width = window.innerWidth;
 				canvas.height = window.innerHeight;
+				// resize #katex too
 			};
 			resizeCanvas('canvas');
 			resizeCanvas('hitCanvas');

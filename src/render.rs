@@ -1,11 +1,13 @@
 use js_sys::Array;
 use wasm_bindgen::prelude::*;
+use web_sys::*;
 
 use rand::Rng;
 use std::collections::HashMap;
 
 use super::util::*;
 use super::{CANVAS, GAME};
+use crate::katex::*;
 
 pub fn draw() {
     let canvas = unsafe { CANVAS.as_mut().unwrap() };
@@ -84,6 +86,8 @@ fn draw_field() {
     let hit_region_map = &mut canvas.hit_region_map;
 
     for (i, card) in field.iter().enumerate() {
+        let id = format!("f={}", i);
+
         if card.basis.is_none() {
             context
                 .set_line_dash(&JsValue::from(&Array::fill(
@@ -111,20 +115,20 @@ fn draw_field() {
         let hit_colour = random_hit_colour(&hit_region_map);
         hit_context.set_fill_style(&JsValue::from(&hit_colour));
         hit_context.fill_rect(card_pos.x, card_pos.y, rect_width, rect_height);
-        hit_region_map.insert(hit_colour, format!("f={}", i));
-
-        context.set_font("40px serif");
-        context.set_text_baseline("middle");
-        context.set_text_align("center");
+        hit_region_map.insert(hit_colour, id.clone());
 
         if let Some(basis) = &card.basis {
-            context
-                .fill_text(
-                    &basis.to_string(),
-                    card_pos.x + rect_width / 2.0,
-                    card_pos.y + rect_width / 2.0,
-                )
-                .expect(&format!("Cannot print text for {:?}", card));
+            let katex_element_id = format!("katex-item_{}", &id);
+            let element = render_katex_element(basis.clone(), katex_element_id, "Huge");
+
+            let style_string = format!(
+                "position: absolute; top: {}px; left: {}px;",
+                card_pos.y + rect_width / 2.0,
+                card_pos.x + rect_width / 2.0
+            );
+            element
+                .set_attribute("style", style_string.as_str())
+                .expect(format!("Cannot set style for {:?}", card).as_str());
         }
     }
 }
@@ -146,6 +150,8 @@ fn draw_hand(player_num: u32) {
     let hit_region_map = &mut canvas.hit_region_map;
 
     for (i, card) in hand.iter().enumerate() {
+        let id = format!("p{}={}", player_num, i);
+
         let y_pos = if player_num == 1 {
             canvas.canvas_bounds.y - gutter - rect_height
         } else {
@@ -162,18 +168,18 @@ fn draw_hand(player_num: u32) {
         let hit_colour = random_hit_colour(&hit_region_map);
         hit_context.set_fill_style(&JsValue::from(&hit_colour));
         hit_context.fill_rect(card_pos.x, card_pos.y, rect_width, rect_height);
-        hit_region_map.insert(hit_colour, format!("p{}={}", player_num, i));
+        hit_region_map.insert(hit_colour, id.clone());
 
-        context.set_font("20px serif");
-        context.set_text_baseline("middle");
-        context.set_text_align("center");
+        let katex_element_id = format!("katex-item_{}", &id);
+        let element = render_katex_element(card.clone(), katex_element_id, "Large");
 
-        context
-            .fill_text(
-                &card.to_string(),
-                card_pos.x + rect_width / 2.0,
-                card_pos.y + rect_width / 2.0,
-            )
-            .expect(&format!("Cannot print text for {:?}", card));
+        let style_string = format!(
+            "position: absolute; top: {}px; left: {}px;",
+            card_pos.y + rect_width / 2.0,
+            card_pos.x + rect_width / 2.0
+        );
+        element
+            .set_attribute("style", style_string.as_str())
+            .expect(format!("Cannot set style for {:?}", card).as_str());
     }
 }
