@@ -16,17 +16,6 @@ where
     js_render_katex(item.to_latex())
 }
 
-pub fn render_katex_with_size<T>(item: T, size: &str) -> Element
-where
-    T: ToLatex,
-{
-    js_render_katex(format!(
-        "\\{size}{{{latex}}}",
-        size = size,
-        latex = item.to_latex()
-    ))
-}
-
 pub fn render_katex_element<T>(item: T, id: String, size: &str) -> Element
 where
     T: ToLatex,
@@ -35,4 +24,8 @@ where
         format!("\\{size}{{{latex}}}", size = size, latex = item.to_latex()),
         id,
     )
+}
+
+pub fn clear_katex_element(id: String) -> Element {
+    js_render_katex_element(String::default(), id)
 }

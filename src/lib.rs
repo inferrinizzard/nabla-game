@@ -11,6 +11,7 @@ mod event_listeners;
 
 mod canvas;
 mod render;
+mod render_constants;
 
 pub mod katex;
 mod util;

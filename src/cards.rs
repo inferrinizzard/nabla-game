@@ -182,7 +182,7 @@ impl ToLatex for DerivativeCard {
         let string = match self {
             DerivativeCard::Derivative => "\\frac{d}{dx}",
             DerivativeCard::Nabla => "\\nabla",
-            DerivativeCard::Laplacian => "\\delta",
+            DerivativeCard::Laplacian => "\\Delta",
             DerivativeCard::Integral => "\\int",
         };
         format!("{}", string)
