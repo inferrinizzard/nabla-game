@@ -40,8 +40,13 @@ fn render_item(id: String) {
         "f" => draw_field(val, id),
         "p1" => draw_hand(1, val, id),
         "p2" => draw_hand(2, val, id),
-        "x" => draw_x(),
-        "m" => draw_multi_done(),
+        "x" => {
+            if val == 0 {
+                draw_x();
+            } else if val == 1 {
+                draw_multi_done();
+            }
+        }
         _ => {}
     }
 }
@@ -190,11 +195,6 @@ fn draw_hand(player_num: u32, val: usize, id: String) {
         y: y_pos,
     };
 
-    let in_hand = val < hand.len();
-    if in_hand {
-        set_line_dash(&canvas.context, 2, 10.0); // set line dash for empty player card
-    }
-
     draw_rect(
         card_pos.x,
         card_pos.y,
@@ -203,22 +203,14 @@ fn draw_hand(player_num: u32, val: usize, id: String) {
         id.clone(),
     );
 
-    if !in_hand {
-        set_line_dash(&canvas.context, 0, 0.0);
-    }
-
     let katex_element_id = format!("katex-item_{}", &id);
-    if in_hand {
-        draw_katex(
-            card,
-            katex_element_id,
-            "Large",
-            Vector2 {
-                y: card_pos.y + PLAYER_CARD_HEIGHT / 2.0,
-                x: card_pos.x + PLAYER_CARD_WIDTH / 2.0,
-            },
-        );
-    } else {
-        clear_katex_element(katex_element_id);
-    }
+    draw_katex(
+        card,
+        katex_element_id,
+        "Large",
+        Vector2 {
+            y: card_pos.y + PLAYER_CARD_HEIGHT / 2.0,
+            x: card_pos.x + PLAYER_CARD_WIDTH / 2.0,
+        },
+    );
 }

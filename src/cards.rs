@@ -216,7 +216,7 @@ impl ToLatex for AlgebraicCard {
             AlgebraicCard::Mult => "\\times",
             AlgebraicCard::Sqrt => "\\sqrt{}",
             AlgebraicCard::Inverse => "f^{-1}",
-            AlgebraicCard::Log => "\\log(x)",
+            AlgebraicCard::Log => "\\log",
         };
         format!("{}", string)
     }
