@@ -6,7 +6,7 @@ use web_sys::*;
 use super::GAME;
 use crate::basis::structs::*;
 use crate::cards::*;
-use crate::game::{field::FieldBasis, structs::*};
+use crate::game::{field::FieldBasis, flags::ALLOW_LINEAR_DEPENDENCE, structs::*};
 use crate::render::render;
 
 pub fn handle_mousedown(id: String) {
@@ -305,6 +305,36 @@ fn end_turn() {
     for _ in player.len()..min(deck.len(), 7) {
         player.push(deck.pop().unwrap());
     }
+
+    let flag = unsafe { ALLOW_LINEAR_DEPENDENCE };
+    if !flag {
+        let field = &mut game.field;
+        // TODO: animate ?
+        // clear field bases that are linearly dependent
+        for i in 0..=2 {
+            for j in i + 1..=2 {
+                if field[i].basis.is_some()
+                    && field[j].basis.is_some()
+                    && field[i].basis.as_ref().unwrap().with_coefficient(1)
+                        == field[j].basis.as_ref().unwrap().with_coefficient(1)
+                {
+                    field[j] = FieldBasis::none();
+                }
+            }
+        }
+        for i in 3..6 {
+            for j in i + 1..6 {
+                if field[i].basis.is_some()
+                    && field[j].basis.is_some()
+                    && field[i].basis.as_ref().unwrap().with_coefficient(1)
+                        == field[j].basis.as_ref().unwrap().with_coefficient(1)
+                {
+                    field[j] = FieldBasis::none();
+                }
+            }
+        }
+    }
+
     next_turn();
 }
 
@@ -320,9 +350,6 @@ fn next_phase(phase: TurnPhase) {
 
 pub fn next_turn() {
     let game = unsafe { GAME.as_mut().unwrap() };
-    // console::log_1(&JsValue::from(format!("{:?}", game.field)));
-    // console::log_1(&JsValue::from(format!("{:?}", game.player_1)));
-    // console::log_1(&JsValue::from(format!("{:?}", game.player_2)));
 
     console::log_1(&JsValue::from(format!(
         "entering turn: {}",

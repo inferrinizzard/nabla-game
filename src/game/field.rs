@@ -1,6 +1,6 @@
 use std::collections::HashMap;
-use std::ops::Index;
-use std::ops::IndexMut;
+use std::ops::{Index, IndexMut};
+use std::slice::SliceIndex;
 
 use crate::basis::structs::*;
 use crate::cards::*;
@@ -61,10 +61,13 @@ impl Field {
     }
 }
 
-impl Index<usize> for Field {
-    type Output = FieldBasis;
+impl<Idx> Index<Idx> for Field
+where
+    Idx: SliceIndex<[FieldBasis]>,
+{
+    type Output = Idx::Output;
 
-    fn index(&self, i: usize) -> &FieldBasis {
+    fn index(&self, i: Idx) -> &Self::Output {
         &self.basis[i]
     }
 }
