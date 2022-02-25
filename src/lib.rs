@@ -4,12 +4,14 @@ use wasm_bindgen::prelude::*;
 pub mod basis;
 pub mod cards;
 mod game;
+use game::structs::Game;
 pub mod math;
 
 mod event_handlers;
 mod event_listeners;
 
 mod canvas;
+use canvas::Canvas;
 mod render;
 
 mod util;
@@ -22,8 +24,8 @@ mod util;
 #[global_allocator]
 static ALLOC: wee_alloc::WeeAlloc = wee_alloc::WeeAlloc::INIT;
 
-pub static mut CANVAS: Option<canvas::Canvas> = None;
-pub static mut GAME: Option<game::Game> = None;
+pub static mut CANVAS: Option<Canvas> = None;
+pub static mut GAME: Option<Game> = None;
 
 // This is like the `main` function, except for JavaScript.
 #[wasm_bindgen(start)]
@@ -36,8 +38,8 @@ pub fn main_js() -> Result<(), JsValue> {
     let window = web_sys::window().unwrap();
     let document = window.document().unwrap();
     unsafe {
-        CANVAS = Some(canvas::Canvas::new(&document));
-        GAME = Some(game::Game::new())
+        CANVAS = Some(Canvas::new(&document));
+        GAME = Some(Game::new())
     }
     let canvas = unsafe { CANVAS.as_mut().unwrap() };
 
