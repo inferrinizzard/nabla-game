@@ -1,9 +1,7 @@
 use std::fmt::{Display, Formatter, Result};
 
-use wasm_bindgen::prelude::*;
-use web_sys::*;
-
 use crate::basis::{builders::*, structs::*};
+use crate::game::flags::DISPLAY_LN_FOR_LOG;
 use crate::math::{
     derivative::derivative, integral::integral, inverse::inverse, limits::limit,
     logarithm::logarithm,
@@ -218,7 +216,14 @@ impl ToLatex for AlgebraicCard {
             AlgebraicCard::Mult => "\\times",
             AlgebraicCard::Sqrt => "\\sqrt{}",
             AlgebraicCard::Inverse => "f^{-1}",
-            AlgebraicCard::Log => "\\log",
+            AlgebraicCard::Log => {
+                let flag = unsafe { DISPLAY_LN_FOR_LOG };
+                if flag {
+                    "\\ln"
+                } else {
+                    "\\log"
+                }
+            }
         };
         format!("{}", string)
     }

@@ -1,6 +1,7 @@
 use std::fmt::{Display, Formatter, Result};
 
 use crate::cards::BasisCard;
+use crate::game::flags::DISPLAY_LN_FOR_LOG;
 use crate::math::fraction::Fraction;
 
 use crate::util::ToLatex;
@@ -508,7 +509,10 @@ impl ToLatex for BasisOperator {
                 format!("^{{{}/{}}}", n, d)
             }
             BasisOperator::E => "e^".to_string(),
-            BasisOperator::Log => "\\log".to_string(),
+            BasisOperator::Log => {
+                let flag = unsafe { DISPLAY_LN_FOR_LOG };
+                (if flag { "\\ln" } else { "\\log" }).to_string()
+            }
             BasisOperator::Cos => "\\cos".to_string(),
             BasisOperator::Sin => "\\sin".to_string(),
             BasisOperator::Acos => "\\acos".to_string(),
