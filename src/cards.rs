@@ -1,5 +1,8 @@
 use std::fmt::{Display, Formatter, Result};
 
+use wasm_bindgen::prelude::*;
+use web_sys::*;
+
 use crate::basis::{builders::*, structs::*};
 use crate::math::{
     derivative::derivative, integral::integral, inverse::inverse, limits::limit,
@@ -34,7 +37,7 @@ pub fn apply_multi_card(card: &Card, bases: Vec<Basis>) -> Basis {
             let mut numerator = vec![];
             let mut denominator = vec![];
             for i in (0..bases.len()).rev() {
-                if i % 2 == 1 {
+                if i % 2 == 0 {
                     numerator.push(bases[i].clone());
                 } else {
                     denominator.push(bases[i].clone());
