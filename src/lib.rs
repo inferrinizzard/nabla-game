@@ -49,7 +49,7 @@ pub fn main_js() -> Result<(), JsValue> {
         event_listeners::mousedown_event_listener,
     ));
 
-    render::draw();
+    render::render::draw();
 
     Ok(())
 }

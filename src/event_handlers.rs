@@ -3,11 +3,11 @@ use std::cmp::min;
 use wasm_bindgen::prelude::*;
 use web_sys::*;
 
-use super::game::field::*;
-use super::game::structs::*;
-use super::render;
 use super::GAME;
-use super::{basis::structs::*, cards::*};
+use crate::basis::structs::*;
+use crate::cards::*;
+use crate::game::{field::FieldBasis, structs::*};
+use crate::render::render;
 
 pub fn handle_mousedown(id: String) {
     if id.is_empty() {

@@ -4,8 +4,15 @@
 		<meta charset="UTF-8" />
 		<title>Nabla Game</title>
 		<link rel="stylesheet" href="index.css" />
+		<link
+			rel="stylesheet"
+			href="https://cdn.jsdelivr.net/npm/katex@0.15.2/dist/katex.min.css"
+			integrity="sha384-MlJdn/WNKDGXveldHDdyRP1R4CTHr3FeuDNfhsLPYrq2t0UBkUdK2jyTnXPEK1NQ"
+			crossorigin="anonymous"
+		/>
 	</head>
 	<body>
+		<div id="katex"></div>
 		<canvas id="canvas"></canvas>
 		<canvas id="hitCanvas" hidden></canvas>
 		<script src="index.js"></script>
@@ -14,6 +21,7 @@
 				let canvas = document.getElementById(canvasId);
 				canvas.width = window.innerWidth;
 				canvas.height = window.innerHeight;
+				// resize #katex too
 			};
 			resizeCanvas('canvas');
 			resizeCanvas('hitCanvas');
