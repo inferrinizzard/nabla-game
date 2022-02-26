@@ -1,10 +1,12 @@
 use std::fmt::{Display, Formatter, Result};
 
 use crate::basis::{builders::*, structs::*};
+use crate::game::flags::DISPLAY_LN_FOR_LOG;
 use crate::math::{
     derivative::derivative, integral::integral, inverse::inverse, limits::limit,
     logarithm::logarithm,
 };
+use crate::util::ToLatex;
 
 pub fn apply_card(card: &Card) -> impl Fn(&Basis) -> Basis {
     let card = card.clone();
@@ -21,7 +23,6 @@ pub fn apply_card(card: &Card) -> impl Fn(&Basis) -> Basis {
                 Basis::x(), // invalid limit placeholder
             );
             basis_limit
-            // basis_limit.resolve()
         }
         _ => Basis::from(0),
     };
@@ -34,7 +35,7 @@ pub fn apply_multi_card(card: &Card, bases: Vec<Basis>) -> Basis {
             let mut numerator = vec![];
             let mut denominator = vec![];
             for i in (0..bases.len()).rev() {
-                if i % 2 == 1 {
+                if i % 2 == 0 {
                     numerator.push(bases[i].clone());
                 } else {
                     denominator.push(bases[i].clone());
@@ -66,7 +67,6 @@ impl Card {
         }
     }
 }
-
 impl Display for Card {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result {
         match self {
@@ -74,6 +74,16 @@ impl Display for Card {
             Card::LimitCard(limit_card) => write!(f, "{}", limit_card),
             Card::AlgebraicCard(algebraic_card) => write!(f, "{}", algebraic_card),
             Card::DerivativeCard(derivative_card) => write!(f, "{}", derivative_card),
+        }
+    }
+}
+impl ToLatex for Card {
+    fn to_latex(&self) -> String {
+        match self {
+            Card::BasisCard(basis_card) => basis_card.to_latex(),
+            Card::LimitCard(limit_card) => limit_card.to_latex(),
+            Card::AlgebraicCard(algebraic_card) => algebraic_card.to_latex(),
+            Card::DerivativeCard(derivative_card) => derivative_card.to_latex(),
         }
     }
 }
@@ -102,6 +112,19 @@ impl Display for BasisCard {
         write!(f, "{}", string)
     }
 }
+impl ToLatex for BasisCard {
+    fn to_latex(&self) -> String {
+        let string = match self {
+            BasisCard::X => "x".to_string(),
+            BasisCard::X2 => "x^{2}".to_string(),
+            BasisCard::Cos => "\\cos(x)".to_string(),
+            BasisCard::Sin => "\\sin(x)".to_string(),
+            BasisCard::E => "e^{x}".to_string(),
+            _ => self.to_string(),
+        };
+        format!("{}", string)
+    }
+}
 
 #[derive(Copy, Clone, Debug, Hash, Eq, PartialEq)]
 pub enum LimitCard {
@@ -117,10 +140,22 @@ impl Display for LimitCard {
             LimitCard::LimPosInf => "lim=>+inf",
             LimitCard::LimNegInf => "lim=>-inf",
             LimitCard::Lim0 => "lim=>0",
-            LimitCard::Liminf => "liminf=>+inf",
-            LimitCard::Limsup => "limsup=>+inf",
+            LimitCard::Liminf => "liminf=>inf",
+            LimitCard::Limsup => "limsup=>inf",
         };
         write!(f, "{}", string)
+    }
+}
+impl ToLatex for LimitCard {
+    fn to_latex(&self) -> String {
+        let string = match self {
+            LimitCard::LimPosInf => "\\lim\\limits_{x\\rightarrow+\\infty}",
+            LimitCard::LimNegInf => "\\lim\\limits_{x\\rightarrow-\\infty}",
+            LimitCard::Lim0 => "\\lim\\limits_{x\\rightarrow0}",
+            LimitCard::Liminf => "\\liminf\\limits_{x\\rightarrow+\\infty}",
+            LimitCard::Limsup => "\\limsup\\limits_{x\\rightarrow+\\infty}",
+        };
+        format!("{}", string)
     }
 }
 
@@ -142,6 +177,17 @@ impl Display for DerivativeCard {
         write!(f, "{}", string)
     }
 }
+impl ToLatex for DerivativeCard {
+    fn to_latex(&self) -> String {
+        let string = match self {
+            DerivativeCard::Derivative => "\\frac{d}{dx}",
+            DerivativeCard::Nabla => "\\nabla",
+            DerivativeCard::Laplacian => "\\Delta",
+            DerivativeCard::Integral => "\\int",
+        };
+        format!("{}", string)
+    }
+}
 
 #[derive(Copy, Clone, Debug, Hash, Eq, PartialEq)]
 pub enum AlgebraicCard {
@@ -161,5 +207,24 @@ impl Display for AlgebraicCard {
             AlgebraicCard::Log => "log",
         };
         write!(f, "{}", string)
+    }
+}
+impl ToLatex for AlgebraicCard {
+    fn to_latex(&self) -> String {
+        let string = match self {
+            AlgebraicCard::Div => "\\div",
+            AlgebraicCard::Mult => "\\times",
+            AlgebraicCard::Sqrt => "\\sqrt{}",
+            AlgebraicCard::Inverse => "f^{-1}",
+            AlgebraicCard::Log => {
+                let flag = unsafe { DISPLAY_LN_FOR_LOG };
+                if flag {
+                    "\\ln"
+                } else {
+                    "\\log"
+                }
+            }
+        };
+        format!("{}", string)
     }
 }

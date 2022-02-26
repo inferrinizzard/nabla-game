@@ -24,7 +24,8 @@ module.exports = {
 	// temp, see: https://github.com/rust-random/getrandom/issues/224
 	ignoreWarnings: [
 		warning =>
-			warning.message === 'Critical dependency: the request of a dependency is an expression',
+			warning.message === 'Critical dependency: the request of a dependency is an expression' ||
+			warning.message.startsWith('asset size limit:'), // build size warning
 	],
 	experiments: {
 		syncWebAssembly: true,

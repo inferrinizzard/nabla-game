@@ -1,7 +1,10 @@
 use std::fmt::{Display, Formatter, Result};
 
 use crate::cards::BasisCard;
+use crate::game::flags::DISPLAY_LN_FOR_LOG;
 use crate::math::fraction::Fraction;
+
+use crate::util::ToLatex;
 
 // type union of the starter basis or complex basis
 #[derive(Clone, Debug, Hash, Eq, PartialEq)]
@@ -170,6 +173,15 @@ impl Display for Basis {
     }
 }
 
+impl ToLatex for Basis {
+    fn to_latex(&self) -> String {
+        match self {
+            Basis::BasisLeaf(basis_leaf) => format!("{}", basis_leaf.to_latex()),
+            Basis::BasisNode(basis_node) => format!("{}", basis_node.to_latex()),
+        }
+    }
+}
+
 // most basic Basis type
 #[derive(Clone, Debug, Hash, Eq, PartialEq)]
 pub struct BasisLeaf {
@@ -228,6 +240,20 @@ impl Display for BasisLeaf {
                 if self.coefficient > 0 { "+" } else { "-" },
                 "INF"
             ),
+        }
+    }
+}
+
+impl ToLatex for BasisLeaf {
+    fn to_latex(&self) -> String {
+        match self.element {
+            BasisElement::Inf => (if self.coefficient > 1 {
+                "\\infty"
+            } else {
+                "-\\infty"
+            })
+            .to_string(),
+            _ => self.to_string(),
         }
     }
 }
@@ -308,6 +334,58 @@ impl Display for BasisNode {
                         })
                 )
             }
+        }
+    }
+}
+
+impl ToLatex for BasisNode {
+    fn to_latex(&self) -> String {
+        match self.operator {
+            BasisOperator::E => format!(
+                "{}{{{}}}",
+                self.operator.to_latex(),
+                self.operands[0].to_latex()
+            ),
+            BasisOperator::Add | BasisOperator::Minus | BasisOperator::Mult => format!(
+                "{}",
+                self.operands
+                    .iter()
+                    .fold(String::new(), |acc, op| if acc == "" {
+                        format!("{}", op.to_latex())
+                    } else {
+                        format!("{} {} {}", acc, self.operator.to_latex(), op.to_latex())
+                    })
+            ),
+            BasisOperator::Div => format!(
+                "\\frac{{{numerator}}}{{{denominator}}}",
+                numerator = self.operands[0].to_latex(),
+                denominator = self.operands[1].to_latex()
+            ),
+            BasisOperator::Pow(pow) => {
+                if pow == -1 {
+                    return format!(
+                        "\\frac{{1}}{{{denominator}}}",
+                        denominator = self.operands[0].to_latex()
+                    );
+                }
+                match self.operands[0] {
+                    Basis::BasisLeaf(_) => format!(
+                        "{}{}",
+                        self.operands[0].to_latex(),
+                        self.operator.to_latex()
+                    ),
+                    Basis::BasisNode(_) => format!(
+                        "({}){}",
+                        self.operands[0].to_latex(),
+                        self.operator.to_latex()
+                    ),
+                }
+            }
+            _ => format!(
+                "{}({})",
+                self.operator.to_latex(),
+                self.operands[0].to_latex()
+            ),
         }
     }
 }
@@ -418,5 +496,31 @@ impl Display for BasisOperator {
             BasisOperator::Int => "I",
         };
         write!(f, "{}", string)
+    }
+}
+
+impl ToLatex for BasisOperator {
+    fn to_latex(&self) -> String {
+        let latex = match self {
+            BasisOperator::Pow(Fraction { n, d: 1 }) => {
+                format!("^{{{}}}", n)
+            }
+            BasisOperator::Pow(Fraction { n, d }) => {
+                format!("^{{{}/{}}}", n, d)
+            }
+            BasisOperator::E => "e^".to_string(),
+            BasisOperator::Log => {
+                let flag = unsafe { DISPLAY_LN_FOR_LOG };
+                (if flag { "\\ln" } else { "\\log" }).to_string()
+            }
+            BasisOperator::Cos => "\\cos".to_string(),
+            BasisOperator::Sin => "\\sin".to_string(),
+            BasisOperator::Acos => "\\acos".to_string(),
+            BasisOperator::Asin => "\\asin".to_string(),
+            BasisOperator::Inv => "f^{\\text{-}1}".to_string(),
+            BasisOperator::Int => "\\int".to_string(),
+            _ => self.to_string(),
+        };
+        format!("{}", latex)
     }
 }

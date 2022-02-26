@@ -1,10 +1,13 @@
+use std::cmp::min;
+
 use wasm_bindgen::prelude::*;
 use web_sys::*;
 
-use super::game::*;
-use super::render;
 use super::GAME;
-use super::{basis::structs::*, cards::*};
+use crate::basis::structs::*;
+use crate::cards::*;
+use crate::game::{field::FieldBasis, flags::ALLOW_LINEAR_DEPENDENCE, structs::*};
+use crate::render::render;
 
 pub fn handle_mousedown(id: String) {
     if id.is_empty() {
@@ -75,15 +78,16 @@ fn idle_turn_phase(card: Card) {
     match card {
         Card::BasisCard(basis_card) => {
             // allow play if empty slot
-            if game.field.iter().any(|b| b.basis.is_none()) {
+            if game.field.basis.iter().any(|b| b.basis.is_none()) {
                 next_phase(TurnPhase::SELECT(Card::BasisCard(basis_card)));
             }
         }
         Card::DerivativeCard(derivative_card)
-            if matches!(
-                derivative_card,
-                DerivativeCard::Laplacian | DerivativeCard::Nabla
-            ) =>
+            if (game.turn.number == 1 && matches!(derivative_card, DerivativeCard::Nabla))
+                || matches!(
+                    derivative_card,
+                    DerivativeCard::Laplacian | DerivativeCard::Nabla
+                ) =>
         {
             // field select
             next_phase(TurnPhase::FIELD_SELECT(Card::DerivativeCard(
@@ -123,11 +127,16 @@ fn select_turn_phase(select_operator: Card, (id_key, id_val): (String, usize)) {
                     Card::DerivativeCard(DerivativeCard::Derivative | DerivativeCard::Integral)
                 ) {
                     handle_derivative_card(operator_card, id_val);
+                } else if matches!(operator_card, Card::AlgebraicCard(AlgebraicCard::Inverse)) {
+                    // let field = &mut game.field;
+                    let result_basis =
+                        apply_card(&operator_card)(game.field[id_val].basis.as_ref().unwrap());
+                    game.field.inverse(id_val, Some(result_basis))
                 } else {
                     let selected_field_basis = &mut game.field[id_val];
                     let result_basis =
                         apply_card(&operator_card)(selected_field_basis.basis.as_ref().unwrap());
-                    if result_basis.is_num(0) {
+                    if result_basis.is_num(0) || result_basis.is_inf(1) || result_basis.is_inf(-1) {
                         game.field[id_val] = FieldBasis::none();
                     } else {
                         game.field[id_val] = FieldBasis::new(&result_basis);
@@ -158,7 +167,7 @@ fn handle_derivative_card(card: Card, i: usize) {
         Card::DerivativeCard(DerivativeCard::Derivative | DerivativeCard::Nabla)
     );
 
-    let selected_field_basis = &mut game.field[i];
+    let selected_field_basis = &game.field[i];
     if selected_field_basis.basis.is_none() {
         return;
     }
@@ -167,12 +176,12 @@ fn handle_derivative_card(card: Card, i: usize) {
     // shortcut if already in history
     if selected_field_basis.has_value(&card) {
         if is_derivative || is_laplacian {
-            selected_field_basis.derivative(None);
+            game.field.derivative(i, None);
         } else if is_integral {
-            selected_field_basis.integral(None);
+            game.field.integral(i, None);
         }
         if is_laplacian {
-            selected_field_basis.derivative(None);
+            game.field.derivative(i, None);
         }
     } else {
         let result_basis = apply_card(&card)(selected_field_basis.basis.as_ref().unwrap());
@@ -181,9 +190,9 @@ fn handle_derivative_card(card: Card, i: usize) {
             return;
         } else {
             if is_derivative || is_laplacian {
-                selected_field_basis.derivative(Some(&result_basis));
+                game.field.derivative(i, Some(result_basis.clone()));
             } else if is_integral {
-                selected_field_basis.integral(Some(&result_basis));
+                game.field.integral(i, Some(result_basis.clone()));
             }
         }
         if is_laplacian {
@@ -192,7 +201,7 @@ fn handle_derivative_card(card: Card, i: usize) {
                 game.field[i] = FieldBasis::none();
                 return;
             }
-            selected_field_basis.derivative(Some(&second_derivative));
+            game.field.derivative(i, Some(second_derivative));
         }
     }
 }
@@ -293,11 +302,39 @@ fn end_turn() {
 
     let deck = &mut game.deck;
     // replenish from deck if possible
-    for _ in player.len()..7 {
-        if deck.len() > 0 {
-            player.push(deck.pop().unwrap());
+    for _ in player.len()..min(deck.len(), 7) {
+        player.push(deck.pop().unwrap());
+    }
+
+    let flag = unsafe { ALLOW_LINEAR_DEPENDENCE };
+    if !flag {
+        let field = &mut game.field;
+        // TODO: animate ?
+        // clear field bases that are linearly dependent
+        for i in 0..=2 {
+            for j in i + 1..=2 {
+                if field[i].basis.is_some()
+                    && field[j].basis.is_some()
+                    && field[i].basis.as_ref().unwrap().with_coefficient(1)
+                        == field[j].basis.as_ref().unwrap().with_coefficient(1)
+                {
+                    field[j] = FieldBasis::none();
+                }
+            }
+        }
+        for i in 3..6 {
+            for j in i + 1..6 {
+                if field[i].basis.is_some()
+                    && field[j].basis.is_some()
+                    && field[i].basis.as_ref().unwrap().with_coefficient(1)
+                        == field[j].basis.as_ref().unwrap().with_coefficient(1)
+                {
+                    field[j] = FieldBasis::none();
+                }
+            }
         }
     }
+
     next_turn();
 }
 
@@ -313,9 +350,6 @@ fn next_phase(phase: TurnPhase) {
 
 pub fn next_turn() {
     let game = unsafe { GAME.as_mut().unwrap() };
-    // console::log_1(&JsValue::from(format!("{:?}", game.field)));
-    // console::log_1(&JsValue::from(format!("{:?}", game.player_1)));
-    // console::log_1(&JsValue::from(format!("{:?}", game.player_2)));
 
     console::log_1(&JsValue::from(format!(
         "entering turn: {}",
