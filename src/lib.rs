@@ -11,7 +11,7 @@ mod event_handlers;
 mod event_listeners;
 
 mod canvas;
-use canvas::Canvas;
+use canvas::*;
 mod render;
 
 mod util;
@@ -49,7 +49,14 @@ pub fn main_js() -> Result<(), JsValue> {
         event_listeners::mousedown_event_listener,
     ));
 
+    canvas::resize_canvas();
     render::render::draw();
+
+    EventListener::new(&window, "resize", |_e| {
+        canvas::resize_canvas();
+        render::render::draw();
+    })
+    .forget();
 
     Ok(())
 }

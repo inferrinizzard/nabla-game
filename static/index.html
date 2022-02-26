@@ -16,20 +16,5 @@
 		<canvas id="canvas"></canvas>
 		<canvas id="hitCanvas" hidden></canvas>
 		<script src="index.js"></script>
-		<script>
-			const resizeCanvas = canvasId => {
-				let canvas = document.getElementById(canvasId);
-				canvas.width = window.innerWidth;
-				canvas.height = window.innerHeight;
-				// resize #katex too
-			};
-			resizeCanvas('canvas');
-			resizeCanvas('hitCanvas');
-			window.addEventListener('resize', () => {
-				resizeCanvas('canvas');
-				resizeCanvas('hitCanvas');
-				// call redraw
-			});
-		</script>
 	</body>
 </html>

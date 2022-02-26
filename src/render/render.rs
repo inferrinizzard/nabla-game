@@ -11,6 +11,7 @@ use crate::util::*;
 use crate::{CANVAS, GAME};
 
 /// main render function, iterates through all items to render
+#[wasm_bindgen]
 pub fn draw() {
     let canvas = unsafe { CANVAS.as_mut().unwrap() };
     let context = &canvas.context;
