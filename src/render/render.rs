@@ -8,17 +8,22 @@ use web_sys::*;
 // external crate imports
 use crate::game::structs::*;
 use crate::util::*;
-use crate::{CANVAS, GAME};
+use crate::{CANVAS, GAME, MENU};
 // internal crate imports
 use super::katex::*;
 use super::render_constants::*;
 
 /// main render function, iterates through all items to render
 pub fn draw() {
-    let game = unsafe { GAME.as_ref().unwrap() };
+    let (game, menu) = unsafe { (GAME.as_ref().unwrap(), MENU.as_ref().unwrap()) };
     match game.state {
-        GameState::PLAY => render_play_screen(),
-        // GameState::MENU => render_menu(),
+        GameState::PLAYAI | GameState::PLAYVS => {
+            menu.disable();
+            render_play_screen()
+        }
+        GameState::MENU => {
+            menu.enable();
+        }
         _ => {}
     }
 }

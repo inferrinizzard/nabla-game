@@ -1,8 +1,10 @@
 use rand::seq::SliceRandom;
 use rand::thread_rng;
+use std::fmt::{Display, Formatter, Result};
 
 use super::field::*;
 use crate::cards::*;
+use crate::render::render;
 
 fn get_new_deck() -> Vec<Card> {
     let mut deck = vec![];
@@ -84,6 +86,11 @@ impl Game {
             },
         };
     }
+
+    pub fn set_state(&mut self, state: GameState) {
+        self.state = state;
+        render::draw();
+    }
 }
 
 #[derive(Debug)]
@@ -117,7 +124,53 @@ impl ActiveCards {
 #[derive(Debug)]
 pub enum GameState {
     MENU,
-    OPTIONS,
+    PLAYAI,
+    PLAYVS,
     TUTORIAL,
-    PLAY,
+    SETTINGS,
+    CREDITS,
+}
+
+impl GameState {
+    pub fn vec() -> Vec<Self> {
+        vec![
+            Self::MENU,
+            Self::PLAYAI,
+            Self::PLAYVS,
+            Self::TUTORIAL,
+            Self::SETTINGS,
+            Self::CREDITS,
+        ]
+    }
+}
+
+impl Display for GameState {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result {
+        write!(
+            f,
+            "{}",
+            match self {
+                Self::MENU => "MENU",
+                Self::PLAYAI => "PLAYAI",
+                Self::PLAYVS => "PLAYVS",
+                Self::TUTORIAL => "TUTORIAL",
+                Self::SETTINGS => "SETTINGS",
+                Self::CREDITS => "CREDITS",
+            }
+        )
+    }
+}
+
+impl From<&str> for GameState {
+    fn from(input: &str) -> Self {
+        match input {
+            "MENU" => Self::MENU,
+            "PLAYAI" => Self::PLAYAI,
+            "PLAYVS" => Self::PLAYVS,
+            "TUTORIAL" => Self::TUTORIAL,
+            "SETTINGS" => Self::SETTINGS,
+            "CREDITS" => Self::CREDITS,
+            _ => unreachable!("{} is not a valid GameState", input),
+        }
+    }
 }
