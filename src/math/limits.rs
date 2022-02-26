@@ -4,6 +4,7 @@ use crate::basis::{
     builders::{AddBasisNode, MultBasisNode},
     structs::*,
 };
+use crate::game::flags::ALLOW_LIMITS_BEYOND_BOUNDS;
 
 fn limit_arccos_arcsin(
     limit_card: &LimitCard,
@@ -168,9 +169,24 @@ pub fn limit(_limit_card: &LimitCard) -> impl Fn(&Basis) -> Option<Basis> {
                         Some(Basis::from(*coefficient)) // coefficient * some cos(n) | sin(n)
                     }
                     BasisOperator::Acos | BasisOperator::Asin => {
-                        // find nested limit
-                        let operand_limit = limit(&limit_card)(&Basis::x()).unwrap();
-                        return limit_arccos_arcsin(&limit_card, &operands[0], operand_limit);
+                        let flag = unsafe { ALLOW_LIMITS_BEYOND_BOUNDS };
+                        if flag {
+                            // find nested limit
+                            let operand_limit = limit(&limit_card)(&Basis::x()).unwrap();
+                            return limit_arccos_arcsin(&limit_card, &operands[0], operand_limit);
+                        } else {
+                            match *operator {
+                                // acos(0) = PI/2
+                                BasisOperator::Acos if limit_card == LimitCard::Lim0 => {
+                                    Some(Basis::from(1))
+                                }
+                                // asin(0) = 0
+                                BasisOperator::Asin if limit_card == LimitCard::Lim0 => {
+                                    Some(Basis::from(0))
+                                }
+                                _ => None,
+                            }
+                        }
                     }
                     BasisOperator::Inv => {
                         unimplemented!(
