@@ -13,7 +13,7 @@ use crate::{CANVAS, GAME};
 /// main render function, iterates through all items to render
 #[wasm_bindgen]
 pub fn draw() {
-    let canvas = unsafe { CANVAS.as_mut().unwrap() };
+    let canvas = unsafe { CANVAS.as_ref().unwrap() };
     let context = &canvas.context;
 
     context.clear_rect(0.0, 0.0, canvas.canvas_bounds.x, canvas.canvas_bounds.y);
@@ -27,6 +27,7 @@ pub fn draw() {
             render_item(format!("p{}={}", i, j));
         }
     }
+    render_item("d=1".to_string());
     render_item("x=0".to_string());
     render_item("x=1".to_string());
 }
@@ -38,6 +39,7 @@ fn render_item(id: String) {
     let val = kvp[1].parse::<usize>().unwrap();
 
     match key {
+        "d" => draw_deck(),
         "f" => draw_field(val, id),
         "p1" => draw_hand(1, val, id),
         "p2" => draw_hand(2, val, id),
@@ -96,10 +98,40 @@ fn draw_x() {
 
 /// draws the button that ends MULTI_SELECT phase
 fn draw_multi_done() {
-    let canvas = unsafe { CANVAS.as_mut().unwrap() };
+    let canvas = unsafe { CANVAS.as_ref().unwrap() };
 
     let bounds = &canvas.canvas_bounds;
     draw_rect(bounds.x - 35.0, 10.0, 25.0, 25.0, "x=1".to_string());
+}
+
+/// draws deck and num cards remaining
+fn draw_deck() {
+    let (canvas, game) = unsafe { (CANVAS.as_mut().unwrap(), GAME.as_ref().unwrap()) };
+
+    let center = &canvas.canvas_center;
+    let deck_pos = Vector2 {
+        x: center.x - FIELD_BASIS_WIDTH * 2.5 - FIELD_BASIS_GUTTER * 2.0,
+        y: center.y - FIELD_BASIS_HEIGHT / 2.0,
+    };
+    draw_rect(
+        deck_pos.x,
+        deck_pos.y,
+        FIELD_BASIS_WIDTH,
+        FIELD_BASIS_HEIGHT,
+        "d=1".to_string(),
+    );
+
+    let context = &mut canvas.context;
+    context.set_font("40px serif");
+    context.set_text_baseline("middle");
+    context.set_text_align("center");
+    context
+        .fill_text(
+            game.deck.len().to_string().as_str(),
+            deck_pos.x + FIELD_BASIS_WIDTH / 2.0,
+            deck_pos.y + FIELD_BASIS_HEIGHT / 2.0,
+        )
+        .expect(&format!("Cannot printsize for deck"));
 }
 
 /// applies line dash style to context, or clears if dash_num is 0
@@ -132,7 +164,7 @@ where
 
 /// renders 6 field basis slots
 fn draw_field(val: usize, id: String) {
-    let (canvas, game) = unsafe { (CANVAS.as_mut().unwrap(), GAME.as_mut().unwrap()) };
+    let (canvas, game) = unsafe { (CANVAS.as_ref().unwrap(), GAME.as_mut().unwrap()) };
     let field = &game.field;
     let context = &canvas.context;
 
@@ -176,7 +208,7 @@ fn draw_field(val: usize, id: String) {
 
 /// renders player hands
 fn draw_hand(player_num: u32, val: usize, id: String) {
-    let (canvas, game) = unsafe { (CANVAS.as_mut().unwrap(), GAME.as_mut().unwrap()) };
+    let (canvas, game) = unsafe { (CANVAS.as_ref().unwrap(), GAME.as_mut().unwrap()) };
     let hand = if player_num == 1 {
         &game.player_1
     } else {
