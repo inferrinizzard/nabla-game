@@ -15,8 +15,10 @@ use crate::{CANVAS, GAME};
 pub fn draw() {
     let canvas = unsafe { CANVAS.as_ref().unwrap() };
     let context = &canvas.context;
+    let hit_context = &canvas.hit_context;
 
     context.clear_rect(0.0, 0.0, canvas.canvas_bounds.x, canvas.canvas_bounds.y);
+    hit_context.clear_rect(0.0, 0.0, canvas.canvas_bounds.x, canvas.canvas_bounds.y);
 
     // draw field
     for i in 0..6 {
@@ -80,7 +82,12 @@ fn draw_rect(x: f64, y: f64, width: f64, height: f64, id: String) {
     context.stroke_rect(x, y, width, height);
 
     // draw rect onto hit canvas with random colour
-    let hit_colour = random_hit_colour(&hit_region_map);
+    let existing_colour = hit_region_map.iter().find(|(_, v)| **v == id);
+    let hit_colour = if existing_colour.is_some() {
+        existing_colour.unwrap().0.clone()
+    } else {
+        random_hit_colour(&hit_region_map)
+    };
     hit_context.set_fill_style(&JsValue::from(&hit_colour));
     hit_context.fill_rect(x, y, width, height);
     hit_region_map.insert(hit_colour, id);

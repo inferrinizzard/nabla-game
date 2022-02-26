@@ -95,6 +95,8 @@ pub fn resize_canvas() {
 
     canvas.canvas_element.set_width(inner_width);
     canvas.canvas_element.set_height(inner_height);
+    canvas.hit_canvas_element.set_width(inner_width);
+    canvas.hit_canvas_element.set_height(inner_height);
 
     canvas.rebounds();
 }
