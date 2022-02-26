@@ -1,5 +1,6 @@
 use crate::basis::{builders::*, structs::*};
 
+use crate::game::flags::FULL_COMPUTE;
 use crate::math::fraction::Fraction;
 use crate::math::integral::*;
 
@@ -18,12 +19,12 @@ pub fn logarithmic(basis_node: &BasisNode, u: &Basis, dv: &Basis) -> Option<Basi
 
 pub fn inv_trig(basis_node: &BasisNode) -> Option<Basis> {
     // current temp short circuit
-    // turn on with flag
     if basis_node
         .operands
         .iter()
         .any(|op| op.is_node(BasisOperator::Acos) | op.is_node(BasisOperator::Asin))
     {
+        // use FULL_COMPUTE here with x^n
         return None;
     }
 
@@ -50,9 +51,9 @@ pub fn algebraic(_basis_node: &BasisNode, u: &Basis, dv: &Basis) -> Option<Basis
         ..
     }) = u
     {
+        let flag = unsafe { FULL_COMPUTE };
         // skip if too complex
-        // turn on with flag
-        if *n < 4 {
+        if flag || *n < 4 {
             return Some(tabular_integration(u, dv));
         }
     }

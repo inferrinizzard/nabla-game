@@ -1,6 +1,7 @@
 use std::cmp::{max, min};
 
 use crate::basis::{builders::*, structs::*};
+use crate::game::flags::FULL_COMPUTE;
 
 use crate::math::derivative::derivative;
 use crate::math::fraction::Fraction;
@@ -87,6 +88,14 @@ pub fn integral(basis: &Basis) -> Basis {
                 // I(f-1(x)) = xf-1(x) - I(xf-1(x))
                 integration_by_parts(basis, &Basis::from(1))
             }
+            BasisOperator::Acos | BasisOperator::Asin => {
+                let flag = unsafe { FULL_COMPUTE };
+                if flag {
+                    // I(acos(x)) = xacos(x) - I(x * d/dx(acos(x)))
+                    return integration_by_parts(basis, &Basis::from(1));
+                }
+                IntBasisNode(basis) * *coefficient
+            }
             _ => IntBasisNode(basis) * *coefficient,
         },
     }
@@ -161,7 +170,7 @@ fn substitution_integration(basis_node: &BasisNode) -> Basis {
         || basis_node.operands.len() > 2
     {
         return IntBasisNode(&Basis::BasisNode(basis_node.clone()));
-        // turn on with flag
+        // use FULL_COMPUTE here and order by weight
         // return polynomial_integration_by_parts(basis_node.operands.clone());
     }
 
