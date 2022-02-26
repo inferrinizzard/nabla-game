@@ -53,6 +53,7 @@ fn create_players(deck: &mut Vec<Card>) -> (Vec<Card>, Vec<Card>) {
 
 #[derive(Debug)]
 pub struct Game {
+    pub state: GameState,
     pub turn: Turn, // turn counter
     pub field: Field,
     pub player_1: Vec<Card>, // up to 7 cards in hand (<7 if deck running low)
@@ -68,6 +69,7 @@ impl Game {
 
         let (player_1, player_2) = create_players(&mut deck);
         return Game {
+            state: GameState::MENU,
             turn: Turn {
                 number: 0,
                 phase: TurnPhase::IDLE,
@@ -110,4 +112,12 @@ impl ActiveCards {
         self.selected = Vec::default();
         self.hover = None;
     }
+}
+
+#[derive(Debug)]
+pub enum GameState {
+    MENU,
+    OPTIONS,
+    TUTORIAL,
+    PLAY,
 }

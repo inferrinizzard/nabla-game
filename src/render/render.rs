@@ -1,17 +1,29 @@
+// std imports
+use rand::Rng;
+use std::collections::HashMap;
+// wasm-bindgen imports
 use js_sys::Array;
 use wasm_bindgen::prelude::*;
 use web_sys::*;
-
-use rand::Rng;
-use std::collections::HashMap;
-
-use super::katex::*;
-use super::render_constants::*;
+// external crate imports
+use crate::game::structs::*;
 use crate::util::*;
 use crate::{CANVAS, GAME};
+// internal crate imports
+use super::katex::*;
+use super::render_constants::*;
 
 /// main render function, iterates through all items to render
 pub fn draw() {
+    let game = unsafe { GAME.as_ref().unwrap() };
+    match game.state {
+        GameState::PLAY => render_play_screen(),
+        // GameState::MENU => render_menu(),
+        _ => {}
+    }
+}
+
+pub fn render_play_screen() {
     let canvas = unsafe { CANVAS.as_mut().unwrap() };
     let context = &canvas.context;
 
@@ -66,7 +78,7 @@ fn random_hit_colour(hit_region_map: &HashMap<String, String>) -> String {
     format!("#{}", hex_colour)
 }
 
-// draws a rectangle of given size and sets hit region for id
+/// draws a rectangle of given size and sets hit region for id
 fn draw_rect(x: f64, y: f64, width: f64, height: f64, id: String) {
     let canvas = unsafe { CANVAS.as_mut().unwrap() };
 
