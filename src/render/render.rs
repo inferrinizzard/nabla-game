@@ -95,20 +95,85 @@ fn draw_rect(x: f64, y: f64, width: f64, height: f64, id: String) {
 
 /// draws the escape button for SELECT phase
 fn draw_x() {
-    let game = unsafe { GAME.as_mut().unwrap() };
+    let (canvas, game) = unsafe { (CANVAS.as_mut().unwrap(), GAME.as_ref().unwrap()) };
     if game.active.selected.is_empty() {
         return;
     }
 
-    draw_rect(10.0, 10.0, 25.0, 25.0, "x=0".to_string());
+    let player_num = game.get_current_player_num();
+    let cancel_size = Vector2 {
+        x: PLAYER_CARD_WIDTH,
+        y: (PLAYER_CARD_HEIGHT - PLAYER_CARD_GUTTER) / 2.0,
+    };
+    let cancel_pos = Vector2 {
+        x: canvas.canvas_center.x + PLAYER_CARD_WIDTH * 3.5 + PLAYER_CARD_GUTTER * 4.0,
+        y: if player_num == 1 {
+            canvas.canvas_bounds.y - PLAYER_CARD_HEIGHT - PLAYER_CARD_GUTTER
+        } else {
+            PLAYER_CARD_GUTTER
+        },
+    };
+
+    draw_rect(
+        cancel_pos.x,
+        cancel_pos.y,
+        cancel_size.x,
+        cancel_size.y,
+        "x=0".to_string(),
+    );
+
+    let context = &mut canvas.context;
+    context.set_font("20px serif");
+    context.set_text_baseline("middle");
+    context.set_text_align("center");
+
+    context
+        .fill_text(
+            "Cancel",
+            cancel_pos.x + cancel_size.x / 2.0,
+            cancel_pos.y + cancel_size.y / 2.0,
+        )
+        .expect(&format!("Cannot print cancel"));
 }
 
 /// draws the button that ends MULTI_SELECT phase
 fn draw_multi_done() {
-    let canvas = unsafe { CANVAS.as_ref().unwrap() };
+    let (canvas, game) = unsafe { (CANVAS.as_mut().unwrap(), GAME.as_ref().unwrap()) };
 
-    let bounds = &canvas.canvas_bounds;
-    draw_rect(bounds.x - 35.0, 10.0, 25.0, 25.0, "x=1".to_string());
+    let player_num = game.get_current_player_num();
+    let multidone_size = Vector2 {
+        x: PLAYER_CARD_WIDTH,
+        y: (PLAYER_CARD_HEIGHT - PLAYER_CARD_GUTTER) / 2.0,
+    };
+    let multidone_pos = Vector2 {
+        x: canvas.canvas_center.x + PLAYER_CARD_WIDTH * 3.5 + PLAYER_CARD_GUTTER * 4.0,
+        y: if player_num == 1 {
+            canvas.canvas_bounds.y - PLAYER_CARD_GUTTER - multidone_size.y
+        } else {
+            PLAYER_CARD_GUTTER * 2.0 + multidone_size.y
+        },
+    };
+
+    draw_rect(
+        multidone_pos.x,
+        multidone_pos.y,
+        multidone_size.x,
+        multidone_size.y,
+        "x=1".to_string(),
+    );
+
+    let context = &mut canvas.context;
+    context.set_font("20px serif");
+    context.set_text_baseline("middle");
+    context.set_text_align("center");
+
+    context
+        .fill_text(
+            "Finish",
+            multidone_pos.x + multidone_size.x / 2.0,
+            multidone_pos.y + multidone_size.y / 2.0,
+        )
+        .expect(&format!("Cannot print multidone"));
 }
 
 /// draws deck and num cards remaining

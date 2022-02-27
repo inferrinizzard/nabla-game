@@ -82,6 +82,21 @@ impl Game {
             },
         };
     }
+
+    pub fn get_current_player_num(&self) -> u32 {
+        if self.turn.number % 2 == 0 {
+            1
+        } else {
+            2
+        }
+    }
+    pub fn get_current_player(&self) -> &Vec<Card> {
+        match self.get_current_player_num() {
+            1 => &self.player_1,
+            2 => &self.player_2,
+            _ => unreachable!("No Active Player"),
+        }
+    }
 }
 
 #[derive(Debug)]
