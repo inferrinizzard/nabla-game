@@ -515,8 +515,8 @@ impl ToLatex for BasisOperator {
             }
             BasisOperator::Cos => "\\cos".to_string(),
             BasisOperator::Sin => "\\sin".to_string(),
-            BasisOperator::Acos => "\\acos".to_string(),
-            BasisOperator::Asin => "\\asin".to_string(),
+            BasisOperator::Acos => "\\arccos".to_string(),
+            BasisOperator::Asin => "\\arcsin".to_string(),
             BasisOperator::Inv => "f^{\\text{-}1}".to_string(),
             BasisOperator::Int => "\\int".to_string(),
             _ => self.to_string(),
