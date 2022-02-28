@@ -297,7 +297,8 @@ fn end_turn() {
     };
     // remove used cards
     for i in selected_indices.iter() {
-        player.remove(*i);
+        let used_card = player.remove(*i);
+        game.graveyard.push(used_card);
     }
 
     let deck = &mut game.deck;

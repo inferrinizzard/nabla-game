@@ -61,6 +61,7 @@ pub struct Game {
     pub player_1: Vec<Card>, // up to 7 cards in hand (<7 if deck running low)
     pub player_2: Vec<Card>,
     pub deck: Vec<Card>,
+    pub graveyard: Vec<Card>,
     pub active: ActiveCards,
 }
 
@@ -80,6 +81,7 @@ impl Game {
             player_1: player_1,
             player_2: player_2,
             deck: deck,
+            graveyard: vec![],
             active: ActiveCards {
                 selected: Vec::default(),
                 hover: None,
