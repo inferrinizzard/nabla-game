@@ -1,14 +1,9 @@
-use wasm_bindgen::*;
-use web_sys::*;
-
 use rand::seq::SliceRandom;
 use rand::thread_rng;
 
 use super::field::*;
 use crate::cards::*;
 use crate::render::render;
-
-use crate::MENU;
 
 fn get_new_deck() -> Vec<Card> {
     let mut deck = vec![];

@@ -4,13 +4,16 @@ use gloo::events::EventListener;
 use wasm_bindgen::JsCast;
 use web_sys::{Document, Element};
 
+use crate::game::flags::*;
 use crate::game::structs::GameState;
 use crate::{GAME, MENU};
 
 pub struct Menu {
-    pub main_menu: MainMenu,
     pub menu_children: HashMap<String, Element>,
     pub menu_element: Element,
+
+    pub main_menu: MainMenu,
+    pub settings_menu: SettingsMenu,
 }
 
 impl Menu {
@@ -25,16 +28,21 @@ impl Menu {
         for i in 0..menu_html_children.length() {
             let child = menu_html_children.item(i).unwrap();
             // split id from 'menu-ID'
-            let child_id = child.id().split("-").collect::<Vec<&str>>()[1].to_string();
-            menu_children.insert(child_id, child.dyn_into::<Element>().unwrap());
+            let child_id = child.id();
+            let id_kvp = child_id.split("-").collect::<Vec<&str>>();
+            if id_kvp[0] == "menu" {
+                menu_children.insert(id_kvp[1].to_string(), child.dyn_into::<Element>().unwrap());
+            }
         }
 
         let main_menu = MainMenu::new(document);
+        let settings_menu = SettingsMenu::new(document);
 
         Menu {
-            main_menu,
             menu_children,
             menu_element,
+            main_menu,
+            settings_menu,
         }
     }
 
@@ -84,8 +92,8 @@ impl MainMenu {
 
         let mut button_listeners: HashMap<String, EventListener> = HashMap::new();
         for element in button_elements.iter() {
-            let target_id = element.dyn_ref::<Element>().unwrap().id().clone();
-            let id_clone = target_id.clone();
+            let element_target = element.dyn_ref::<Element>().unwrap();
+            let target_id = element_target.id();
             let listener = EventListener::new(element, "click", move |_e| {
                 let (game, menu_ref) = unsafe { (GAME.as_mut().unwrap(), MENU.as_ref()) };
                 // split id from 'button-ID'
@@ -99,12 +107,85 @@ impl MainMenu {
                     }
                 }
             });
-            button_listeners.insert(id_clone, listener);
+            button_listeners.insert(element_target.id(), listener);
         }
 
         Self {
             button_elements,
             button_listeners,
+        }
+    }
+}
+
+pub struct SettingsMenu {
+    checkboxes: Vec<Element>,
+    checkbox_listeners: HashMap<String, EventListener>,
+}
+
+impl SettingsMenu {
+    pub fn new(document: &Document) -> Self {
+        let checkboxes: Vec<Element> = vec![
+            "DISPLAY_LN_FOR_LOG",
+            "ALLOW_LINEAR_DEPENDENCE",
+            "ALLOW_LIMITS_BEYOND_BOUNDS",
+            "FULL_COMPUTE",
+            "LIMIT_FIELD_BASIS",
+        ]
+        .iter()
+        .map(|state| {
+            document
+                .get_element_by_id(&format!("checkbox-{}", state).to_owned()[..])
+                .unwrap()
+        })
+        .collect();
+
+        let mut checkbox_listeners: HashMap<String, EventListener> = HashMap::new();
+        for element in checkboxes.iter() {
+            let element_target = element.dyn_ref::<Element>().unwrap();
+            let target_id = element_target.id();
+
+            // set initial checked value
+            unsafe {
+                let flag = match target_id.split("-").nth(1).unwrap() {
+                    "DISPLAY_LN_FOR_LOG" => DISPLAY_LN_FOR_LOG,
+                    "ALLOW_LINEAR_DEPENDENCE" => ALLOW_LINEAR_DEPENDENCE,
+                    "ALLOW_LIMITS_BEYOND_BOUNDS" => ALLOW_LIMITS_BEYOND_BOUNDS,
+                    "FULL_COMPUTE" => FULL_COMPUTE,
+                    "LIMIT_FIELD_BASIS" => LIMIT_FIELD_BASIS,
+                    _ => false,
+                };
+                if flag {
+                    element_target
+                        .set_attribute("checked", "true")
+                        .expect(format!("Failed to set checkbox {}", target_id).as_str());
+                }
+            }
+
+            let listener = EventListener::new(element, "change", move |_e| {
+                // split id from 'checkbox-FLAG'
+                let flag_name = target_id.split("-").nth(1).unwrap();
+
+                unsafe {
+                    match flag_name {
+                        "DISPLAY_LN_FOR_LOG" => DISPLAY_LN_FOR_LOG = !DISPLAY_LN_FOR_LOG,
+                        "ALLOW_LINEAR_DEPENDENCE" => {
+                            ALLOW_LINEAR_DEPENDENCE = !ALLOW_LINEAR_DEPENDENCE
+                        }
+                        "ALLOW_LIMITS_BEYOND_BOUNDS" => {
+                            ALLOW_LIMITS_BEYOND_BOUNDS = !ALLOW_LIMITS_BEYOND_BOUNDS
+                        }
+                        "FULL_COMPUTE" => FULL_COMPUTE = !FULL_COMPUTE,
+                        "LIMIT_FIELD_BASIS" => LIMIT_FIELD_BASIS = !LIMIT_FIELD_BASIS,
+                        _ => panic!("Unknown flag name: {}", flag_name),
+                    }
+                }
+            });
+            checkbox_listeners.insert(element_target.id(), listener);
+        }
+
+        Self {
+            checkboxes,
+            checkbox_listeners,
         }
     }
 }
