@@ -50,6 +50,9 @@ pub fn integral(basis: &Basis) -> Basis {
             BasisOperator::Pow(Fraction { n, d }) => {
                 let base = operands[0].clone();
                 if base.is_x() {
+                    if *n == -1 && *d == 1 {
+                        return LogBasisNode(&Basis::x()) * *coefficient;
+                    }
                     return (base ^ (n + d, *d)).with_frac(*coefficient * *d / (n + d));
                 }
                 if base.is_node(BasisOperator::Log) {
