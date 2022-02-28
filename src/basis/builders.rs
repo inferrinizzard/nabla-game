@@ -535,11 +535,17 @@ pub fn PowBasisNode(n: i32, d: i32, base: &Basis) -> Basis {
             // if base inside Pow is also a x^(n/d), then result is x^((n/d)*(i_n/i_d))
             BasisOperator::Pow(inner_pow) if inner_operands[0].is_x() => {
                 pow *= *inner_pow;
+                if pow == 1 {
+                    return Basis::x();
+                }
                 return Basis::BasisNode(BasisNode {
                     coefficient: *inner_coefficient ^ pow.n, // TODO:C handle fractional roots
                     operator: BasisOperator::Pow(pow),
                     operands: vec![Basis::x()],
                 });
+            }
+            BasisOperator::Pow(inner_pow) if pow * *inner_pow == 1 => {
+                return inner_operands[0].clone();
             }
             // (e^f(x))^n = e^(nf(x))
             BasisOperator::E => {
