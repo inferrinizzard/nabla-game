@@ -1,10 +1,14 @@
+use wasm_bindgen::*;
+use web_sys::*;
+
 use rand::seq::SliceRandom;
 use rand::thread_rng;
-use std::fmt::{Display, Formatter, Result};
 
 use super::field::*;
 use crate::cards::*;
 use crate::render::render;
+
+use crate::MENU;
 
 fn get_new_deck() -> Vec<Card> {
     let mut deck = vec![];
@@ -129,36 +133,6 @@ pub enum GameState {
     TUTORIAL,
     SETTINGS,
     CREDITS,
-}
-
-impl GameState {
-    pub fn vec() -> Vec<Self> {
-        vec![
-            Self::MENU,
-            Self::PLAYAI,
-            Self::PLAYVS,
-            Self::TUTORIAL,
-            Self::SETTINGS,
-            Self::CREDITS,
-        ]
-    }
-}
-
-impl Display for GameState {
-    fn fmt(&self, f: &mut Formatter<'_>) -> Result {
-        write!(
-            f,
-            "{}",
-            match self {
-                Self::MENU => "MENU",
-                Self::PLAYAI => "PLAYAI",
-                Self::PLAYVS => "PLAYVS",
-                Self::TUTORIAL => "TUTORIAL",
-                Self::SETTINGS => "SETTINGS",
-                Self::CREDITS => "CREDITS",
-            }
-        )
-    }
 }
 
 impl From<&str> for GameState {

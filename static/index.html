@@ -16,12 +16,21 @@
 		<div id="menu">
 			<h1>Nabla Operator Game</h1>
 			<div class="button-wrapper">
-				<button id="button-MENU" style="display: none">Menu</button>
-				<button id="button-PLAYVS">Play vs Friend</button>
-				<button id="button-PLAYAI">Play vs AI</button>
-				<button id="button-TUTORIAL">Instructions</button>
-				<button id="button-SETTINGS">Settings</button>
-				<button id="button-CREDITS">Credits</button>
+				<div id="menu-MENU" class="menu-item">
+					<button id="button-PLAYVS">Play vs Friend</button>
+					<button id="button-PLAYAI">Play vs AI</button>
+					<button id="button-TUTORIAL">Instructions</button>
+					<button id="button-SETTINGS">Settings</button>
+					<button id="button-CREDITS">Credits</button>
+				</div>
+				<div id="menu-SETTINGS" class="menu-item" hidden>
+					<input id="checkbox-DISPLAY_LN_FOR_LOG" type="checkbox" />
+					<input id="checkbox-ALLOW_LINEAR_DEPENDENCE" type="checkbox" />
+					<input id="checkbox-ALLOW_LIMITS_BEYOND_BOUNDS" type="checkbox" />
+					<input id="checkbox-FULL_COMPUTE" type="checkbox" />
+					<input id="checkbox-LIMIT_FIELD_BASIS" type="checkbox" />
+				</div>
+				<div id="menu-TUTORIAL" class="menu-item" hidden></div>
 			</div>
 		</div>
 		<div id="katex"></div>
