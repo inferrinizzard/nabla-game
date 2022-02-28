@@ -51,8 +51,11 @@ body {
 	background-image: url('bg.png');
 }
 
-.disable {
-	display: none;
+#button-MENU {
+	position: fixed;
+	left: 2em;
+	top: 2em;
+	z-index: 3;
 }
 
 #menu > h1 {

@@ -11,6 +11,8 @@ use crate::{GAME, MENU};
 pub struct Menu {
     pub menu_children: HashMap<String, Element>,
     pub menu_element: Element,
+    pub main_menu_button: Element,
+    pub main_menu_listener: EventListener,
 
     pub main_menu: MainMenu,
     pub settings_menu: SettingsMenu,
@@ -35,12 +37,24 @@ impl Menu {
             }
         }
 
+        let main_menu_button = document.get_element_by_id("button-MENU").unwrap();
+        let main_menu_listener = EventListener::new(&main_menu_button, "click", |_e| {
+            let (game, menu_ref) = unsafe { (GAME.as_mut().unwrap(), MENU.as_ref()) };
+            game.set_state(GameState::from("MENU"));
+
+            if menu_ref.is_some() {
+                menu_ref.unwrap().activate("MENU".to_string());
+            }
+        });
+
         let main_menu = MainMenu::new(document);
         let settings_menu = SettingsMenu::new(document);
 
         Menu {
             menu_children,
             menu_element,
+            main_menu_button,
+            main_menu_listener,
             main_menu,
             settings_menu,
         }
