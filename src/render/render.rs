@@ -51,6 +51,7 @@ pub fn render_play_screen() {
     render_item("x=0".to_string());
     render_item("x=1".to_string());
     render_item("g=0".to_string());
+    render_item("t=0".to_string());
 }
 
 /// id-based render, dispatches to component render fns based on id
@@ -63,9 +64,10 @@ fn render_item(id: String) {
         "f" => draw_field(val, id),
         "p1" => draw_hand(1, val, id),
         "p2" => draw_hand(2, val, id),
+        "t" => draw_turn_indicator(),
         "x" => {
             if val == 0 {
-                draw_x();
+                draw_cancel();
             } else if val == 1 {
                 draw_multi_done();
             }
@@ -112,7 +114,7 @@ fn draw_rect(x: f64, y: f64, width: f64, height: f64, id: String) {
 }
 
 /// draws the escape button for SELECT phase
-fn draw_x() {
+fn draw_cancel() {
     let (canvas, game) = unsafe { (CANVAS.as_mut().unwrap(), GAME.as_ref().unwrap()) };
     if game.active.selected.is_empty() {
         return;
@@ -195,6 +197,49 @@ fn draw_multi_done() {
             multidone_pos.y + multidone_size.y / 2.0,
         )
         .expect(&format!("Cannot print multidone"));
+}
+
+/// draw marker to show whose turn it is
+fn draw_turn_indicator() {
+    let (canvas, game) = unsafe { (CANVAS.as_mut().unwrap(), GAME.as_ref().unwrap()) };
+
+    let player_num = game.get_current_player_num();
+    let turn_indicator_size = Vector2 {
+        x: PLAYER_CARD_WIDTH + PLAYER_CARD_GUTTER,
+        y: (PLAYER_CARD_HEIGHT - PLAYER_CARD_GUTTER) / 2.0,
+    };
+    let turn_indicator_pos = Vector2 {
+        x: canvas.canvas_center.x
+            - PLAYER_CARD_WIDTH * 3.5
+            - PLAYER_CARD_GUTTER * 4.0
+            - turn_indicator_size.x,
+        y: if player_num == 1 {
+            canvas.canvas_bounds.y - PLAYER_CARD_HEIGHT - PLAYER_CARD_GUTTER
+        } else {
+            PLAYER_CARD_GUTTER
+        },
+    };
+
+    draw_rect(
+        turn_indicator_pos.x,
+        turn_indicator_pos.y,
+        turn_indicator_size.x,
+        turn_indicator_size.y,
+        "t=0".to_string(),
+    );
+
+    let context = &mut canvas.context;
+    context.set_font("20px serif");
+    context.set_text_baseline("middle");
+    context.set_text_align("center");
+
+    context
+        .fill_text(
+            "Your Turn",
+            turn_indicator_pos.x + turn_indicator_size.x / 2.0,
+            turn_indicator_pos.y + turn_indicator_size.y / 2.0,
+        )
+        .expect(&format!("Cannot print cancel"));
 }
 
 /// draws deck and num cards remaining
