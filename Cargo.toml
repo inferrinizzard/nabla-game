@@ -3,6 +3,8 @@ name = "nabla-game"
 description = "Online version of Nabla Operator Game (https://nablagame.com/) - made with Rust/WASM"
 version = "0.1.0"
 authors = ["inferrinizzard"]
+repository = "https://github.com/inferrinizzard/nabla-game"
+license = "MIT"
 categories = ["wasm"]
 readme = "README.md"
 edition = "2018"
@@ -51,6 +53,7 @@ features = [
   "Document",
   "Element",
   "HtmlCanvasElement",
+  "HtmlCollection",
 	"CanvasRenderingContext2d",
   "MouseEvent",
   "ImageData",

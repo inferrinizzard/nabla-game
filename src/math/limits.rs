@@ -1,11 +1,12 @@
-use crate::cards::LimitCard;
-
+// outer crate imports
 use crate::basis::{
     builders::{AddBasisNode, MultBasisNode},
     structs::*,
 };
+use crate::cards::LimitCard;
 use crate::game::flags::ALLOW_LIMITS_BEYOND_BOUNDS;
 
+/// find limits of arccos and arcsin
 fn limit_arccos_arcsin(
     limit_card: &LimitCard,
     operator: &Basis,
@@ -44,8 +45,9 @@ fn limit_arccos_arcsin(
     Some(Basis::from(1))
 }
 
-pub fn limit(_limit_card: &LimitCard) -> impl Fn(&Basis) -> Option<Basis> {
-    let limit_card = _limit_card.clone();
+/// finds the limit given by `limit_card` of `basis` if possible, returns None if not
+pub fn limit(limit_card: &LimitCard) -> impl Fn(&Basis) -> Option<Basis> {
+    let limit_card = limit_card.clone();
     return move |basis| {
         match basis {
             Basis::BasisLeaf(basis_leaf) => match basis_leaf.element {
@@ -207,6 +209,7 @@ pub fn limit(_limit_card: &LimitCard) -> impl Fn(&Basis) -> Option<Basis> {
     };
 }
 
+/// calculates integral limits using squeeze theorem and comparing to a smaller/larger function with known limit
 fn integral_limit(basis: &Basis) -> Option<Basis> {
     None
 }

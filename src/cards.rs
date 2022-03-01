@@ -1,13 +1,16 @@
+// std imports
 use std::fmt::{Display, Formatter, Result};
-
+// outer crate imports
 use crate::basis::{builders::*, structs::*};
 use crate::game::flags::DISPLAY_LN_FOR_LOG;
 use crate::math::{
     derivative::derivative, integral::integral, inverse::inverse, limits::limit,
     logarithm::logarithm,
 };
+// util imports
 use crate::util::ToLatex;
 
+/// apply effect of `card` onto Basis `basis`
 pub fn apply_card(card: &Card) -> impl Fn(&Basis) -> Basis {
     let card = card.clone();
     return move |basis| match card {
@@ -28,6 +31,7 @@ pub fn apply_card(card: &Card) -> impl Fn(&Basis) -> Basis {
     };
 }
 
+// used for Mult and Div cards, coalesces selected operands and applies the operator
 pub fn apply_multi_card(card: &Card, bases: Vec<Basis>) -> Basis {
     match card {
         Card::AlgebraicCard(AlgebraicCard::Mult) => MultBasisNode(bases),
@@ -47,8 +51,7 @@ pub fn apply_multi_card(card: &Card, bases: Vec<Basis>) -> Basis {
     }
 }
 
-// type union of basis cards or operator cards
-// #[wasm_bindgen]
+/// type union of basis cards or operator cards
 #[derive(Copy, Clone, Debug, Hash, Eq, PartialEq)]
 pub enum Card {
     BasisCard(BasisCard),
@@ -67,6 +70,7 @@ impl Card {
         }
     }
 }
+/// string representation of Card, defers to enum variants
 impl Display for Card {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result {
         match self {
@@ -77,6 +81,7 @@ impl Display for Card {
         }
     }
 }
+/// LaTeX representation of Card, defers to enum variants
 impl ToLatex for Card {
     fn to_latex(&self) -> String {
         match self {
@@ -88,6 +93,7 @@ impl ToLatex for Card {
     }
 }
 
+/// card that represents a Basis
 #[derive(Copy, Clone, Debug, Hash, Eq, PartialEq)]
 pub enum BasisCard {
     Zero,
@@ -98,6 +104,7 @@ pub enum BasisCard {
     Sin,
     E,
 }
+/// string representation of BasisCard, used internally
 impl Display for BasisCard {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result {
         let string = match self {
@@ -112,6 +119,7 @@ impl Display for BasisCard {
         write!(f, "{}", string)
     }
 }
+/// LaTeX representation of BasisCard, displayed on game UI
 impl ToLatex for BasisCard {
     fn to_latex(&self) -> String {
         let string = match self {
@@ -126,6 +134,7 @@ impl ToLatex for BasisCard {
     }
 }
 
+/// enum representing the various limit operator cards
 #[derive(Copy, Clone, Debug, Hash, Eq, PartialEq)]
 pub enum LimitCard {
     LimPosInf,
@@ -134,6 +143,7 @@ pub enum LimitCard {
     Liminf,
     Limsup,
 }
+/// string representation of LimitCard, used internally
 impl Display for LimitCard {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result {
         let string = match self {
@@ -146,6 +156,7 @@ impl Display for LimitCard {
         write!(f, "{}", string)
     }
 }
+/// LaTeX representation of LimitCard, displayed on game UI
 impl ToLatex for LimitCard {
     fn to_latex(&self) -> String {
         let string = match self {
@@ -159,13 +170,15 @@ impl ToLatex for LimitCard {
     }
 }
 
+/// enum representing the various derivative operator cards
 #[derive(Copy, Clone, Debug, Hash, Eq, PartialEq)]
 pub enum DerivativeCard {
-    Derivative,
-    Nabla,
-    Laplacian,
     Integral,
+    Derivative,
+    Nabla,     // 1st derivative of all field basis
+    Laplacian, // 2nd derivative of all field basis
 }
+/// string representation of DerivativeCard, used internally
 impl Display for DerivativeCard {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result {
         let string = match self {
@@ -177,6 +190,7 @@ impl Display for DerivativeCard {
         write!(f, "{}", string)
     }
 }
+/// LaTeX representation of DerivativeCard, displayed on game UI
 impl ToLatex for DerivativeCard {
     fn to_latex(&self) -> String {
         let string = match self {
@@ -189,6 +203,7 @@ impl ToLatex for DerivativeCard {
     }
 }
 
+/// enum representing the various algebraic operator cards
 #[derive(Copy, Clone, Debug, Hash, Eq, PartialEq)]
 pub enum AlgebraicCard {
     Div,
@@ -197,6 +212,7 @@ pub enum AlgebraicCard {
     Inverse,
     Log,
 }
+/// string representation of AlgebraicCard, used internally
 impl Display for AlgebraicCard {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result {
         let string = match self {
@@ -209,6 +225,7 @@ impl Display for AlgebraicCard {
         write!(f, "{}", string)
     }
 }
+/// LaTeX representation of AlgebraicCard, displayed on game UI
 impl ToLatex for AlgebraicCard {
     fn to_latex(&self) -> String {
         let string = match self {

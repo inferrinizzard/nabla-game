@@ -1,14 +1,16 @@
+// std imports
 use std::cmp::min;
-
-use wasm_bindgen::prelude::*;
-use web_sys::*;
-
-use super::GAME;
+// outer crate imports
 use crate::basis::structs::*;
 use crate::cards::*;
 use crate::game::{field::FieldBasis, flags::ALLOW_LINEAR_DEPENDENCE, structs::*};
 use crate::render::render;
+// root imports
+use super::GAME;
+// util imports
+use crate::util::get_key_val;
 
+/// delegates event handling based on turn num
 pub fn handle_mousedown(id: String) {
     if id.is_empty() {
         return;
@@ -26,15 +28,11 @@ pub fn handle_mousedown(id: String) {
             // odd-number turn, player 2
             branch_turn_phase(id, 2);
         }
-        _ => console::log_1(&JsValue::from(id)),
+        _ => unreachable!("Turn Number is not even or odd?"),
     }
 }
 
-fn get_key_val(id: &String) -> (String, usize) {
-    let kvp = id.split("=").collect::<Vec<&str>>();
-    (kvp[0].to_string(), kvp[1].parse::<usize>().unwrap())
-}
-
+/// further splits click event based on turn phase
 pub fn branch_turn_phase(id: String, player_num: u32) {
     let game = unsafe { GAME.as_mut().unwrap() };
     let turn = &game.turn;
@@ -64,13 +62,14 @@ pub fn branch_turn_phase(id: String, player_num: u32) {
         TurnPhase::MULTISELECT(multi_operator) => {
             multi_select_phase(multi_operator, id, player_num)
         }
-        _ => console::log_1(&JsValue::from(format!(
-            "unknown case, received id:{} on turn:{:?}",
+        _ => unreachable!(format!(
+            "Turn Phase Error: received {} on turn {:?}",
             id, turn
-        ))),
+        )),
     }
 }
 
+/// handles idle turn phase, where player can select a card
 fn idle_turn_phase(card: Card) {
     let game = unsafe { GAME.as_mut().unwrap() };
 
@@ -82,17 +81,21 @@ fn idle_turn_phase(card: Card) {
                 next_phase(TurnPhase::SELECT(Card::BasisCard(basis_card)));
             }
         }
-        Card::DerivativeCard(derivative_card)
-            if (game.turn.number == 1 && matches!(derivative_card, DerivativeCard::Nabla))
-                || matches!(
-                    derivative_card,
-                    DerivativeCard::Laplacian | DerivativeCard::Nabla
-                ) =>
-        {
-            // field select
-            next_phase(TurnPhase::FIELD_SELECT(Card::DerivativeCard(
+        Card::DerivativeCard(derivative_card) => {
+            if matches!(
                 derivative_card,
-            )));
+                DerivativeCard::Derivative | DerivativeCard::Integral
+            ) {
+                next_phase(TurnPhase::SELECT(card));
+            } else if matches!(derivative_card, DerivativeCard::Nabla)
+            // prevent player from playing laplacian on first turn for each player
+                || (game.turn.number >= 2 && matches!(derivative_card, DerivativeCard::Laplacian))
+            {
+                // field select
+                next_phase(TurnPhase::FIELD_SELECT(Card::DerivativeCard(
+                    derivative_card,
+                )));
+            }
         }
         Card::AlgebraicCard(algebraic_card)
             if matches!(algebraic_card, AlgebraicCard::Div | AlgebraicCard::Mult) =>
@@ -107,6 +110,7 @@ fn idle_turn_phase(card: Card) {
     }
 }
 
+/// handles select turn phase, player can choose single target of selected card
 fn select_turn_phase(select_operator: Card, (id_key, id_val): (String, usize)) {
     let game = unsafe { GAME.as_mut().unwrap() };
 
@@ -128,7 +132,6 @@ fn select_turn_phase(select_operator: Card, (id_key, id_val): (String, usize)) {
                 ) {
                     handle_derivative_card(operator_card, id_val);
                 } else if matches!(operator_card, Card::AlgebraicCard(AlgebraicCard::Inverse)) {
-                    // let field = &mut game.field;
                     let result_basis =
                         apply_card(&operator_card)(game.field[id_val].basis.as_ref().unwrap());
                     game.field.inverse(id_val, Some(result_basis))
@@ -148,6 +151,7 @@ fn select_turn_phase(select_operator: Card, (id_key, id_val): (String, usize)) {
     }
 }
 
+/// handles field select turn phase, player can choose side of field to target with selected card
 fn field_select_phase(field_operator: Card, (id_key, id_val): (String, usize)) {
     let card_range = if id_val < 3 { 0..3 } else { 3..6 };
     // for each basis on one half of the field
@@ -157,6 +161,7 @@ fn field_select_phase(field_operator: Card, (id_key, id_val): (String, usize)) {
     end_turn();
 }
 
+/// manages derivatives of FieldBasis, looks up history of derivatives/integrals and applies if possible
 fn handle_derivative_card(card: Card, i: usize) {
     let game = unsafe { GAME.as_mut().unwrap() };
 
@@ -172,7 +177,6 @@ fn handle_derivative_card(card: Card, i: usize) {
         return;
     }
 
-    // console::log_1(&JsValue::from(&format!("Derivative of: {:?}", selected_field_basis.basis)));
     // shortcut if already in history
     if selected_field_basis.has_value(&card) {
         if is_derivative || is_laplacian {
@@ -206,6 +210,7 @@ fn handle_derivative_card(card: Card, i: usize) {
     }
 }
 
+/// handles multiselect turn phase, player can choose multiple targets of selected operator (Mult/Div)
 fn multi_select_phase(multi_operator: Card, id: String, player_num: u32) {
     let game = unsafe { GAME.as_mut().unwrap() };
     let player = if &game.turn.number % 2 == 0 {
@@ -219,9 +224,10 @@ fn multi_select_phase(multi_operator: Card, id: String, player_num: u32) {
         || (id_key == format!("p{}", player_num) && matches!(player[id_val], Card::BasisCard(_)))
     {
         game.active.selected.push(id.to_string());
-        console::log_1(&JsValue::from(format!("added to multiselect: {}", id)));
+        // console::log_1(&JsValue::from(format!("added to multiselect: {}", id)));
     }
 
+    // TODO: prevent 0 * all or 0 / all
     if id_key == "x"
         && id_val == 1
         && game // must have at least 1 field basis
@@ -268,11 +274,15 @@ fn multi_select_phase(multi_operator: Card, id: String, player_num: u32) {
         used_field_bases // clear used field bases
             .iter()
             .for_each(|field_index| field[*field_index] = FieldBasis::none());
+        if result_basis.is_num(0) {
+            field[used_field_bases[0]] = FieldBasis::none();
+        }
         field[used_field_bases[0]] = FieldBasis::new(&result_basis); // assign result basis to any newly empty field
         end_turn();
     }
 }
 
+/// performs cleanup tasks after turn is over
 fn end_turn() {
     let game = unsafe { GAME.as_mut().unwrap() };
     // get vector indices of cards used by player this turn
@@ -297,7 +307,8 @@ fn end_turn() {
     };
     // remove used cards
     for i in selected_indices.iter() {
-        player.remove(*i);
+        let used_card = player.remove(*i);
+        game.graveyard.push(used_card);
     }
 
     let deck = &mut game.deck;
@@ -338,9 +349,10 @@ fn end_turn() {
     next_turn();
 }
 
+/// shifts to next turn phase with given selected card
 fn next_phase(phase: TurnPhase) {
     let game = unsafe { GAME.as_mut().unwrap() };
-    console::log_1(&JsValue::from(format!("entering phase: {:?}", phase)));
+    // console::log_1(&JsValue::from(format!("entering phase: {:?}", phase)));
     game.turn = Turn {
         number: game.turn.number,
         phase: phase,
@@ -348,17 +360,24 @@ fn next_phase(phase: TurnPhase) {
     render::draw();
 }
 
+/// finalises turn and increments turn, checking if game is in terminal state
 pub fn next_turn() {
     let game = unsafe { GAME.as_mut().unwrap() };
 
-    console::log_1(&JsValue::from(format!(
-        "entering turn: {}",
-        game.turn.number + 1
-    )));
+    // console::log_1(&JsValue::from(format!("entering turn: {}", game.turn.number + 1)));
     game.turn = Turn {
         number: game.turn.number + 1,
         phase: TurnPhase::IDLE,
     };
     game.active.clear();
     render::draw();
+
+    let field = game.field.basis.iter();
+    if field.clone().take(3).all(|f| f.basis.is_none()) {
+        // player 1 wins
+        game.game_over(1);
+    } else if field.clone().skip(3).all(|f| f.basis.is_none()) {
+        // player 2 wins
+        game.game_over(2);
+    }
 }

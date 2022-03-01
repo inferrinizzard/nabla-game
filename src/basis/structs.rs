@@ -1,12 +1,13 @@
+// std imports
 use std::fmt::{Display, Formatter, Result};
-
+// outer crate imports
 use crate::cards::BasisCard;
 use crate::game::flags::DISPLAY_LN_FOR_LOG;
 use crate::math::fraction::Fraction;
-
+// util imports
 use crate::util::ToLatex;
 
-// type union of the starter basis or complex basis
+/// type union of the starter basis or complex basis
 #[derive(Clone, Debug, Hash, Eq, PartialEq)]
 pub enum Basis {
     BasisLeaf(BasisLeaf),
@@ -14,15 +15,18 @@ pub enum Basis {
 }
 
 impl Basis {
+    /// getter for coefficient of basis
     pub fn coefficient(&self) -> Fraction {
         match self {
             Basis::BasisLeaf(basis_leaf) => basis_leaf.coefficient,
             Basis::BasisNode(basis_node) => basis_node.coefficient,
         }
     }
+    /// returns copy of basis with coefficient set to given integer
     pub fn with_coefficient(&self, i: i32) -> Basis {
         self.with_frac(Fraction::from(i))
     }
+    /// returns copy of basis with coefficient set to given fraction
     pub fn with_frac(&self, coefficient: Fraction) -> Basis {
         match self.clone() {
             Basis::BasisLeaf(basis_leaf) => Basis::BasisLeaf(BasisLeaf {
@@ -52,6 +56,7 @@ impl Basis {
         }
     }
 
+    /// checks if basis is a BasisNode with given operator
     pub fn is_node(&self, operator: BasisOperator) -> bool {
         match self {
             Basis::BasisNode(BasisNode {
@@ -62,9 +67,11 @@ impl Basis {
         }
     }
 
+    /// checks if basis is num BasisLeaf equal to given integer
     pub fn is_num(&self, i: i32) -> bool {
         self.is_frac(Fraction::from(i))
     }
+    /// checks if basis is num BasisLeaf equal to given fraction
     pub fn is_frac(&self, frac: Fraction) -> bool {
         matches!(
             self,
@@ -74,6 +81,7 @@ impl Basis {
             })
         ) && self.coefficient() == frac
     }
+    /// checks if basis is x BasisLeaf
     pub fn is_x(&self) -> bool {
         matches!(
             self,
@@ -83,6 +91,7 @@ impl Basis {
             })
         )
     }
+    /// checks if basis is INF with given sign
     pub fn is_inf(&self, i: i32) -> bool {
         if !(i == 1 || i == -1) {
             panic!("INF must be -1 or 1 only")
@@ -96,13 +105,16 @@ impl Basis {
         ) && self.coefficient() == i
     }
 
+    /// creates Basis of x BasisLeaf
     pub fn x() -> Basis {
         Basis::BasisLeaf(BasisLeaf::x())
     }
+    /// creates Basis of INF BasisLeaf
     pub fn inf(i: i32) -> Basis {
         Basis::BasisLeaf(BasisLeaf::inf(i))
     }
 
+    /// checks if two Bases have same structure
     pub fn like(&self, other: &Basis) -> bool {
         match other {
             Basis::BasisLeaf(other_basis_leaf) => {
@@ -116,6 +128,7 @@ impl Basis {
     }
 }
 
+/// Instantiates Basis from possible BasisCard enums
 impl From<BasisCard> for Basis {
     fn from(card: BasisCard) -> Self {
         match card {
@@ -145,6 +158,7 @@ impl From<BasisCard> for Basis {
         }
     }
 }
+/// creates Basis of num with given fraction
 impl From<Fraction> for Basis {
     fn from(frac: Fraction) -> Self {
         Basis::BasisLeaf(BasisLeaf {
@@ -153,17 +167,20 @@ impl From<Fraction> for Basis {
         })
     }
 }
+/// creates Basis of num with given tuple
 impl From<(i32, i32)> for Basis {
     fn from((n, d): (i32, i32)) -> Self {
         Basis::from(Fraction::from((n, d)))
     }
 }
+/// creates Basis of num with given integer
 impl From<i32> for Basis {
     fn from(i: i32) -> Self {
         Basis::from((i, 1))
     }
 }
 
+/// string representation of Basis, defers to BasisLeaf and BasisNode
 impl Display for Basis {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result {
         match self {
@@ -173,6 +190,7 @@ impl Display for Basis {
     }
 }
 
+/// LaTeX representation of Basis, defers to BasisLeaf and BasisNode
 impl ToLatex for Basis {
     fn to_latex(&self) -> String {
         match self {
@@ -182,13 +200,14 @@ impl ToLatex for Basis {
     }
 }
 
-// most basic Basis type
+/// most basic Basis type
 #[derive(Clone, Debug, Hash, Eq, PartialEq)]
 pub struct BasisLeaf {
     pub coefficient: Fraction,
     pub element: BasisElement,
 }
 
+/// atomic elements for BasisLeaf
 #[derive(Clone, Debug, Hash, Eq, PartialEq)]
 pub enum BasisElement {
     Num,
@@ -197,12 +216,15 @@ pub enum BasisElement {
 }
 
 impl BasisLeaf {
+    /// creates basic x BasisLeaf
     pub fn x() -> BasisLeaf {
         BasisLeaf {
             coefficient: Fraction::from(1),
             element: BasisElement::X,
         }
     }
+
+    /// creates basic INF BasisLeaf with given sign
     pub fn inf(i: i32) -> BasisLeaf {
         if !(i == 1 || i == -1) {
             panic!("INF must be -1 or 1 only")
@@ -213,11 +235,13 @@ impl BasisLeaf {
         }
     }
 
+    /// checks if two BasisLeafs have same elements
     pub fn like(&self, other: &BasisLeaf) -> bool {
         self.element == other.element
     }
 }
 
+/// string representation of BasisLeaf, shows coefficient and element
 impl Display for BasisLeaf {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result {
         match self.element {
@@ -244,21 +268,29 @@ impl Display for BasisLeaf {
     }
 }
 
+/// LaTeX representation of BasisLeaf, defers to Display
 impl ToLatex for BasisLeaf {
     fn to_latex(&self) -> String {
         match self.element {
+            BasisElement::Num => {
+                if self.coefficient == 1 {
+                    String::from("1")
+                } else {
+                    format!("{coefficient}", coefficient = self.coefficient.to_latex())
+                }
+            }
+            BasisElement::X => format!("{}x", self.coefficient.to_latex()),
             BasisElement::Inf => (if self.coefficient > 1 {
                 "\\infty"
             } else {
                 "-\\infty"
             })
             .to_string(),
-            _ => self.to_string(),
         }
     }
 }
 
-// used for complex bases derived from the starter cards
+/// used for complex bases with mathematical functions and operators
 #[derive(Clone, Debug, Hash, Eq)]
 pub struct BasisNode {
     pub coefficient: Fraction,
@@ -267,6 +299,7 @@ pub struct BasisNode {
     pub operands: Vec<Basis>,
 }
 
+/// string representation of BasisNode, shows custom format for unary operators, concats binary operators
 impl Display for BasisNode {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result {
         if !matches!(
@@ -338,15 +371,17 @@ impl Display for BasisNode {
     }
 }
 
+/// LaTeX representation of BasisNode, defers to Display
 impl ToLatex for BasisNode {
     fn to_latex(&self) -> String {
         match self.operator {
             BasisOperator::E => format!(
-                "{}{{{}}}",
-                self.operator.to_latex(),
-                self.operands[0].to_latex()
+                "{coefficient}{operator}{{{operands}}}",
+                coefficient = self.coefficient.to_latex(),
+                operator = self.operator.to_latex(),
+                operands = self.operands[0].to_latex()
             ),
-            BasisOperator::Add | BasisOperator::Minus | BasisOperator::Mult => format!(
+            BasisOperator::Add | BasisOperator::Minus => format!(
                 "{}",
                 self.operands
                     .iter()
@@ -356,40 +391,65 @@ impl ToLatex for BasisNode {
                         format!("{} {} {}", acc, self.operator.to_latex(), op.to_latex())
                     })
             ),
+            BasisOperator::Mult => format!(
+                "{}",
+                self.operands
+                    .iter()
+                    .fold(self.coefficient.to_latex(), |acc, op| format!(
+                        "{}{}",
+                        acc,
+                        op.to_latex()
+                    ))
+            ),
             BasisOperator::Div => format!(
-                "\\frac{{{numerator}}}{{{denominator}}}",
+                "{coefficient}\\frac{{{numerator}}}{{{denominator}}}",
+                coefficient = self.operator.to_latex(),
                 numerator = self.operands[0].to_latex(),
                 denominator = self.operands[1].to_latex()
             ),
             BasisOperator::Pow(pow) => {
                 if pow == -1 {
                     return format!(
-                        "\\frac{{1}}{{{denominator}}}",
+                        "\\frac{{{numerator_coefficient}}}{{{denominator_coefficient}{denominator}}}",
+                        numerator_coefficient= if self.coefficient.n == 1 {
+                            1
+                        } else {
+                            self.coefficient.n
+                        },
+                        denominator_coefficient= if self.coefficient.d == 1 {
+                            String::new()
+                        } else {
+                            self.coefficient.d.to_string()
+                        },
                         denominator = self.operands[0].to_latex()
                     );
                 }
                 match self.operands[0] {
                     Basis::BasisLeaf(_) => format!(
-                        "{}{}",
-                        self.operands[0].to_latex(),
-                        self.operator.to_latex()
+                        "{coefficient}{base}{exponent}",
+                        coefficient = self.coefficient.to_latex(),
+                        base = self.operands[0].to_latex(),
+                        exponent = self.operator.to_latex()
                     ),
                     Basis::BasisNode(_) => format!(
-                        "({}){}",
-                        self.operands[0].to_latex(),
-                        self.operator.to_latex()
+                        "{coefficient}({base}){exponent}",
+                        coefficient = self.coefficient.to_latex(),
+                        base = self.operands[0].to_latex(),
+                        exponent = self.operator.to_latex()
                     ),
                 }
             }
             _ => format!(
-                "{}({})",
-                self.operator.to_latex(),
-                self.operands[0].to_latex()
+                "{coefficient}{function}({operand})",
+                coefficient = self.coefficient.to_latex(),
+                function = self.operator.to_latex(),
+                operand = self.operands[0].to_latex()
             ),
         }
     }
 }
 
+/// custom equality for Basis, compares non-sortable Basis structs string-wise
 impl PartialEq for BasisNode {
     fn eq(&self, other: &BasisNode) -> bool {
         if self.coefficient != other.coefficient {
@@ -456,6 +516,7 @@ impl PartialEq for BasisNode {
     }
 }
 
+/// valid functions and operators for BasisNode
 #[derive(Copy, Clone, Debug, Hash, Eq, PartialEq)]
 pub enum BasisOperator {
     Add,
@@ -473,6 +534,7 @@ pub enum BasisOperator {
     Int,
 }
 
+/// string representation of BasisOperator
 impl Display for BasisOperator {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result {
         let string = match self {
@@ -499,6 +561,7 @@ impl Display for BasisOperator {
     }
 }
 
+/// LaTeX representation of BasisOperator, defers to Display
 impl ToLatex for BasisOperator {
     fn to_latex(&self) -> String {
         let latex = match self {
@@ -515,8 +578,8 @@ impl ToLatex for BasisOperator {
             }
             BasisOperator::Cos => "\\cos".to_string(),
             BasisOperator::Sin => "\\sin".to_string(),
-            BasisOperator::Acos => "\\acos".to_string(),
-            BasisOperator::Asin => "\\asin".to_string(),
+            BasisOperator::Acos => "\\arccos".to_string(),
+            BasisOperator::Asin => "\\arcsin".to_string(),
             BasisOperator::Inv => "f^{\\text{-}1}".to_string(),
             BasisOperator::Int => "\\int".to_string(),
             _ => self.to_string(),

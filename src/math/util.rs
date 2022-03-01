@@ -1,5 +1,7 @@
+// outer crate imports
 use crate::basis::structs::*;
 
+/// implements recursive f o g
 pub fn function_composition(f: &Basis, g: &Basis) -> Basis {
     match f.clone() {
         Basis::BasisLeaf(basis_leaf) => {

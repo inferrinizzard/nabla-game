@@ -1,9 +1,11 @@
+// outer crate imports
 use crate::basis::{builders::*, structs::*};
-
 use crate::game::flags::FULL_COMPUTE;
-use crate::math::fraction::Fraction;
-use crate::math::integral::*;
+// local imports
+use super::fraction::Fraction;
+use super::integral::*;
 
+/// tries integration with a logarithmic component, skips if doesn't match pattern
 pub fn logarithmic(basis_node: &BasisNode, u: &Basis, dv: &Basis) -> Option<Basis> {
     if basis_node
         .operands
@@ -17,6 +19,7 @@ pub fn logarithmic(basis_node: &BasisNode, u: &Basis, dv: &Basis) -> Option<Basi
     None
 }
 
+/// tries integration with an inverse trigonometric component, skips if doesn't match pattern
 pub fn inv_trig(basis_node: &BasisNode) -> Option<Basis> {
     // current temp short circuit
     if basis_node
@@ -31,6 +34,7 @@ pub fn inv_trig(basis_node: &BasisNode) -> Option<Basis> {
     None
 }
 
+/// tries integration with an inverse component, skips if doesn't match pattern
 pub fn inverse(basis_node: &BasisNode, u: &Basis, dv: &Basis) -> Option<Basis> {
     if basis_node
         .operands
@@ -44,6 +48,7 @@ pub fn inverse(basis_node: &BasisNode, u: &Basis, dv: &Basis) -> Option<Basis> {
     None
 }
 
+/// tries integration with a power component, skips if doesn't match pattern
 pub fn algebraic(_basis_node: &BasisNode, u: &Basis, dv: &Basis) -> Option<Basis> {
     // any fractional exponent is not accepted
     if let Basis::BasisNode(BasisNode {
@@ -61,6 +66,7 @@ pub fn algebraic(_basis_node: &BasisNode, u: &Basis, dv: &Basis) -> Option<Basis
     None
 }
 
+/// tries integration with a trigonometric component, skips if doesn't match pattern
 pub fn trig(_basis_node: &BasisNode, u: &Basis, dv: &Basis) -> Option<Basis> {
     // f(cos)sin | f(sin)cos
     if let Basis::BasisNode(BasisNode {
@@ -94,6 +100,7 @@ pub fn trig(_basis_node: &BasisNode, u: &Basis, dv: &Basis) -> Option<Basis> {
     None
 }
 
+/// tries integration with an exponential component, skips if doesn't match pattern
 pub fn exponential(_basis_node: &BasisNode, u: &Basis, dv: &Basis) -> Option<Basis> {
     // dv is e
     if u.is_node(BasisOperator::Cos) {
