@@ -18,11 +18,11 @@ pub fn draw() {
     let (game, menu) = unsafe { (GAME.as_ref().unwrap(), MENU.as_ref().unwrap()) };
     match game.state {
         GameState::PLAYAI | GameState::PLAYVS => {
-            menu.disable();
+            menu.close();
             render_play_screen()
         }
         GameState::MENU => {
-            menu.enable();
+            menu.open();
         }
         _ => {}
     }

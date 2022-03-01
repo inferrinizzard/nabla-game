@@ -7,7 +7,7 @@ mod game;
 use game::structs::Game;
 pub mod math;
 mod menu;
-use menu::Menu;
+use menu::*;
 
 mod event_handlers;
 mod event_listeners;
