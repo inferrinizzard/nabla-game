@@ -1,9 +1,11 @@
 use rand::seq::SliceRandom;
 use rand::thread_rng;
 
-use super::field::*;
 use crate::cards::*;
 use crate::render::render;
+use crate::MENU;
+
+use super::field::*;
 
 fn get_new_deck() -> Vec<Card> {
     let mut deck = vec![];
@@ -91,6 +93,18 @@ impl Game {
     pub fn set_state(&mut self, state: GameState) {
         self.state = state;
         render::draw();
+    }
+
+    pub fn game_over(&self, winner: u32) {
+        let menu = unsafe { MENU.as_ref().unwrap() };
+
+        menu.game_over_menu
+            .get_elements_by_tag_name("h2")
+            .item(0)
+            .unwrap()
+            .set_text_content(Some(format!("Player {} wins!", winner).as_str()));
+        menu.open();
+        menu.activate("GAMEOVER".to_string());
     }
 }
 

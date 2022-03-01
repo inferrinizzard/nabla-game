@@ -365,4 +365,13 @@ pub fn next_turn() {
     };
     game.active.clear();
     render::draw();
+
+    let field = game.field.basis.iter();
+    if field.clone().take(3).all(|f| f.basis.is_none()) {
+        // player 1 wins
+        game.game_over(1);
+    } else if field.clone().skip(3).all(|f| f.basis.is_none()) {
+        // player 2 wins
+        game.game_over(2);
+    }
 }

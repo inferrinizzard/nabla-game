@@ -5,14 +5,17 @@ use wasm_bindgen::JsCast;
 use web_sys::{Document, Element};
 
 use crate::game::flags::*;
-use crate::game::structs::GameState;
+use crate::game::structs::{Game, GameState};
 use crate::{GAME, MENU};
 
 pub struct Menu {
     pub menu_children: HashMap<String, Element>,
     pub menu_element: Element,
+
     pub main_menu_button: Element,
     pub main_menu_listener: EventListener,
+    pub game_over_menu: Element,
+    pub game_over_listener: EventListener,
 
     pub main_menu: MainMenu,
     pub settings_menu: SettingsMenu,
@@ -47,6 +50,21 @@ impl Menu {
             }
         });
 
+        let game_over_menu = document.get_element_by_id("menu-GAMEOVER").unwrap();
+        let game_over_listener = EventListener::new(
+            &document.get_element_by_id("gameover-RESTART").unwrap(),
+            "click",
+            |_e| {
+                let menu_ref = unsafe { MENU.as_ref() };
+                if menu_ref.is_some() {
+                    menu_ref.unwrap().activate("MENU".to_string());
+                    unsafe {
+                        GAME = Some(Game::new());
+                    }
+                }
+            },
+        );
+
         let main_menu = MainMenu::new(document);
         let settings_menu = SettingsMenu::new(document);
 
@@ -55,6 +73,8 @@ impl Menu {
             menu_element,
             main_menu_button,
             main_menu_listener,
+            game_over_menu,
+            game_over_listener,
             main_menu,
             settings_menu,
         }
@@ -131,6 +151,7 @@ impl MainMenu {
     }
 }
 
+#[allow(dead_code)]
 pub struct SettingsMenu {
     checkboxes: Vec<Element>,
     checkbox_listeners: HashMap<String, EventListener>,
