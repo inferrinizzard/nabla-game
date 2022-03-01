@@ -49,6 +49,7 @@ pub fn render_play_screen() {
     render_item("d=1".to_string());
     render_item("x=0".to_string());
     render_item("x=1".to_string());
+    render_item("g=0".to_string());
 }
 
 /// id-based render, dispatches to component render fns based on id
@@ -59,6 +60,7 @@ fn render_item(id: String) {
 
     match key {
         "d" => draw_deck(),
+        "g" => draw_graveyard(),
         "f" => draw_field(val, id),
         "p1" => draw_hand(1, val, id),
         "p2" => draw_hand(2, val, id),
@@ -214,7 +216,7 @@ fn draw_deck() {
     );
 
     let context = &mut canvas.context;
-    context.set_font("40px serif");
+    context.set_font("40px KaTeX_Main");
     context.set_text_baseline("middle");
     context.set_text_align("center");
     context
@@ -224,6 +226,65 @@ fn draw_deck() {
             deck_pos.y + FIELD_BASIS_HEIGHT / 2.0,
         )
         .expect(&format!("Cannot printsize for deck"));
+}
+
+/// draws graveyard and last 3 cards played
+fn draw_graveyard() {
+    let (canvas, game) = unsafe { (CANVAS.as_mut().unwrap(), GAME.as_ref().unwrap()) };
+
+    let center = &canvas.canvas_center;
+
+    let card_size = Vector2 {
+        x: PLAYER_CARD_WIDTH * 1.5,
+        y: PLAYER_CARD_HEIGHT * 1.5,
+    };
+    let graveyard_start = Vector2 {
+        x: center.x + FIELD_BASIS_WIDTH * 3.0 - FIELD_BASIS_GUTTER * 2.0,
+        y: center.y - FIELD_BASIS_HEIGHT + FIELD_BASIS_GUTTER / 2.0,
+    };
+    let graveyard_end = Vector2 {
+        x: graveyard_start.x,
+        y: center.y + FIELD_BASIS_GUTTER / 2.0 + FIELD_BASIS_HEIGHT - card_size.y,
+    };
+
+    let graveyard = &game.graveyard;
+    for i in (0..3).rev() {
+        if i + 1 > graveyard.len() {
+            continue;
+        }
+
+        let id = format!("g={}", i + 1);
+        let card_pos = Vector2 {
+            x: graveyard_start.x + FIELD_BASIS_GUTTER / 4.0 * i as f64,
+            y: graveyard_start.y + (graveyard_end.y - graveyard_start.y) / 2.0 * i as f64,
+        };
+        canvas
+            .context
+            .clear_rect(card_pos.x, card_pos.y, card_size.x, card_size.y);
+        draw_rect(card_pos.x, card_pos.y, card_size.x, card_size.y, id.clone());
+
+        draw_katex(
+            &graveyard[graveyard.len() - i - 1],
+            format!("katex-item_{}", id),
+            "Large",
+            Vector2 {
+                x: card_pos.x + card_size.x / 2.0,
+                y: card_pos.y + card_size.y / 2.0,
+            },
+        );
+    }
+
+    let context = &mut canvas.context;
+    context.set_font("20px serif");
+    context.set_text_baseline("middle");
+    context.set_text_align("center");
+    context
+        .fill_text(
+            "Last 3 cards played:",
+            graveyard_start.x + FIELD_BASIS_WIDTH / 2.0,
+            graveyard_start.y - FIELD_BASIS_GUTTER / 2.0,
+        )
+        .expect(&format!("Cannot print header for graveyard"));
 }
 
 /// applies line dash style to context, or clears if dash_num is 0
