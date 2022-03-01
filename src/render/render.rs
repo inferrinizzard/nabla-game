@@ -55,11 +55,9 @@ pub fn render_play_screen() {
 
 /// id-based render, dispatches to component render fns based on id
 fn render_item(id: String) {
-    let kvp = id.split("=").collect::<Vec<&str>>();
-    let key = kvp[0];
-    let val = kvp[1].parse::<usize>().unwrap();
+    let (key, val) = get_key_val(&id);
 
-    match key {
+    match key.as_str() {
         "d" => draw_deck(),
         "g" => draw_graveyard(),
         "f" => draw_field(val, id),

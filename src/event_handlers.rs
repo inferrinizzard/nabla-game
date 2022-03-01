@@ -7,6 +7,8 @@ use crate::game::{field::FieldBasis, flags::ALLOW_LINEAR_DEPENDENCE, structs::*}
 use crate::render::render;
 // root imports
 use super::GAME;
+// util imports
+use crate::util::get_key_val;
 
 /// delegates event handling based on turn num
 pub fn handle_mousedown(id: String) {
@@ -28,12 +30,6 @@ pub fn handle_mousedown(id: String) {
         }
         _ => unreachable!("Turn Number is not even or odd?"),
     }
-}
-
-/// extracts id key and id value from id kvp
-pub fn get_key_val(id: &String) -> (String, usize) {
-    let kvp = id.split("=").collect::<Vec<&str>>();
-    (kvp[0].to_string(), kvp[1].parse::<usize>().unwrap())
 }
 
 /// further splits click event based on turn phase
