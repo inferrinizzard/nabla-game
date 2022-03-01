@@ -26,7 +26,7 @@ pub fn handle_mousedown(id: String) {
             // odd-number turn, player 2
             branch_turn_phase(id, 2);
         }
-        _ => console::log_1(&JsValue::from(id)),
+        _ => unreachable!("Turn Number is not even or odd?"),
     }
 }
 
@@ -64,10 +64,10 @@ pub fn branch_turn_phase(id: String, player_num: u32) {
         TurnPhase::MULTISELECT(multi_operator) => {
             multi_select_phase(multi_operator, id, player_num)
         }
-        _ => console::log_1(&JsValue::from(format!(
-            "unknown case, received id:{} on turn:{:?}",
+        _ => unreachable!(format!(
+            "Turn Phase Error: received {} on turn {:?}",
             id, turn
-        ))),
+        )),
     }
 }
 
@@ -175,7 +175,6 @@ fn handle_derivative_card(card: Card, i: usize) {
         return;
     }
 
-    // console::log_1(&JsValue::from(&format!("Derivative of: {:?}", selected_field_basis.basis)));
     // shortcut if already in history
     if selected_field_basis.has_value(&card) {
         if is_derivative || is_laplacian {
@@ -222,7 +221,7 @@ fn multi_select_phase(multi_operator: Card, id: String, player_num: u32) {
         || (id_key == format!("p{}", player_num) && matches!(player[id_val], Card::BasisCard(_)))
     {
         game.active.selected.push(id.to_string());
-        console::log_1(&JsValue::from(format!("added to multiselect: {}", id)));
+        // console::log_1(&JsValue::from(format!("added to multiselect: {}", id)));
     }
 
     // TODO: prevent 0 * all or 0 / all
@@ -348,7 +347,7 @@ fn end_turn() {
 
 fn next_phase(phase: TurnPhase) {
     let game = unsafe { GAME.as_mut().unwrap() };
-    console::log_1(&JsValue::from(format!("entering phase: {:?}", phase)));
+    // console::log_1(&JsValue::from(format!("entering phase: {:?}", phase)));
     game.turn = Turn {
         number: game.turn.number,
         phase: phase,
@@ -359,10 +358,7 @@ fn next_phase(phase: TurnPhase) {
 pub fn next_turn() {
     let game = unsafe { GAME.as_mut().unwrap() };
 
-    console::log_1(&JsValue::from(format!(
-        "entering turn: {}",
-        game.turn.number + 1
-    )));
+    // console::log_1(&JsValue::from(format!("entering turn: {}", game.turn.number + 1)));
     game.turn = Turn {
         number: game.turn.number + 1,
         phase: TurnPhase::IDLE,
