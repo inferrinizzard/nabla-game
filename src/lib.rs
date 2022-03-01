@@ -53,11 +53,12 @@ pub fn main_js() -> Result<(), JsValue> {
         event_listeners::mousedown_event_listener,
     ));
 
-    canvas::resize_canvas();
+    canvas.resize();
     render::render::draw();
 
     EventListener::new(&window, "resize", |_e| {
-        canvas::resize_canvas();
+        let canvas = unsafe { CANVAS.as_mut().unwrap() };
+        canvas.resize();
         render::render::draw();
     })
     .forget();

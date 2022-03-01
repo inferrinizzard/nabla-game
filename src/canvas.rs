@@ -73,6 +73,20 @@ impl Canvas {
         }
     }
 
+    /// recalculate canvas element sizes on resize
+    pub fn resize(&mut self) {
+        let window = web_sys::window().unwrap();
+        let inner_width = window.inner_width().unwrap().as_f64().unwrap() as u32;
+        let inner_height = window.inner_height().unwrap().as_f64().unwrap() as u32;
+
+        self.canvas_element.set_width(inner_width);
+        self.canvas_element.set_height(inner_height);
+        self.hit_canvas_element.set_width(inner_width);
+        self.hit_canvas_element.set_height(inner_height);
+
+        self.rebounds();
+    }
+
     /// recalculate canvas bounds and center on resize
     pub fn rebounds(&mut self) {
         let canvas_bounds = Vector2 {
@@ -88,20 +102,4 @@ impl Canvas {
         self.canvas_bounds = canvas_bounds;
         self.canvas_center = canvas_center;
     }
-}
-
-/// recalculate canvas element sizes on resize
-pub fn resize_canvas() {
-    let canvas = unsafe { CANVAS.as_mut().unwrap() };
-    let window = web_sys::window().unwrap();
-
-    let inner_width = window.inner_width().unwrap().as_f64().unwrap() as u32;
-    let inner_height = window.inner_height().unwrap().as_f64().unwrap() as u32;
-
-    canvas.canvas_element.set_width(inner_width);
-    canvas.canvas_element.set_height(inner_height);
-    canvas.hit_canvas_element.set_width(inner_width);
-    canvas.hit_canvas_element.set_height(inner_height);
-
-    canvas.rebounds();
 }
