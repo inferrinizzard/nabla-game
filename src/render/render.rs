@@ -7,6 +7,8 @@ use std::collections::HashMap;
 
 use super::katex::*;
 use super::render_constants::*;
+
+use crate::game::structs::TurnPhase;
 use crate::util::*;
 use crate::{CANVAS, GAME};
 
@@ -139,6 +141,9 @@ fn draw_x() {
 /// draws the button that ends MULTI_SELECT phase
 fn draw_multi_done() {
     let (canvas, game) = unsafe { (CANVAS.as_mut().unwrap(), GAME.as_ref().unwrap()) };
+    if !matches!(game.turn.phase, TurnPhase::MULTISELECT(_)) {
+        return;
+    }
 
     let player_num = game.get_current_player_num();
     let multidone_size = Vector2 {
@@ -221,7 +226,7 @@ fn set_line_dash(context: &CanvasRenderingContext2d, dash_num: u32, dash_size: f
 }
 
 /// renders KaTeX item at pos with given size & id
-fn draw_katex<T>(item: &T, id: String, size: &str, pos: Vector2)
+fn draw_katex<T>(item: &T, id: String, size: &str, pos: Vector2) -> Element
 where
     T: ToLatex,
     T: Clone,
@@ -232,6 +237,8 @@ where
     element
         .set_attribute("style", style_string.as_str())
         .expect(format!("Cannot set style for {:?}", item).as_str());
+
+    element
 }
 
 /// renders 6 field basis slots
