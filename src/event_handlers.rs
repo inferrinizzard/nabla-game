@@ -222,6 +222,7 @@ fn multi_select_phase(multi_operator: Card, id: String, player_num: u32) {
         console::log_1(&JsValue::from(format!("added to multiselect: {}", id)));
     }
 
+    // TODO: prevent 0 * all or 0 / all
     if id_key == "x"
         && id_val == 1
         && game // must have at least 1 field basis
@@ -268,6 +269,9 @@ fn multi_select_phase(multi_operator: Card, id: String, player_num: u32) {
         used_field_bases // clear used field bases
             .iter()
             .for_each(|field_index| field[*field_index] = FieldBasis::none());
+        if result_basis.is_num(0) {
+            field[used_field_bases[0]] = FieldBasis::none();
+        }
         field[used_field_bases[0]] = FieldBasis::new(&result_basis); // assign result basis to any newly empty field
         end_turn();
     }
