@@ -272,13 +272,20 @@ impl Display for BasisLeaf {
 impl ToLatex for BasisLeaf {
     fn to_latex(&self) -> String {
         match self.element {
+            BasisElement::Num => {
+                if self.coefficient == 1 {
+                    String::from("1")
+                } else {
+                    format!("{coefficient}", coefficient = self.coefficient.to_latex())
+                }
+            }
+            BasisElement::X => format!("{}x", self.coefficient.to_latex()),
             BasisElement::Inf => (if self.coefficient > 1 {
                 "\\infty"
             } else {
                 "-\\infty"
             })
             .to_string(),
-            _ => self.to_string(),
         }
     }
 }
@@ -369,11 +376,12 @@ impl ToLatex for BasisNode {
     fn to_latex(&self) -> String {
         match self.operator {
             BasisOperator::E => format!(
-                "{}{{{}}}",
-                self.operator.to_latex(),
-                self.operands[0].to_latex()
+                "{coefficient}{operator}{{{operands}}}",
+                coefficient = self.coefficient.to_latex(),
+                operator = self.operator.to_latex(),
+                operands = self.operands[0].to_latex()
             ),
-            BasisOperator::Add | BasisOperator::Minus | BasisOperator::Mult => format!(
+            BasisOperator::Add | BasisOperator::Minus => format!(
                 "{}",
                 self.operands
                     .iter()
@@ -383,35 +391,59 @@ impl ToLatex for BasisNode {
                         format!("{} {} {}", acc, self.operator.to_latex(), op.to_latex())
                     })
             ),
+            BasisOperator::Mult => format!(
+                "{}",
+                self.operands
+                    .iter()
+                    .fold(self.coefficient.to_latex(), |acc, op| format!(
+                        "{}{}",
+                        acc,
+                        op.to_latex()
+                    ))
+            ),
             BasisOperator::Div => format!(
-                "\\frac{{{numerator}}}{{{denominator}}}",
+                "{coefficient}\\frac{{{numerator}}}{{{denominator}}}",
+                coefficient = self.operator.to_latex(),
                 numerator = self.operands[0].to_latex(),
                 denominator = self.operands[1].to_latex()
             ),
             BasisOperator::Pow(pow) => {
                 if pow == -1 {
                     return format!(
-                        "\\frac{{1}}{{{denominator}}}",
+                        "\\frac{{{numerator_coefficient}}}{{{denominator_coefficient}{denominator}}}",
+                        numerator_coefficient= if self.coefficient.n == 1 {
+                            1
+                        } else {
+                            self.coefficient.n
+                        },
+                        denominator_coefficient= if self.coefficient.d == 1 {
+                            String::new()
+                        } else {
+                            self.coefficient.d.to_string()
+                        },
                         denominator = self.operands[0].to_latex()
                     );
                 }
                 match self.operands[0] {
                     Basis::BasisLeaf(_) => format!(
-                        "{}{}",
-                        self.operands[0].to_latex(),
-                        self.operator.to_latex()
+                        "{coefficient}{base}{exponent}",
+                        coefficient = self.coefficient.to_latex(),
+                        base = self.operands[0].to_latex(),
+                        exponent = self.operator.to_latex()
                     ),
                     Basis::BasisNode(_) => format!(
-                        "({}){}",
-                        self.operands[0].to_latex(),
-                        self.operator.to_latex()
+                        "{coefficient}({base}){exponent}",
+                        coefficient = self.coefficient.to_latex(),
+                        base = self.operands[0].to_latex(),
+                        exponent = self.operator.to_latex()
                     ),
                 }
             }
             _ => format!(
-                "{}({})",
-                self.operator.to_latex(),
-                self.operands[0].to_latex()
+                "{coefficient}{function}({operand})",
+                coefficient = self.coefficient.to_latex(),
+                function = self.operator.to_latex(),
+                operand = self.operands[0].to_latex()
             ),
         }
     }

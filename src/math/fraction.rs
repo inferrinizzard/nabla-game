@@ -2,6 +2,8 @@
 use std::cmp::{max, min, Ordering};
 use std::fmt::{Display, Formatter, Result};
 use std::ops::{Add, AddAssign, BitXor, Div, DivAssign, Mul, MulAssign, Neg, Not, Sub, SubAssign};
+// util imports
+use crate::util::ToLatex;
 
 /// struct to represent a rational number coefficient in terms of numerator and denominator
 #[derive(Copy, Clone, Debug, Hash, Eq, PartialEq, Ord)]
@@ -78,6 +80,25 @@ impl Display for Fraction {
             write!(f, "{}", self.n)
         } else {
             write!(f, "{}/{}", self.n, self.d)
+        }
+    }
+}
+
+/// LaTeX representation of Fraction, displays as plain number if denominator is 1, does not display if fraction = 1
+impl ToLatex for Fraction {
+    fn to_latex(&self) -> String {
+        if self.n == 1 && self.d == 1 {
+            String::new()
+        } else if self.n == -1 && self.d == 1 {
+            String::from("-")
+        } else if self.d == 1 {
+            format!("{}", self.n)
+        } else {
+            format!(
+                "\\frac{{{numerator}}}{{{denominator}}}",
+                numerator = self.n,
+                denominator = self.d
+            )
         }
     }
 }
