@@ -246,6 +246,7 @@ fn assemble_mult(coefficient: Fraction, numerator: Vec<Basis>, denominator: Vec<
     if numerator
         .iter()
         .any(|op| op.is_num(0) || op.coefficient() == 0)
+        || coefficient == 0
     {
         return Basis::from(0);
     }
