@@ -82,17 +82,21 @@ fn idle_turn_phase(card: Card) {
                 next_phase(TurnPhase::SELECT(Card::BasisCard(basis_card)));
             }
         }
-        Card::DerivativeCard(derivative_card)
-            if (game.turn.number == 1 && matches!(derivative_card, DerivativeCard::Nabla))
-                || matches!(
-                    derivative_card,
-                    DerivativeCard::Laplacian | DerivativeCard::Nabla
-                ) =>
-        {
-            // field select
-            next_phase(TurnPhase::FIELD_SELECT(Card::DerivativeCard(
+        Card::DerivativeCard(derivative_card) => {
+            if matches!(
                 derivative_card,
-            )));
+                DerivativeCard::Derivative | DerivativeCard::Integral
+            ) {
+                next_phase(TurnPhase::SELECT(card));
+            } else if matches!(derivative_card, DerivativeCard::Nabla)
+            // prevent player from playing laplacian on first turn for each player
+                || (game.turn.number >= 2 && matches!(derivative_card, DerivativeCard::Laplacian))
+            {
+                // field select
+                next_phase(TurnPhase::FIELD_SELECT(Card::DerivativeCard(
+                    derivative_card,
+                )));
+            }
         }
         Card::AlgebraicCard(algebraic_card)
             if matches!(algebraic_card, AlgebraicCard::Div | AlgebraicCard::Mult) =>
@@ -128,7 +132,6 @@ fn select_turn_phase(select_operator: Card, (id_key, id_val): (String, usize)) {
                 ) {
                     handle_derivative_card(operator_card, id_val);
                 } else if matches!(operator_card, Card::AlgebraicCard(AlgebraicCard::Inverse)) {
-                    // let field = &mut game.field;
                     let result_basis =
                         apply_card(&operator_card)(game.field[id_val].basis.as_ref().unwrap());
                     game.field.inverse(id_val, Some(result_basis))
@@ -301,7 +304,8 @@ fn end_turn() {
     };
     // remove used cards
     for i in selected_indices.iter() {
-        player.remove(*i);
+        let used_card = player.remove(*i);
+        game.graveyard.push(used_card);
     }
 
     let deck = &mut game.deck;
@@ -365,4 +369,13 @@ pub fn next_turn() {
     };
     game.active.clear();
     render::draw();
+
+    let field = game.field.basis.iter();
+    if field.clone().take(3).all(|f| f.basis.is_none()) {
+        // player 1 wins
+        game.game_over(1);
+    } else if field.clone().skip(3).all(|f| f.basis.is_none()) {
+        // player 2 wins
+        game.game_over(2);
+    }
 }

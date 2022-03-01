@@ -5,6 +5,7 @@ use web_sys::*;
 use std::collections::HashMap;
 
 use super::util::Vector2;
+use super::CANVAS;
 
 pub struct Canvas {
     pub canvas_element: HtmlCanvasElement,
@@ -68,4 +69,34 @@ impl Canvas {
             mousedown_listener: None,
         }
     }
+
+    pub fn rebounds(&mut self) {
+        let canvas_bounds = Vector2 {
+            x: f64::from(self.canvas_element.width()),
+            y: f64::from(self.canvas_element.height()),
+        };
+
+        let canvas_center = Vector2 {
+            x: canvas_bounds.x / 2.0,
+            y: canvas_bounds.y / 2.0,
+        };
+
+        self.canvas_bounds = canvas_bounds;
+        self.canvas_center = canvas_center;
+    }
+}
+
+pub fn resize_canvas() {
+    let canvas = unsafe { CANVAS.as_mut().unwrap() };
+    let window = web_sys::window().unwrap();
+
+    let inner_width = window.inner_width().unwrap().as_f64().unwrap() as u32;
+    let inner_height = window.inner_height().unwrap().as_f64().unwrap() as u32;
+
+    canvas.canvas_element.set_width(inner_width);
+    canvas.canvas_element.set_height(inner_height);
+    canvas.hit_canvas_element.set_width(inner_width);
+    canvas.hit_canvas_element.set_height(inner_height);
+
+    canvas.rebounds();
 }

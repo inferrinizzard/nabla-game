@@ -4,6 +4,7 @@
 		<meta charset="UTF-8" />
 		<title>Nabla Game</title>
 		<link rel="stylesheet" href="index.css" />
+		<link rel="icon" href="favicon.png" />
 		<link
 			rel="stylesheet"
 			href="https://cdn.jsdelivr.net/npm/katex@0.15.2/dist/katex.min.css"
@@ -12,24 +13,78 @@
 		/>
 	</head>
 	<body>
+		<button id="button-MENU">Main Menu</button>
+		<div id="menu">
+			<h1>Nabla Operator Game</h1>
+			<div class="button-wrapper">
+				<div id="menu-MENU" class="menu-item">
+					<button id="button-PLAYVS">Play vs Friend</button>
+					<button id="button-PLAYAI">Play vs AI</button>
+					<button id="button-TUTORIAL">Instructions</button>
+					<button id="button-SETTINGS">Settings</button>
+					<button id="button-CREDITS">Credits</button>
+				</div>
+				<div id="menu-SETTINGS" class="menu-item" hidden>
+					<div>
+						<label for="checkbox-DISPLAY_LN_FOR_LOG">Display Ln instead of Log ?</label>
+						<input id="checkbox-DISPLAY_LN_FOR_LOG" type="checkbox" />
+					</div>
+					<div>
+						<label for="checkbox-ALLOW_LINEAR_DEPENDENCE"
+							>Allow linearly dependent bases ? (ie. x and 2x)</label
+						>
+						<input id="checkbox-ALLOW_LINEAR_DEPENDENCE" type="checkbox" />
+					</div>
+					<div>
+						<label for="checkbox-ALLOW_LIMITS_BEYOND_BOUNDS"
+							>Allow limits beyond function bounds ? (ie. arccos(INF))</label
+						>
+						<input id="checkbox-ALLOW_LIMITS_BEYOND_BOUNDS" type="checkbox" />
+					</div>
+					<div>
+						<label for="checkbox-FULL_COMPUTE">Perform all computations ?</label>
+						<input id="checkbox-FULL_COMPUTE" type="checkbox" />
+					</div>
+					<div>
+						<label for="checkbox-LIMIT_FIELD_BASIS">Only allow max 3 field basis ?</label>
+						<input id="checkbox-LIMIT_FIELD_BASIS" type="checkbox" />
+					</div>
+				</div>
+				<div id="menu-TUTORIAL" class="menu-item" hidden>
+					<h3>Japanese Instructional Video:</h3>
+					<iframe
+						width="560"
+						height="315"
+						src="https://www.youtube.com/embed/kf0DAygsXAU"
+						title="YouTube video player"
+						frameborder="0"
+						allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+						allowfullscreen
+					></iframe>
+					<a href="https://trans-nabla--itter2voxrtiyag.repl.co/">
+						<h3>English Translation of PDF Instructions:</h3>
+					</a>
+				</div>
+				<div id="menu-CREDITS" class="menu-item" hidden>
+					<p>Built by: <a href="https://github.com/inferrinizzard">inferrinizzard</a></p>
+					<p>
+						Github Link:
+						<a href="https://github.com/inferrinizzard/nabla-game"
+							>https://github.com/inferrinizzard/nabla-game</a
+						>
+					</p>
+					<p>Inspired by: <a href="https://nablagame.com/">ナブラ演算子ゲーム</a>"</p>
+				</div>
+				<div id="menu-GAMEOVER" hidden>
+					<h1>Game Over</h1>
+					<h2 id="gameover-WINNER">Player</h2>
+					<button id="gameover-RESTART">Restart?</button>
+				</div>
+			</div>
+		</div>
 		<div id="katex"></div>
 		<canvas id="canvas"></canvas>
 		<canvas id="hitCanvas" hidden></canvas>
 		<script src="index.js"></script>
-		<script>
-			const resizeCanvas = canvasId => {
-				let canvas = document.getElementById(canvasId);
-				canvas.width = window.innerWidth;
-				canvas.height = window.innerHeight;
-				// resize #katex too
-			};
-			resizeCanvas('canvas');
-			resizeCanvas('hitCanvas');
-			window.addEventListener('resize', () => {
-				resizeCanvas('canvas');
-				resizeCanvas('hitCanvas');
-				// call redraw
-			});
-		</script>
 	</body>
 </html>

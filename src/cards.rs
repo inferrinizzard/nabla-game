@@ -161,10 +161,10 @@ impl ToLatex for LimitCard {
 
 #[derive(Copy, Clone, Debug, Hash, Eq, PartialEq)]
 pub enum DerivativeCard {
-    Derivative,
-    Nabla,
-    Laplacian,
     Integral,
+    Derivative,
+    Nabla,     // 1st derivative of all field basis
+    Laplacian, // 2nd derivative of all field basis
 }
 impl Display for DerivativeCard {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result {

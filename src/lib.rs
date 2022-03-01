@@ -6,12 +6,14 @@ pub mod cards;
 mod game;
 use game::structs::Game;
 pub mod math;
+mod menu;
+use menu::*;
 
 mod event_handlers;
 mod event_listeners;
 
 mod canvas;
-use canvas::Canvas;
+use canvas::*;
 mod render;
 
 mod util;
@@ -26,6 +28,7 @@ static ALLOC: wee_alloc::WeeAlloc = wee_alloc::WeeAlloc::INIT;
 
 pub static mut CANVAS: Option<Canvas> = None;
 pub static mut GAME: Option<Game> = None;
+pub static mut MENU: Option<Menu> = None;
 
 // This is like the `main` function, except for JavaScript.
 #[wasm_bindgen(start)]
@@ -38,8 +41,9 @@ pub fn main_js() -> Result<(), JsValue> {
     let window = web_sys::window().unwrap();
     let document = window.document().unwrap();
     unsafe {
+        GAME = Some(Game::new());
         CANVAS = Some(Canvas::new(&document));
-        GAME = Some(Game::new())
+        MENU = Some(Menu::new(&document));
     }
     let canvas = unsafe { CANVAS.as_mut().unwrap() };
 
@@ -49,7 +53,14 @@ pub fn main_js() -> Result<(), JsValue> {
         event_listeners::mousedown_event_listener,
     ));
 
+    canvas::resize_canvas();
     render::render::draw();
+
+    EventListener::new(&window, "resize", |_e| {
+        canvas::resize_canvas();
+        render::render::draw();
+    })
+    .forget();
 
     Ok(())
 }
