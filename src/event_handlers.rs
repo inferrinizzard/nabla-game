@@ -1,14 +1,14 @@
+// std imports
 use std::cmp::min;
-
-use wasm_bindgen::prelude::*;
-use web_sys::*;
-
-use super::GAME;
+// outer crate imports
 use crate::basis::structs::*;
 use crate::cards::*;
 use crate::game::{field::FieldBasis, flags::ALLOW_LINEAR_DEPENDENCE, structs::*};
 use crate::render::render;
+// root imports
+use super::GAME;
 
+/// delegates event handling based on turn num
 pub fn handle_mousedown(id: String) {
     if id.is_empty() {
         return;
@@ -30,11 +30,13 @@ pub fn handle_mousedown(id: String) {
     }
 }
 
-fn get_key_val(id: &String) -> (String, usize) {
+/// extracts id key and id value from id kvp
+pub fn get_key_val(id: &String) -> (String, usize) {
     let kvp = id.split("=").collect::<Vec<&str>>();
     (kvp[0].to_string(), kvp[1].parse::<usize>().unwrap())
 }
 
+/// further splits click event based on turn phase
 pub fn branch_turn_phase(id: String, player_num: u32) {
     let game = unsafe { GAME.as_mut().unwrap() };
     let turn = &game.turn;
@@ -71,6 +73,7 @@ pub fn branch_turn_phase(id: String, player_num: u32) {
     }
 }
 
+/// handles idle turn phase, where player can select a card
 fn idle_turn_phase(card: Card) {
     let game = unsafe { GAME.as_mut().unwrap() };
 
@@ -111,6 +114,7 @@ fn idle_turn_phase(card: Card) {
     }
 }
 
+/// handles select turn phase, player can choose single target of selected card
 fn select_turn_phase(select_operator: Card, (id_key, id_val): (String, usize)) {
     let game = unsafe { GAME.as_mut().unwrap() };
 
@@ -151,6 +155,7 @@ fn select_turn_phase(select_operator: Card, (id_key, id_val): (String, usize)) {
     }
 }
 
+/// handles field select turn phase, player can choose side of field to target with selected card
 fn field_select_phase(field_operator: Card, (id_key, id_val): (String, usize)) {
     let card_range = if id_val < 3 { 0..3 } else { 3..6 };
     // for each basis on one half of the field
@@ -160,6 +165,7 @@ fn field_select_phase(field_operator: Card, (id_key, id_val): (String, usize)) {
     end_turn();
 }
 
+/// manages derivatives of FieldBasis, looks up history of derivatives/integrals and applies if possible
 fn handle_derivative_card(card: Card, i: usize) {
     let game = unsafe { GAME.as_mut().unwrap() };
 
@@ -208,6 +214,7 @@ fn handle_derivative_card(card: Card, i: usize) {
     }
 }
 
+/// handles multiselect turn phase, player can choose multiple targets of selected operator (Mult/Div)
 fn multi_select_phase(multi_operator: Card, id: String, player_num: u32) {
     let game = unsafe { GAME.as_mut().unwrap() };
     let player = if &game.turn.number % 2 == 0 {
@@ -279,6 +286,7 @@ fn multi_select_phase(multi_operator: Card, id: String, player_num: u32) {
     }
 }
 
+/// performs cleanup tasks after turn is over
 fn end_turn() {
     let game = unsafe { GAME.as_mut().unwrap() };
     // get vector indices of cards used by player this turn
@@ -345,6 +353,7 @@ fn end_turn() {
     next_turn();
 }
 
+/// shifts to next turn phase with given selected card
 fn next_phase(phase: TurnPhase) {
     let game = unsafe { GAME.as_mut().unwrap() };
     // console::log_1(&JsValue::from(format!("entering phase: {:?}", phase)));
@@ -355,6 +364,7 @@ fn next_phase(phase: TurnPhase) {
     render::draw();
 }
 
+/// finalises turn and increments turn, checking if game is in terminal state
 pub fn next_turn() {
     let game = unsafe { GAME.as_mut().unwrap() };
 

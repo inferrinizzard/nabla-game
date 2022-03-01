@@ -13,6 +13,7 @@ use crate::{CANVAS, GAME, MENU};
 use super::katex::*;
 use super::render_constants::*;
 
+/// main draw function, delegates to respective draw functions based on game state
 #[wasm_bindgen]
 pub fn draw() {
     let (game, menu) = unsafe { (GAME.as_ref().unwrap(), MENU.as_ref().unwrap()) };
@@ -28,7 +29,7 @@ pub fn draw() {
     }
 }
 
-/// main game render function, iterates through all items to render
+/// main game render function, iterates through all game items to render
 pub fn render_play_screen() {
     let canvas = unsafe { CANVAS.as_mut().unwrap() };
     let context = &canvas.context;

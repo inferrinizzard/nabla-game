@@ -1,6 +1,9 @@
+// outer crate imports
 use crate::basis::{builders::*, structs::*};
-use crate::math::fraction::Fraction;
+// local imports
+use super::fraction::Fraction;
 
+/// calculates the logarithm of a Basis if possible, returns LogBasisNode if not
 pub fn logarithm(basis: &Basis) -> Basis {
     match basis {
         Basis::BasisLeaf(basis_leaf) => match basis_leaf.element {

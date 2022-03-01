@@ -1,7 +1,9 @@
+// std imports
 use std::cmp::{max, min, Ordering};
 use std::fmt::{Display, Formatter, Result};
 use std::ops::{Add, AddAssign, BitXor, Div, DivAssign, Mul, MulAssign, Neg, Not, Sub, SubAssign};
 
+/// struct to represent a rational number coefficient in terms of numerator and denominator
 #[derive(Copy, Clone, Debug, Hash, Eq, PartialEq, Ord)]
 pub struct Fraction {
     pub n: i32, // numerator
@@ -9,6 +11,7 @@ pub struct Fraction {
 }
 
 impl Fraction {
+    /// extracts sign of fraction
     pub fn sign(&self) -> i32 {
         if self.n > 0 {
             1
@@ -19,6 +22,7 @@ impl Fraction {
         }
     }
 
+    /// helper function to find gcd of two numbers, uses Euclid's algorithm
     fn gcd(&self) -> i32 {
         let (abs_n, abs_d) = (self.n.abs(), self.d.abs());
         let (mut a, mut b) = (max(abs_n, abs_d), (min(abs_n, abs_d)));
@@ -31,6 +35,7 @@ impl Fraction {
         a // gcd
     }
 
+    /// reduces fraction to lowest terms
     pub fn simplify(self) -> Self {
         let gcd = self.gcd();
         let (mut n, mut d) = (self.n, self.d);
@@ -46,23 +51,27 @@ impl Fraction {
     }
 }
 
+/// creates a new Fraction with given integer as numerator, 1 as denominator
 impl From<i32> for Fraction {
     fn from(n: i32) -> Self {
         Fraction { n, d: 1 }
     }
 }
+/// creates a new Fractin with given tuple elements as numerator and denominator
 impl From<(i32, i32)> for Fraction {
     fn from((n, d): (i32, i32)) -> Self {
         Fraction { n, d }
     }
 }
 
+/// converts Fraction to (n,d) tuple
 impl Into<(i32, i32)> for Fraction {
     fn into(self) -> (i32, i32) {
         (self.n, self.d)
     }
 }
 
+/// string representation of Fraction, displays as plain number if denominator is 1
 impl Display for Fraction {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result {
         if self.d == 1 {
@@ -73,6 +82,7 @@ impl Display for Fraction {
     }
 }
 
+/// checks if self Fraction is an integer and is equal to other Fraction integer
 impl PartialEq<i32> for Fraction {
     fn eq(&self, other: &i32) -> bool {
         self.d == 1 && self.n == *other
@@ -89,6 +99,7 @@ impl PartialOrd for Fraction {
         } else if left.n < right.n {
             Some(Ordering::Less)
         } else {
+            // TODO: use LCM to compare denominators
             Some(Ordering::Equal)
         }
     }
@@ -99,6 +110,7 @@ impl PartialOrd<i32> for Fraction {
     }
 }
 
+/// adds fraction with given tuple elements as Fraction
 impl Add<(i32, i32)> for Fraction {
     type Output = Self;
 
@@ -115,6 +127,7 @@ impl Add<(i32, i32)> for Fraction {
         out_frac.simplify()
     }
 }
+/// adds fraction with given Fraction
 impl Add<Fraction> for Fraction {
     type Output = Self;
 
@@ -122,6 +135,7 @@ impl Add<Fraction> for Fraction {
         self + (frac.n, frac.d)
     }
 }
+/// adds fraction with given integer
 impl Add<i32> for Fraction {
     type Output = Self;
 
@@ -135,6 +149,7 @@ impl AddAssign for Fraction {
     }
 }
 
+/// subtracts fraction with given tuple elements as Fraction
 impl Sub<(i32, i32)> for Fraction {
     type Output = Self;
 
@@ -142,6 +157,7 @@ impl Sub<(i32, i32)> for Fraction {
         self + (-n, d)
     }
 }
+/// subtracts fraction with given Fraction
 impl Sub<Fraction> for Fraction {
     type Output = Self;
 
@@ -149,6 +165,7 @@ impl Sub<Fraction> for Fraction {
         self - (frac.n, frac.d)
     }
 }
+/// subtracts fraction with given integer
 impl Sub<i32> for Fraction {
     type Output = Self;
 
@@ -162,6 +179,7 @@ impl SubAssign for Fraction {
     }
 }
 
+/// scales given Fraction by given tuple elements as Fraction
 impl Mul<(i32, i32)> for Fraction {
     type Output = Self;
 
@@ -173,6 +191,7 @@ impl Mul<(i32, i32)> for Fraction {
         out_frac.simplify()
     }
 }
+/// scales given Fraction by given Fraction
 impl Mul<Fraction> for Fraction {
     type Output = Self;
 
@@ -180,6 +199,7 @@ impl Mul<Fraction> for Fraction {
         self * (frac.n, frac.d)
     }
 }
+/// scales given Fraction by given integer
 impl Mul<i32> for Fraction {
     type Output = Self;
 
@@ -193,6 +213,7 @@ impl MulAssign for Fraction {
     }
 }
 
+/// scales given Fraction by given tuple elements as Fraction
 impl Div<(i32, i32)> for Fraction {
     type Output = Self;
 
@@ -200,6 +221,7 @@ impl Div<(i32, i32)> for Fraction {
         self * (d, n)
     }
 }
+/// scales given Fraction by given Fraction
 impl Div<Fraction> for Fraction {
     type Output = Self;
 
@@ -207,6 +229,7 @@ impl Div<Fraction> for Fraction {
         self / (frac.n, frac.d)
     }
 }
+/// scales given Fraction by given integer
 impl Div<i32> for Fraction {
     type Output = Self;
 
@@ -220,6 +243,7 @@ impl DivAssign for Fraction {
     }
 }
 
+/// raises fraction to integer power
 impl BitXor<i32> for Fraction {
     type Output = Self;
 
@@ -240,6 +264,7 @@ impl BitXor<i32> for Fraction {
     }
 }
 
+/// multiplies fraction by -1
 impl Neg for Fraction {
     type Output = Self;
 
@@ -248,6 +273,7 @@ impl Neg for Fraction {
     }
 }
 
+/// finds reciprocal of Fraction
 impl Not for Fraction {
     type Output = Self;
 

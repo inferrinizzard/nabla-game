@@ -1,9 +1,11 @@
+// wasm-bindgen imports
 use wasm_bindgen::{prelude::*, JsCast};
 use web_sys::*;
-
+// root imports
 use super::event_handlers::*;
 use super::CANVAS;
 
+/// get hit region from hit canvas and return id corresponding to region colour
 pub fn get_hit_region_id(e: &MouseEvent) -> String {
     let canvas = unsafe { CANVAS.as_mut().unwrap() };
     let pixel = canvas // get pixel colour on hit canvas at this mouse location
@@ -28,6 +30,7 @@ pub fn get_hit_region_id(e: &MouseEvent) -> String {
         .clone()
 }
 
+/// mousedown listener for hit canvas, controls game logic
 pub fn mousedown_event_listener(event: &Event) {
     let e = event.dyn_ref::<MouseEvent>().unwrap_throw();
     let hit_region_id = get_hit_region_id(e);

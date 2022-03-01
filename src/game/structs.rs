@@ -1,12 +1,14 @@
+/// std imports
 use rand::seq::SliceRandom;
 use rand::thread_rng;
-
+// outer crate imports
 use crate::cards::*;
 use crate::render::render;
 use crate::MENU;
-
+// local imports
 use super::field::*;
 
+/// helper function to create new deck Vec
 fn get_new_deck() -> Vec<Card> {
     let mut deck = vec![];
     deck.extend(vec![Card::BasisCard(BasisCard::Zero); 2]);
@@ -34,6 +36,7 @@ fn get_new_deck() -> Vec<Card> {
     return deck;
 }
 
+// helper function to shuffle deck and deal cards to player hands
 fn create_players(deck: &mut Vec<Card>) -> (Vec<Card>, Vec<Card>) {
     // deal initial hands
     let mut hand_1 = deck.split_off(deck.len() - 7);
@@ -54,6 +57,7 @@ fn create_players(deck: &mut Vec<Card>) -> (Vec<Card>, Vec<Card>) {
     (hand_1, hand_2)
 }
 
+/// main Game struct, holds all game state
 #[derive(Debug)]
 pub struct Game {
     pub state: GameState,
@@ -67,6 +71,7 @@ pub struct Game {
 }
 
 impl Game {
+    /// create new game for start
     pub fn new() -> Game {
         let mut deck = get_new_deck();
         deck.shuffle(&mut thread_rng());
@@ -90,6 +95,7 @@ impl Game {
         };
     }
 
+    /// get current player based on turn number
     pub fn get_current_player_num(&self) -> u32 {
         if self.turn.number % 2 == 0 {
             1
@@ -97,6 +103,7 @@ impl Game {
             2
         }
     }
+    /// get reference to current player hand
     pub fn get_current_player(&self) -> &Vec<Card> {
         match self.get_current_player_num() {
             1 => &self.player_1,
@@ -105,11 +112,13 @@ impl Game {
         }
     }
 
+    /// set new game state
     pub fn set_state(&mut self, state: GameState) {
         self.state = state;
         render::draw();
     }
 
+    /// handle losing state
     pub fn game_over(&self, winner: u32) {
         let menu = unsafe { MENU.as_ref().unwrap() };
 
@@ -123,12 +132,14 @@ impl Game {
     }
 }
 
+/// turn struct to manager turn number and turn phases
 #[derive(Debug)]
 pub struct Turn {
     pub number: u32,
     pub phase: TurnPhase,
 }
 
+/// turn phases for the steps required in various cards
 #[allow(non_camel_case_types)]
 #[derive(Debug)]
 pub enum TurnPhase {
@@ -138,6 +149,7 @@ pub enum TurnPhase {
     MULTISELECT(Card),  // mult or div
 }
 
+/// struct to store currently selected cards
 #[derive(Debug)]
 pub struct ActiveCards {
     pub selected: Vec<String>,
@@ -151,6 +163,7 @@ impl ActiveCards {
     }
 }
 
+/// different possible states of game and UI
 #[derive(Debug)]
 pub enum GameState {
     MENU,

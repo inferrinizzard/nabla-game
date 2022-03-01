@@ -1,10 +1,12 @@
+// std imports
 use std::collections::HashMap;
-
-use super::structs::*;
-
+// outer crate imports
 use crate::math::fraction::Fraction;
 use crate::math::logarithm::logarithm;
+// local imports
+use super::structs::*;
 
+/// handles Add BasisNodes
 #[allow(non_snake_case)]
 pub fn AddBasisNode(operands: Vec<Basis>) -> Basis {
     // combine all add and minus ops
@@ -81,6 +83,7 @@ pub fn AddBasisNode(operands: Vec<Basis>) -> Basis {
     })
 }
 
+/// handles Minus BasisNodes, wrapper for AddBasisNode
 #[allow(non_snake_case)]
 pub fn MinusBasisNode(operands: Vec<Basis>) -> Basis {
     let head = operands.iter().take(1).cloned();
@@ -88,6 +91,7 @@ pub fn MinusBasisNode(operands: Vec<Basis>) -> Basis {
     AddBasisNode(head.chain(tail).collect())
 }
 
+/// gets the inner base of an exponential expression if possible, returning the base and the exponent (as fraction tuple)
 fn get_base(basis: &Basis) -> Option<(Basis, i32, i32)> {
     match basis {
         Basis::BasisLeaf(_) => Some((basis.clone(), 1, 1)),
@@ -119,6 +123,7 @@ fn get_base(basis: &Basis) -> Option<(Basis, i32, i32)> {
     }
 }
 
+/// coalesces operands for multiplication and division, unfolding any nested Mult and Div nodes and collecting coefficients
 fn build_numerator_denominator(
     in_numerator: Vec<Basis>,
     in_denominator: Vec<Basis>,
@@ -233,6 +238,7 @@ fn build_numerator_denominator(
     (final_coefficient, numerator, denominator)
 }
 
+/// handles multiplication edge case logic, combines final numerator and denominator
 fn assemble_mult(coefficient: Fraction, numerator: Vec<Basis>, denominator: Vec<Basis>) -> Basis {
     let mut final_coefficient = coefficient;
 
@@ -422,12 +428,14 @@ fn assemble_mult(coefficient: Fraction, numerator: Vec<Basis>, denominator: Vec<
     })
 }
 
+/// handles Mult BasisNodes, uses `build_numerator_denominator` and `assemble_mult`
 #[allow(non_snake_case)]
 pub fn MultBasisNode(operands: Vec<Basis>) -> Basis {
     let (coefficient, numerator, denominator) = build_numerator_denominator(operands, vec![]);
     assemble_mult(coefficient, numerator, denominator)
 }
 
+/// handles Div BasisNodes, defers to `build_numerator_denominator` and `assemble_mult`
 #[allow(non_snake_case)]
 pub fn DivBasisNode(numerator: &Basis, denominator: &Basis) -> Basis {
     // 0 / n = 0
@@ -497,6 +505,7 @@ pub fn DivBasisNode(numerator: &Basis, denominator: &Basis) -> Basis {
     assemble_mult(coefficient, final_numerator, final_denominator)
 }
 
+/// handles Pow BasisNodes, exponents currently represented as Fraction{n,d} - limited to rational powers
 #[allow(non_snake_case)]
 pub fn PowBasisNode(n: i32, d: i32, base: &Basis) -> Basis {
     let mut pow = Fraction::from((n, d)).simplify();
@@ -572,11 +581,13 @@ pub fn PowBasisNode(n: i32, d: i32, base: &Basis) -> Basis {
     })
 }
 
+/// handles Sqrt exponents, wrapper for PowBasisNode
 #[allow(non_snake_case)]
 pub fn SqrtBasisNode(n: i32, base: &Basis) -> Basis {
     PowBasisNode(n, 2, &base)
 }
 
+/// handles Log BasisNodes
 #[allow(non_snake_case)]
 pub fn LogBasisNode(base: &Basis) -> Basis {
     // log(e^x) = x
@@ -605,6 +616,7 @@ pub fn LogBasisNode(base: &Basis) -> Basis {
     })
 }
 
+/// handles E BasisNodes, simple constructor for E BasisNodes
 #[allow(non_snake_case)]
 pub fn EBasisNode(operand: &Basis) -> Basis {
     Basis::BasisNode(BasisNode {
@@ -614,6 +626,7 @@ pub fn EBasisNode(operand: &Basis) -> Basis {
     })
 }
 
+/// handles Cos BasisNodes, simple constructor for Cos BasisNodes
 #[allow(non_snake_case)]
 pub fn CosBasisNode(operand: &Basis) -> Basis {
     Basis::BasisNode(BasisNode {
@@ -623,6 +636,7 @@ pub fn CosBasisNode(operand: &Basis) -> Basis {
     })
 }
 
+/// handles Sin BasisNodes, simple constructor for Sin BasisNodes
 #[allow(non_snake_case)]
 pub fn SinBasisNode(operand: &Basis) -> Basis {
     Basis::BasisNode(BasisNode {
@@ -632,6 +646,7 @@ pub fn SinBasisNode(operand: &Basis) -> Basis {
     })
 }
 
+/// handles ACos BasisNodes, simple constructor for ACos BasisNodes
 #[allow(non_snake_case)]
 pub fn ACosBasisNode(operand: &Basis) -> Basis {
     Basis::BasisNode(BasisNode {
@@ -641,6 +656,7 @@ pub fn ACosBasisNode(operand: &Basis) -> Basis {
     })
 }
 
+/// handles ASin BasisNodes, simple constructor for ASin BasisNodes
 #[allow(non_snake_case)]
 pub fn ASinBasisNode(operand: &Basis) -> Basis {
     Basis::BasisNode(BasisNode {
@@ -650,6 +666,7 @@ pub fn ASinBasisNode(operand: &Basis) -> Basis {
     })
 }
 
+/// handles Inv BasisNodes
 #[allow(non_snake_case)]
 pub fn InvBasisNode(base: &Basis) -> Basis {
     match base {
@@ -676,6 +693,7 @@ pub fn InvBasisNode(base: &Basis) -> Basis {
     })
 }
 
+/// handles Int BasisNodes, simple constructor for Integral BasisNodes
 #[allow(non_snake_case)]
 pub fn IntBasisNode(integrand: &Basis) -> Basis {
     Basis::BasisNode(BasisNode {

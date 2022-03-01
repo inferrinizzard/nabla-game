@@ -1,12 +1,14 @@
+// std imports
 use std::cmp::{max, min};
-
+// outer crate imports
 use crate::basis::{builders::*, structs::*};
 use crate::game::flags::FULL_COMPUTE;
+// local imports
+use super::derivative::derivative;
+use super::fraction::Fraction;
+use super::liate;
 
-use crate::math::derivative::derivative;
-use crate::math::fraction::Fraction;
-use crate::math::liate;
-
+/// finds integral of given Basis if possible, returns IntBasisNode if not
 pub fn integral(basis: &Basis) -> Basis {
     match basis {
         Basis::BasisLeaf(basis_leaf) => match basis_leaf.element {
@@ -104,6 +106,7 @@ pub fn integral(basis: &Basis) -> Basis {
     }
 }
 
+/// orders Basis nodes by LIATE order
 fn find_basis_weight(basis: &Basis) -> i32 {
     // TODO: redo weight system
     match basis {
@@ -123,6 +126,7 @@ fn find_basis_weight(basis: &Basis) -> i32 {
     }
 }
 
+// extract u and dv for integral by parts
 fn get_u_dv(
     left_operand: &Basis,
     right_operand: &Basis,
@@ -155,6 +159,7 @@ fn get_u_dv(
     (u.clone(), dv.clone())
 }
 
+/// delegates integration by parts or u sub integration where possible
 fn substitution_integration(basis_node: &BasisNode) -> Basis {
     let operator = basis_node.operator;
     /*
@@ -208,6 +213,7 @@ fn substitution_integration(basis_node: &BasisNode) -> Basis {
     IntBasisNode(&Basis::BasisNode(basis_node.clone()))
 }
 
+/// performs tabular integration for repeated integration by parts
 pub fn tabular_integration(u: &Basis, dv: &Basis) -> Basis {
     if let Basis::BasisNode(BasisNode {
         coefficient,
@@ -229,11 +235,13 @@ pub fn tabular_integration(u: &Basis, dv: &Basis) -> Basis {
     Basis::from(0)
 }
 
+/// implements basis integration by parts formula
 pub fn integration_by_parts(u: &Basis, dv: &Basis) -> Basis {
     let v = &integral(dv);
     u.clone() * v.clone() - integral(&(derivative(u) * v.clone()))
 }
 
+/// handles integration by parts for polyad multiplication and division
 fn polynomial_integration_by_parts(operands: Vec<Basis>) -> Basis {
     unimplemented!("Not yet implemented: {:?}", operands);
     // TODO:B make this general

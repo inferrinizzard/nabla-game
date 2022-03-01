@@ -1,7 +1,9 @@
+// outer crate imports
 use crate::basis::{builders::*, structs::*};
-
+// local imports
 use super::util::*;
 
+/// finds the derivative of the given Basis
 pub fn derivative(basis: &Basis) -> Basis {
     return match basis {
         // is standard basis

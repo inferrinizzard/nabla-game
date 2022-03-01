@@ -1,12 +1,14 @@
+// std imports
+use std::collections::HashMap;
+// wasm-bindgen imports
 use gloo::events::EventListener;
 use wasm_bindgen::JsCast;
 use web_sys::*;
-
-use std::collections::HashMap;
-
+// root imports
 use super::util::Vector2;
 use super::CANVAS;
 
+/// Controller for canvas elements, related contexts, and event listeners
 pub struct Canvas {
     pub canvas_element: HtmlCanvasElement,
     pub context: CanvasRenderingContext2d,
@@ -21,6 +23,7 @@ pub struct Canvas {
 }
 
 impl Canvas {
+    /// get canvases from DOM and extract client bounds and center
     pub fn new(document: &Document) -> Canvas {
         let canvas_element: HtmlCanvasElement = document
             .get_element_by_id("canvas")
@@ -70,6 +73,7 @@ impl Canvas {
         }
     }
 
+    /// recalculate canvas bounds and center on resize
     pub fn rebounds(&mut self) {
         let canvas_bounds = Vector2 {
             x: f64::from(self.canvas_element.width()),
@@ -86,6 +90,7 @@ impl Canvas {
     }
 }
 
+/// recalculate canvas element sizes on resize
 pub fn resize_canvas() {
     let canvas = unsafe { CANVAS.as_mut().unwrap() };
     let window = web_sys::window().unwrap();

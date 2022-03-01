@@ -1,10 +1,12 @@
+// std imports
 use std::ops::{Add, BitXor, Div, Mul, Neg, Not, Sub};
-
-use super::{builders::*, structs::*};
-
+// outer crate imports
 use crate::math::fraction::Fraction;
 use crate::math::inverse::inverse;
+// local imports
+use super::{builders::*, structs::*};
 
+/// wrapper for AddBasisNode
 impl Add<Basis> for Basis {
     type Output = Self;
 
@@ -13,6 +15,7 @@ impl Add<Basis> for Basis {
     }
 }
 
+/// adds a + -b, uses AddBasisNode
 impl Sub<Basis> for Basis {
     type Output = Self;
 
@@ -21,6 +24,7 @@ impl Sub<Basis> for Basis {
     }
 }
 
+/// wrapper for MultBasisNode
 impl Mul<Basis> for Basis {
     type Output = Self;
 
@@ -28,6 +32,7 @@ impl Mul<Basis> for Basis {
         MultBasisNode(vec![self, right])
     }
 }
+/// scales Basis coefficient by given integer
 impl Mul<Basis> for i32 {
     type Output = Basis;
 
@@ -35,6 +40,7 @@ impl Mul<Basis> for i32 {
         right.mul(self)
     }
 }
+/// uses self integer to scale given Basis, used for left-hand commutation
 impl Mul<i32> for Basis {
     type Output = Self;
     fn mul(self, right: i32) -> Self {
@@ -48,6 +54,7 @@ impl Mul<i32> for Basis {
         }
     }
 }
+/// scales Basis by given tuple coefficient
 impl Mul<(i32, i32)> for Basis {
     type Output = Self;
 
@@ -55,6 +62,7 @@ impl Mul<(i32, i32)> for Basis {
         self.with_frac(self.coefficient() * right)
     }
 }
+/// scales Basis by given fraction coefficient
 impl Mul<Fraction> for Basis {
     type Output = Self;
 
@@ -63,6 +71,7 @@ impl Mul<Fraction> for Basis {
     }
 }
 
+/// wrapper for DivBasisNode
 impl Div<Basis> for Basis {
     type Output = Self;
 
@@ -70,6 +79,7 @@ impl Div<Basis> for Basis {
         DivBasisNode(&self, &right)
     }
 }
+/// scales Basis coefficient by given integer
 impl Div<i32> for Basis {
     type Output = Self;
 
@@ -77,6 +87,7 @@ impl Div<i32> for Basis {
         self.with_frac(self.coefficient() / right)
     }
 }
+/// scales Basis by given tuple coefficient
 impl Div<(i32, i32)> for Basis {
     type Output = Self;
 
@@ -84,6 +95,7 @@ impl Div<(i32, i32)> for Basis {
         self.with_frac(self.coefficient() / right)
     }
 }
+/// scales Basis by given fraction coefficient
 impl Div<Fraction> for Basis {
     type Output = Self;
 
@@ -92,6 +104,7 @@ impl Div<Fraction> for Basis {
     }
 }
 
+/// wrapper for PowBasisNode in x^n format, raises Basis to given integer power
 impl BitXor<i32> for Basis {
     type Output = Self;
 
@@ -99,6 +112,7 @@ impl BitXor<i32> for Basis {
         PowBasisNode(exponent, 1, &self)
     }
 }
+/// wrapper for PowBasisNode in x^(n/d) format, raises Basis to given tuple power
 impl BitXor<(i32, i32)> for Basis {
     type Output = Self;
 
@@ -106,6 +120,7 @@ impl BitXor<(i32, i32)> for Basis {
         PowBasisNode(n, d, &self)
     }
 }
+/// wrapper for PowBasisNode in x^(n/d) format, raises Basis to given fractional power
 impl BitXor<Fraction> for Basis {
     type Output = Self;
 
@@ -114,6 +129,7 @@ impl BitXor<Fraction> for Basis {
     }
 }
 
+/// multiplies by -1
 impl Neg for Basis {
     type Output = Self;
 
@@ -122,6 +138,7 @@ impl Neg for Basis {
     }
 }
 
+/// shorthand for inverse of Basis
 impl Not for Basis {
     type Output = Self;
 

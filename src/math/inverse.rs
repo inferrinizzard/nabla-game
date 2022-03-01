@@ -1,7 +1,9 @@
+// outer crate imports
 use crate::basis::{builders::*, structs::*};
+// local imports
+use super::fraction::Fraction;
 
-use crate::math::fraction::Fraction;
-
+/// find inverse of given operator if possible
 fn operator_inverse(operator: BasisOperator) -> Option<BasisOperator> {
     match operator {
         BasisOperator::E => Some(BasisOperator::Log),
@@ -15,6 +17,8 @@ fn operator_inverse(operator: BasisOperator) -> Option<BasisOperator> {
     }
 }
 
+/// finds inverse of Basis if possible, returns InvBasisNode if not
+/// uses stack-based recursion to invert operator order
 pub fn inverse(basis: &Basis) -> Basis {
     if let Basis::BasisLeaf(basis_leaf) = basis {
         if basis_leaf.element == BasisElement::X {

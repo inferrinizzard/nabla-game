@@ -1,13 +1,16 @@
+// std imports
 use std::collections::HashMap;
-
+// wasm-bindgen imports
 use gloo::events::EventListener;
 use wasm_bindgen::JsCast;
 use web_sys::{Document, Element};
-
+// outer crate imports
 use crate::game::flags::*;
 use crate::game::structs::{Game, GameState};
-use crate::{GAME, MENU};
+// root imports
+use super::{GAME, MENU};
 
+/// controller for the main menu and submenus
 pub struct Menu {
     pub menu_children: HashMap<String, Element>,
     pub menu_element: Element,
@@ -22,6 +25,7 @@ pub struct Menu {
 }
 
 impl Menu {
+    /// extracts child elements from DOM and stores with id as key
     pub fn new(document: &Document) -> Self {
         let menu_element = document.get_element_by_id("menu").unwrap();
         let mut menu_children = HashMap::new();
@@ -80,6 +84,7 @@ impl Menu {
         }
     }
 
+    /// activate specific submenu, deactivate all others
     pub fn activate(&self, id: String) {
         for (element_id, element) in self.menu_children.iter() {
             if element_id == &id {
@@ -94,12 +99,14 @@ impl Menu {
         }
     }
 
+    /// hide main menu and show game
     pub fn close(&self) {
         self.menu_element
             .set_attribute("hidden", "true")
             .expect("Failed to hide main menu");
     }
 
+    /// show main menu and hide game
     pub fn open(&self) {
         self.menu_element
             .remove_attribute("hidden")
@@ -107,12 +114,14 @@ impl Menu {
     }
 }
 
+/// controller for the main menu
 pub struct MainMenu {
     pub button_elements: Vec<Element>,
     pub button_listeners: HashMap<String, EventListener>,
 }
 
 impl MainMenu {
+    /// extracts child elements from DOM and adds event listeners for each button
     pub fn new(document: &Document) -> Self {
         let button_elements: Vec<Element> =
             vec!["PLAYVS", "PLAYAI", "TUTORIAL", "SETTINGS", "CREDITS"]
@@ -151,6 +160,7 @@ impl MainMenu {
     }
 }
 
+/// controller for the settings menu
 #[allow(dead_code)]
 pub struct SettingsMenu {
     checkboxes: Vec<Element>,
@@ -158,6 +168,7 @@ pub struct SettingsMenu {
 }
 
 impl SettingsMenu {
+    /// extracts child elements from DOM and adds event listeners for each checkbox
     pub fn new(document: &Document) -> Self {
         let checkboxes: Vec<Element> = vec![
             "DISPLAY_LN_FOR_LOG",
