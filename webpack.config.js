@@ -22,9 +22,9 @@ module.exports = {
 			},
 		],
 	},
-	// temp, see: https://github.com/rust-random/getrandom/issues/224
 	ignoreWarnings: [
 		warning =>
+			// temp, see: https://github.com/rust-random/getrandom/issues/224
 			warning.message === 'Critical dependency: the request of a dependency is an expression' ||
 			warning.message.startsWith('asset size limit:'), // build size warning
 	],
@@ -41,6 +41,7 @@ module.exports = {
 
 		new WasmPackPlugin({
 			crateDirectory: __dirname,
+			forceMode: 'production',
 		}),
 	],
 };

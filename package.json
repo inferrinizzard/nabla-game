@@ -10,13 +10,17 @@
 	},
 	"license": "MIT",
 	"scripts": {
-		"build": "rimraf dist pkg && webpack",
-		"start": "rimraf dist pkg && webpack serve --live-reload --watch-files=src --open --hot",
-		"watch": "rimraf dist pkg && webpack --watch",
+		"clean": "rimraf dist pkg",
+		"build": "yarn clean && webpack",
+		"start": "yarn clean && webpack serve --live-reload --watch-files=src --open --hot",
+		"watch": "yarn clean && webpack --watch",
 		"test:print": "cargo test -- --nocapture",
 		"test:cargo": "cargo test",
 		"test:wasm": "wasm-pack test --headless --chrome",
 		"test": "yarn test:cargo && yarn test:wasm"
+	},
+	"dependencies": {
+		"katex": "^0.15.2"
 	},
 	"devDependencies": {
 		"@wasm-tool/wasm-pack-plugin": "^1.6.0",
@@ -25,8 +29,5 @@
 		"webpack": "^5.65.0",
 		"webpack-cli": "^4.9.1",
 		"webpack-dev-server": "^4.7.1"
-	},
-	"dependencies": {
-		"katex": "^0.15.2"
 	}
 }
