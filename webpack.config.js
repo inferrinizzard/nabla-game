@@ -38,7 +38,6 @@ module.exports = {
 	},
 	plugins: [
 		new CopyPlugin({ patterns: [path.resolve(__dirname, 'static')] }),
-
 		new WasmPackPlugin({
 			crateDirectory: __dirname,
 			forceMode: 'production',
