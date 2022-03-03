@@ -15,3 +15,11 @@ pub fn get_key_val(id: &String) -> (String, usize) {
     let kvp = id.split("=").collect::<Vec<&str>>();
     (kvp[0].to_string(), kvp[1].parse::<usize>().unwrap())
 }
+
+/// macro to print to js console
+macro_rules! js_log {
+    ($($t:tt)*) => {
+        web_sys::console::log_1(&format!($($t)*).into());
+    }
+}
+pub(crate) use js_log;
