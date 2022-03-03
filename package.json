@@ -11,10 +11,10 @@
 	"license": "MIT",
 	"scripts": {
 		"clean": "rimraf dist pkg",
-		"build": "yarn clean && webpack",
+		"build": "yarn clean && rustup default stable && webpack",
 		"start": "yarn clean && webpack serve --live-reload --watch-files=src --open --hot",
 		"watch": "yarn clean && webpack --watch",
-		"install": "curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y && . $HOME/.cargo/env",
+		"install": "curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y && . $HOME/.cargo/env && rustup override set stable",
 		"test:print": "cargo test -- --nocapture",
 		"test:cargo": "cargo test",
 		"test:wasm": "wasm-pack test --headless --chrome",
