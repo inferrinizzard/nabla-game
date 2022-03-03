@@ -591,8 +591,12 @@ pub fn SqrtBasisNode(n: i32, base: &Basis) -> Basis {
 /// handles Log BasisNodes
 #[allow(non_snake_case)]
 pub fn LogBasisNode(base: &Basis) -> Basis {
+    // log(1) = 0
+    if base.is_num(1) {
+        return Basis::from(0);
+    }
     // log(e^x) = x
-    if let Basis::BasisNode(BasisNode {
+    else if let Basis::BasisNode(BasisNode {
         coefficient: e_coefficient,
         operator: BasisOperator::E,
         operands: e_operands,
@@ -609,7 +613,6 @@ pub fn LogBasisNode(base: &Basis) -> Basis {
         return Basis::inf(-1);
     }
 
-    // TODO:D base.clone() + logarithm(base.coefficient())]) // could use a log node here
     Basis::BasisNode(BasisNode {
         coefficient: Fraction::from(1),
         operator: BasisOperator::Log,

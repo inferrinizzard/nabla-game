@@ -11,20 +11,29 @@ pub fn logarithm(basis: &Basis) -> Basis {
                 if basis_leaf.coefficient == 1 {
                     return Basis::from(0);
                 }
-                Basis::from(basis_leaf.coefficient) // actually log(coefficient)
+                LogBasisNode(&Basis::from(basis_leaf.coefficient))
             }
-            BasisElement::X => LogBasisNode(&basis),
+            BasisElement::X => {
+                LogBasisNode(&Basis::x()) + LogBasisNode(&Basis::from(basis_leaf.coefficient))
+            }
             BasisElement::Inf => basis.clone(),
         },
         Basis::BasisNode(basis_node) => match basis_node.operator {
             BasisOperator::Mult => {
                 AddBasisNode(basis_node.operands.iter().map(|op| logarithm(op)).collect())
+                    + LogBasisNode(&Basis::from(basis_node.coefficient))
             }
             BasisOperator::Div => {
                 MinusBasisNode(basis_node.operands.iter().map(|op| logarithm(op)).collect())
+                    + LogBasisNode(&Basis::from(basis_node.coefficient))
             }
-            BasisOperator::Pow(Fraction { n, d }) => logarithm(&basis_node.operands[0]) * n / d,
-            BasisOperator::E => basis_node.operands[0].clone(),
+            BasisOperator::Pow(Fraction { n, d }) => {
+                logarithm(&basis_node.operands[0]) * n / d
+                    + LogBasisNode(&Basis::from(basis_node.coefficient))
+            }
+            BasisOperator::E => {
+                basis_node.operands[0].clone() + LogBasisNode(&Basis::from(basis_node.coefficient))
+            }
             _ => LogBasisNode(basis),
         },
     }
