@@ -62,10 +62,7 @@ pub fn branch_turn_phase(id: String, player_num: u32) {
         TurnPhase::MULTISELECT(multi_operator) => {
             multi_select_phase(multi_operator, id, player_num)
         }
-        _ => unreachable!(format!(
-            "Turn Phase Error: received {} on turn {:?}",
-            id, turn
-        )),
+        _ => unreachable!("Turn Phase Error: received {} on turn {:?}", id, turn),
     }
 }
 
