@@ -52,6 +52,11 @@ pub fn main_js() -> Result<(), JsValue> {
         "mousedown",
         mousedown_event_listener,
     ));
+    canvas.mousemove_listener = Some(EventListener::new(
+        &canvas.canvas_element,
+        "mousemove",
+        mousemove_event_listener,
+    ));
 
     canvas.resize();
     render::render::draw();
