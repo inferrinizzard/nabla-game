@@ -12,9 +12,8 @@ use menu::*;
 mod event_handlers;
 mod event_listeners;
 
-mod canvas;
-use canvas::*;
 mod render;
+use render::canvas::Canvas;
 
 mod util;
 

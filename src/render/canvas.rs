@@ -4,9 +4,10 @@ use std::collections::HashMap;
 use gloo::events::EventListener;
 use wasm_bindgen::JsCast;
 use web_sys::*;
-// root imports
-use super::util::Vector2;
-use super::CANVAS;
+// local imports
+use super::render_constants::*;
+// util imports
+use crate::util::Vector2;
 
 /// Controller for canvas elements, related contexts, and event listeners
 pub struct Canvas {
@@ -20,6 +21,8 @@ pub struct Canvas {
     pub hit_region_map: HashMap<String, String>,
 
     pub mousedown_listener: Option<EventListener>,
+
+    pub render_constants: RenderConstants,
 }
 
 impl Canvas {
@@ -70,6 +73,10 @@ impl Canvas {
             hit_context,
             hit_region_map,
             mousedown_listener: None,
+            render_constants: RenderConstants {
+                field_sizes: (0.0, 0.0, 0.0),
+                player_sizes: (0.0, 0.0, 0.0),
+            },
         }
     }
 
