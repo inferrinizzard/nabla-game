@@ -12,6 +12,7 @@
 	"scripts": {
 		"clean": "rimraf dist pkg",
 		"build": "yarn clean && rustup default stable && webpack --mode=production",
+		"build:cargo": "cargo build --lib --target wasm32-unknown-unknown",
 		"start": "yarn clean && webpack serve --mode=development --live-reload --watch-files=src --open --hot",
 		"watch": "yarn clean && webpack --watch",
 		"test:print": "cargo test -- --nocapture",
