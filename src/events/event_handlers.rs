@@ -6,7 +6,7 @@ use crate::cards::*;
 use crate::game::{field::FieldBasis, flags::ALLOW_LINEAR_DEPENDENCE, structs::*};
 use crate::render::render;
 // root imports
-use super::GAME;
+use crate::GAME;
 // util imports
 use crate::util::get_key_val;
 

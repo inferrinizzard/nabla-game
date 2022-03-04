@@ -1,9 +1,10 @@
 // wasm-bindgen imports
 use wasm_bindgen::{prelude::*, JsCast};
 use web_sys::*;
-// root imports
+// local imports
 use super::event_handlers::*;
-use super::CANVAS;
+// root imports
+use crate::CANVAS;
 
 /// get hit region from hit canvas and return id corresponding to region colour
 pub fn get_hit_region_id(e: &MouseEvent) -> String {

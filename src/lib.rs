@@ -9,8 +9,8 @@ pub mod math;
 mod menu;
 use menu::*;
 
-mod event_handlers;
-mod event_listeners;
+mod events;
+use events::event_listeners::*;
 
 mod canvas;
 use canvas::*;
@@ -50,7 +50,7 @@ pub fn main_js() -> Result<(), JsValue> {
     canvas.mousedown_listener = Some(EventListener::new(
         &canvas.canvas_element,
         "mousedown",
-        event_listeners::mousedown_event_listener,
+        mousedown_event_listener,
     ));
 
     canvas.resize();
