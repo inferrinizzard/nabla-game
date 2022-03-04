@@ -74,8 +74,8 @@ impl Canvas {
             hit_region_map,
             mousedown_listener: None,
             render_constants: RenderConstants {
-                field_sizes: (0.0, 0.0, 0.0),
-                player_sizes: (0.0, 0.0, 0.0),
+                field_sizes: Sizes::default(),
+                player_sizes: Sizes::default(),
             },
         }
     }
@@ -92,10 +92,11 @@ impl Canvas {
         self.hit_canvas_element.set_height(inner_height);
 
         self.rebounds();
+        self.update_render_constants();
     }
 
     /// recalculate canvas bounds and center on resize
-    pub fn rebounds(&mut self) {
+    fn rebounds(&mut self) {
         let canvas_bounds = Vector2 {
             x: f64::from(self.canvas_element.width()),
             y: f64::from(self.canvas_element.height()),
@@ -108,5 +109,30 @@ impl Canvas {
 
         self.canvas_bounds = canvas_bounds;
         self.canvas_center = canvas_center;
+    }
+
+    /// update sizes for player cards and field bases
+    fn update_render_constants(&mut self) {
+        let player_card_height = rem_to_px(String::from("20rem"));
+        let player_card_width = player_card_height / PHI;
+        let player_card_gutter = player_card_width / 4.0;
+
+        let field_basis_height =
+            self.canvas_bounds.y - player_card_height * 2.0 - player_card_gutter * 4.0;
+        let field_basis_width = field_basis_height / PHI;
+        let field_basis_gutter = field_basis_width / 4.0;
+
+        self.render_constants = RenderConstants {
+            field_sizes: Sizes {
+                width: field_basis_width,
+                height: field_basis_height,
+                gutter: field_basis_gutter,
+            },
+            player_sizes: Sizes {
+                width: player_card_width,
+                height: player_card_height,
+                gutter: player_card_gutter,
+            },
+        };
     }
 }
