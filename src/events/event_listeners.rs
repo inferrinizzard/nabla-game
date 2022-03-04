@@ -2,7 +2,7 @@
 use wasm_bindgen::{prelude::*, JsCast};
 use web_sys::*;
 // local imports
-use super::event_handlers::*;
+use super::mousedown_handler::*;
 // root imports
 use crate::CANVAS;
 
