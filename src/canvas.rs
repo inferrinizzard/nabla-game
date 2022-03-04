@@ -113,25 +113,27 @@ impl Canvas {
 
     /// update sizes for player cards and field bases
     fn update_render_constants(&mut self) {
-        let player_card_height = rem_to_px(String::from("20rem"));
-        let player_card_width = player_card_height / PHI;
-        let player_card_gutter = player_card_width / 4.0;
+        let player_card_height = rem_to_px(String::from("9rem"));
+        let player_card_width = player_card_height * 0.75;
+        let gutter = player_card_width / 4.0;
 
+        // TODO: add balancing and min sizes for smaller screens
+        let field_gutter = gutter * 2.0;
         let field_basis_height =
-            self.canvas_bounds.y - player_card_height * 2.0 - player_card_gutter * 4.0;
-        let field_basis_width = field_basis_height / PHI;
-        let field_basis_gutter = field_basis_width / 4.0;
+            (self.canvas_bounds.y - player_card_height * 2.0 - gutter * 2.0 - field_gutter * 3.0)
+                / 2.0;
+        let field_basis_width = field_basis_height * 0.75;
 
         self.render_constants = RenderConstants {
             field_sizes: Sizes {
                 width: field_basis_width,
                 height: field_basis_height,
-                gutter: field_basis_gutter,
+                gutter: field_gutter,
             },
             player_sizes: Sizes {
                 width: player_card_width,
                 height: player_card_height,
-                gutter: player_card_gutter,
+                gutter,
             },
         };
     }
