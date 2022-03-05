@@ -21,6 +21,7 @@ pub struct Canvas {
     pub hit_region_map: HashMap<String, String>,
 
     pub mousedown_listener: Option<EventListener>,
+    pub mousemove_listener: Option<EventListener>,
 
     pub render_constants: RenderConstants,
 }
@@ -73,6 +74,7 @@ impl Canvas {
             hit_context,
             hit_region_map,
             mousedown_listener: None,
+            mousemove_listener: None,
             render_constants: RenderConstants {
                 field_sizes: Sizes::default(),
                 player_sizes: Sizes::default(),
