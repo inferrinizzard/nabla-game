@@ -454,35 +454,60 @@ fn draw_hand(player_num: u32, val: usize, id: String) {
         &game.player_2
     };
 
-    let y_pos = if player_num == 1 {
-        canvas.canvas_bounds.y - player_card_gutter - player_card_height
+    let (hover_key, hover_val) =
+        get_key_val(game.active.hover.as_ref().unwrap_or(&"p0=69".to_string())); // 69 shall be NULL
+    let hover_player_num = hover_key.chars().nth(1).unwrap().to_digit(10).unwrap();
+
+    let hover_card_size = Vector2 {
+        x: player_card_width + player_card_gutter,
+        y: player_card_height + player_card_gutter,
+    };
+    let card_size = if hover_player_num == player_num && hover_val == val {
+        hover_card_size.clone()
     } else {
-        player_card_gutter
+        Vector2 {
+            x: player_card_width,
+            y: player_card_height,
+        }
     };
 
-    let card = &hand[val];
+    let start_pos = Vector2 {
+        x: canvas.canvas_center.x
+            - ((player_card_gutter * 6.0 + player_card_width * 6.0) // width of 6 cards
+                + if hover_player_num == player_num && hover_val != 69 { // width of potential hover card
+                    hover_card_size.x
+                } else {
+                    player_card_width
+                })
+                / 2.0, // divide by 2 for distance from center
+        y: if player_num == 1 {
+            canvas.canvas_bounds.y - player_card_gutter - card_size.y // bottom of canvas if p1
+        } else {
+            player_card_gutter // top of canvas if p2
+        },
+    };
+
     let card_pos = Vector2 {
-        x: canvas.canvas_center.x - (player_card_width * 3.5) - player_card_gutter * 3.0
-            + (val as f64) * (player_card_width + player_card_gutter),
-        y: y_pos,
+        x: start_pos.x
+            + (val as f64) * (player_card_width + player_card_gutter)
+            // add extra space for cards after hover
+            + if hover_player_num == player_num && val > hover_val {
+                hover_card_size.x - player_card_width
+            } else {
+                0.0
+            },
+        y: start_pos.y,
     };
-
-    draw_rect(
-        card_pos.x,
-        card_pos.y,
-        player_card_width,
-        player_card_height,
-        id.clone(),
-    );
+    draw_rect(card_pos.x, card_pos.y, card_size.x, card_size.y, id.clone());
 
     let katex_element_id = format!("katex-item_{}", &id);
     draw_katex(
-        card,
+        &hand[val],
         katex_element_id,
         "Large",
         Vector2 {
-            y: card_pos.y + player_card_height / 2.0,
-            x: card_pos.x + player_card_width / 2.0,
+            x: card_pos.x + card_size.x / 2.0,
+            y: card_pos.y + card_size.y / 2.0,
         },
     );
 }
