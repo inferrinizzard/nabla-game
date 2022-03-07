@@ -369,6 +369,9 @@ pub fn next_turn() {
     game.active.clear();
     render::draw();
 
+    // render player hand katex
+    render::render_player_katex();
+
     let field = game.field.basis.iter();
     if field.clone().take(3).all(|f| f.basis.is_none()) {
         // player 1 wins

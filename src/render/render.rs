@@ -424,19 +424,13 @@ fn draw_field(val: usize, id: String) {
     }
 }
 
-/// renders player hands
-fn draw_hand(player_num: u32, val: usize, id: String) {
-    let (canvas, game) = unsafe { (CANVAS.as_ref().unwrap(), GAME.as_mut().unwrap()) };
+fn get_player_card_bounds(player_num: u32, val: usize) -> (Vector2, Vector2) {
+    let (canvas, game) = unsafe { (CANVAS.as_ref().unwrap(), GAME.as_ref().unwrap()) };
     let Sizes {
         width: player_card_width,
         height: player_card_height,
         gutter: player_card_gutter,
     } = canvas.render_constants.player_sizes;
-    let hand = if player_num == 1 {
-        &game.player_1
-    } else {
-        &game.player_2
-    };
 
     let (hover_key, hover_val) =
         get_key_val(game.active.hover.as_ref().unwrap_or(&"p0=69".to_string())); // 69 shall be NULL
@@ -482,7 +476,38 @@ fn draw_hand(player_num: u32, val: usize, id: String) {
             },
         y: start_pos.y,
     };
+
+    (card_pos, card_size)
+}
+
+/// renders player hands
+fn draw_hand(player_num: u32, val: usize, id: String) {
+    let (card_pos, card_size) = get_player_card_bounds(player_num, val);
     draw_rect(card_pos.x, card_pos.y, card_size.x, card_size.y, id.clone());
+}
+
+pub fn render_player_katex() {
+    for i in 1..=2 {
+        for j in 0..7 {
+            render_player_katex_item(i, j, format!("p{}={}", i, j));
+        }
+    }
+}
+
+fn render_player_katex_item(player_num: u32, val: usize, id: String) {
+    let (canvas, game) = unsafe { (CANVAS.as_ref().unwrap(), GAME.as_ref().unwrap()) };
+    let Sizes {
+        gutter: player_card_gutter,
+        ..
+    } = canvas.render_constants.player_sizes;
+    let hand = if player_num == 1 {
+        &game.player_1
+    } else {
+        &game.player_2
+    };
+
+    let (card_pos, card_size) = get_player_card_bounds(player_num, val);
+
     draw_player_card_katex(
         &hand[val],
         id,

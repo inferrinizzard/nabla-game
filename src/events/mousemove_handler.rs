@@ -17,5 +17,6 @@ pub fn handle_mousemove(id: String) {
     if matches!(game.active.hover, Some(_)) || (matches!(game.active.hover, None) && prev.is_some())
     {
         render::draw();
+        render::render_player_katex()
     }
 }
