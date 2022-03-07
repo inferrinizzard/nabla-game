@@ -67,9 +67,9 @@ pub fn draw_player_card_katex(
 
 fn draw_player_card_corner_katex(corner_type: &str, card: &Card, id: String, pos: Vector2) {
     let katex_string = if card.card_type() == "BASIS_CARD" {
-        "\\in"
+        "\\boldsymbol{\\in}"
     } else {
-        "f(x)"
+        "\\Bbb{F}"
     };
     let corner = render_katex_string(
         katex_string.to_string(),
