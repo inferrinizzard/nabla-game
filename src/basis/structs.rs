@@ -275,6 +275,8 @@ impl ToLatex for BasisLeaf {
             BasisElement::Num => {
                 if self.coefficient == 1 {
                     String::from("1")
+                } else if self.coefficient == -1 {
+                    String::from("-1")
                 } else {
                     format!("{coefficient}", coefficient = self.coefficient.to_latex())
                 }
