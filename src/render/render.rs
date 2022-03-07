@@ -40,12 +40,25 @@ pub fn render_play_screen() {
 
     // draw field
     for i in 0..6 {
+        if i >= 3 {
+            context.set_stroke_style(&JsValue::from(PLAYER_1_COLOUR));
+        } else {
+            context.set_stroke_style(&JsValue::from(PLAYER_2_COLOUR));
+        }
         render_item(format!("f={}", i));
+        context.set_stroke_style(&JsValue::from("#000"));
     }
+    // draw players
     for i in 1..=2 {
+        if i == 1 {
+            context.set_stroke_style(&JsValue::from(PLAYER_1_COLOUR));
+        } else if i == 2 {
+            context.set_stroke_style(&JsValue::from(PLAYER_2_COLOUR));
+        }
         for j in 0..7 {
             render_item(format!("p{}={}", i, j));
         }
+        context.set_stroke_style(&JsValue::from("#000"));
     }
     render_item("d=1".to_string());
     render_item("x=0".to_string());
