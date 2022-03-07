@@ -7,6 +7,7 @@ use web_sys::{Document, Element};
 // outer crate imports
 use crate::game::flags::*;
 use crate::game::structs::{Game, GameState};
+use crate::render::katex::clear_katex_element;
 // root imports
 use super::{GAME, MENU};
 
@@ -64,6 +65,10 @@ impl Menu {
                     menu_ref.unwrap().activate("MENU".to_string());
                     unsafe {
                         GAME = Some(Game::new());
+                        // clear graveyard katex items
+                        ["g=1", "g=2", "g=3"].iter().for_each(|id| {
+                            clear_katex_element(format!("katex-item_{}", id));
+                        })
                     }
                 }
             },
