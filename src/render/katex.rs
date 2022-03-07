@@ -10,11 +10,11 @@ extern "C" {
 }
 
 /// renders given KaTeX expression to a new DOM element and appends to document
-pub fn render_katex<T>(item: T) -> Element
-where
-    T: ToLatex,
-{
-    js_render_katex(item.to_latex())
+pub fn render_katex_string(latex: String, id: String, size: &str) -> Element {
+    js_render_katex_element(
+        format!("\\{size}{{{latex}}}", size = size, latex = latex),
+        id,
+    )
 }
 
 /// renders given KaTeX expression on DOM element with given id with given size

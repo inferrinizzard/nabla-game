@@ -500,14 +500,74 @@ fn draw_hand(player_num: u32, val: usize, id: String) {
     };
     draw_rect(card_pos.x, card_pos.y, card_size.x, card_size.y, id.clone());
 
+    let card = &hand[val];
     let katex_element_id = format!("katex-item_{}", &id);
     draw_katex(
         &hand[val],
-        katex_element_id,
+        katex_element_id.clone(),
         "Large",
         Vector2 {
             x: card_pos.x + card_size.x / 2.0,
             y: card_pos.y + card_size.y / 2.0,
         },
     );
+    let left_corner = render_katex_string(
+        (if card.card_type() == "BASIS_CARD" {
+            "\\in"
+        } else {
+            "f(x)"
+        })
+        .to_string(),
+        format!("{}-corner_left", katex_element_id),
+        "small",
+    );
+    let pos = Vector2 {
+        x: card_pos.x + player_card_gutter * 0.75,
+        y: card_pos.y + player_card_gutter * 0.75,
+    };
+    let style_string = format!("position: absolute; top: {}px; left: {}px;", pos.y, pos.x);
+    left_corner
+        .set_attribute("style", style_string.as_str())
+        .expect(format!("Cannot set style for {:?} left corner", card).as_str());
+    left_corner
+        .set_attribute(
+            "class",
+            &format!(
+                "{} {}",
+                left_corner.get_attribute("class").unwrap(),
+                "katex-left_corner"
+            )
+            .to_owned()[..],
+        )
+        .expect("Cannot set class for left corner");
+
+    let right_corner = render_katex_string(
+        (if card.card_type() == "BASIS_CARD" {
+            "\\in"
+        } else {
+            "f(x)"
+        })
+        .to_string(),
+        format!("{}-corner_right", katex_element_id),
+        "small",
+    );
+    let pos = Vector2 {
+        x: card_pos.x + card_size.x - player_card_gutter * 0.75,
+        y: card_pos.y + card_size.y - player_card_gutter * 0.75,
+    };
+    let style_string = format!("position: absolute; top: {}px; left: {}px;", pos.y, pos.x);
+    right_corner
+        .set_attribute("style", style_string.as_str())
+        .expect(format!("Cannot set style for {:?} left corner", card).as_str());
+    right_corner
+        .set_attribute(
+            "class",
+            &format!(
+                "{} {}",
+                right_corner.get_attribute("class").unwrap(),
+                "katex-right_corner"
+            )
+            .to_owned()[..],
+        )
+        .expect("Cannot set class for right corner");
 }
