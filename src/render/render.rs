@@ -375,22 +375,6 @@ fn set_line_dash(context: &CanvasRenderingContext2d, dash_num: u32, dash_size: f
         .expect("Cannot set line dash");
 }
 
-/// renders KaTeX item at pos with given size & id
-fn draw_katex<T>(item: &T, id: String, size: &str, pos: Vector2) -> Element
-where
-    T: ToLatex,
-    T: Clone,
-    T: std::fmt::Debug,
-{
-    let element = render_katex_element(item.clone(), id, size);
-    let style_string = format!("position: absolute; top: {}px; left: {}px;", pos.y, pos.x);
-    element
-        .set_attribute("style", style_string.as_str())
-        .expect(format!("Cannot set style for {:?}", item).as_str());
-
-    element
-}
-
 /// renders 6 field basis slots
 fn draw_field(val: usize, id: String) {
     let (canvas, game) = unsafe { (CANVAS.as_ref().unwrap(), GAME.as_mut().unwrap()) };
@@ -499,75 +483,23 @@ fn draw_hand(player_num: u32, val: usize, id: String) {
         y: start_pos.y,
     };
     draw_rect(card_pos.x, card_pos.y, card_size.x, card_size.y, id.clone());
-
-    let card = &hand[val];
-    let katex_element_id = format!("katex-item_{}", &id);
-    draw_katex(
+    draw_player_card_katex(
         &hand[val],
-        katex_element_id.clone(),
-        "Large",
+        id,
+        // middle of card
         Vector2 {
             x: card_pos.x + card_size.x / 2.0,
             y: card_pos.y + card_size.y / 2.0,
         },
-    );
-    let left_corner = render_katex_string(
-        (if card.card_type() == "BASIS_CARD" {
-            "\\in"
-        } else {
-            "f(x)"
-        })
-        .to_string(),
-        format!("{}-corner_left", katex_element_id),
-        "small",
-    );
-    let pos = Vector2 {
-        x: card_pos.x + player_card_gutter * 0.75,
-        y: card_pos.y + player_card_gutter * 0.75,
-    };
-    let style_string = format!("position: absolute; top: {}px; left: {}px;", pos.y, pos.x);
-    left_corner
-        .set_attribute("style", style_string.as_str())
-        .expect(format!("Cannot set style for {:?} left corner", card).as_str());
-    left_corner
-        .set_attribute(
-            "class",
-            &format!(
-                "{} {}",
-                left_corner.get_attribute("class").unwrap(),
-                "katex-left_corner"
-            )
-            .to_owned()[..],
-        )
-        .expect("Cannot set class for left corner");
-
-    let right_corner = render_katex_string(
-        (if card.card_type() == "BASIS_CARD" {
-            "\\in"
-        } else {
-            "f(x)"
-        })
-        .to_string(),
-        format!("{}-corner_right", katex_element_id),
-        "small",
-    );
-    let pos = Vector2 {
-        x: card_pos.x + card_size.x - player_card_gutter * 0.75,
-        y: card_pos.y + card_size.y - player_card_gutter * 0.75,
-    };
-    let style_string = format!("position: absolute; top: {}px; left: {}px;", pos.y, pos.x);
-    right_corner
-        .set_attribute("style", style_string.as_str())
-        .expect(format!("Cannot set style for {:?} left corner", card).as_str());
-    right_corner
-        .set_attribute(
-            "class",
-            &format!(
-                "{} {}",
-                right_corner.get_attribute("class").unwrap(),
-                "katex-right_corner"
-            )
-            .to_owned()[..],
-        )
-        .expect("Cannot set class for right corner");
+        // top left of card
+        Vector2 {
+            x: card_pos.x + player_card_gutter * 0.75,
+            y: card_pos.y + player_card_gutter * 0.75,
+        },
+        // bottom right of card
+        Vector2 {
+            x: card_pos.x + card_size.x - player_card_gutter * 0.75,
+            y: card_pos.y + card_size.y - player_card_gutter * 0.75,
+        },
+    )
 }
