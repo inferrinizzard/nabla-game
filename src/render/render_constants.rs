@@ -12,19 +12,6 @@ pub fn rem_to_px(string: String) -> f64 {
 // Golden number
 pub const PHI: f64 = 1.618;
 
-// size dimensions for Field cards
-
-pub const FIELD_BASIS_HEIGHT: f64 = 200.0;
-pub const FIELD_BASIS_WIDTH: f64 = 150.0;
-pub const FIELD_BASIS_GUTTER: f64 = 50.0;
-
-// size dimensions for player hand cards
-
-// pub const PLAYER_CARD_HEIGHT: f64 = rem_to_px("1.5rem".to_string());
-pub const PLAYER_CARD_HEIGHT: f64 = 150.0;
-pub const PLAYER_CARD_WIDTH: f64 = PLAYER_CARD_HEIGHT / PHI;
-pub const PLAYER_CARD_GUTTER: f64 = PLAYER_CARD_WIDTH / 4.0;
-
 pub struct RenderConstants {
     pub field_sizes: Sizes,
     pub player_sizes: Sizes,

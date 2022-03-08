@@ -113,7 +113,8 @@ impl Canvas {
 
     /// update sizes for player cards and field bases
     fn update_render_constants(&mut self) {
-        let player_card_height = rem_to_px(String::from("20rem"));
+        // let player_card_height = rem_to_px(String::from("20rem"));
+        let player_card_height = 150.0;
         let player_card_width = player_card_height / PHI;
         let player_card_gutter = player_card_width / 4.0;
 
