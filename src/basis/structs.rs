@@ -279,7 +279,16 @@ impl ToLatex for BasisLeaf {
                     format!("{coefficient}", coefficient = self.coefficient.to_latex())
                 }
             }
-            BasisElement::X => format!("{}x", self.coefficient.to_latex()),
+            BasisElement::X => {
+                if self.coefficient.n == 1 && self.coefficient.d != 1 {
+                    format!(
+                        "\\frac{{x}}{{{denominator}}}",
+                        denominator = self.coefficient.d
+                    )
+                } else {
+                    format!("{}x", self.coefficient.to_latex())
+                }
+            }
             BasisElement::Inf => (if self.coefficient > 1 {
                 "\\infty"
             } else {
