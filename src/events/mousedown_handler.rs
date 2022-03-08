@@ -9,6 +9,7 @@ use crate::render::render;
 use crate::GAME;
 // util imports
 use crate::util::get_key_val;
+use crate::util::js_log;
 
 /// delegates event handling based on turn num
 pub fn handle_mousedown(id: String) {
@@ -225,15 +226,27 @@ fn multi_select_phase(multi_operator: Card, id: String, player_num: u32) {
         // console::log_1(&JsValue::from(format!("added to multiselect: {}", id)));
     }
 
-    // TODO: prevent 0 * all or 0 / all
-    if id_key == "x"
-        && id_val == 1
-        && selected // must have at least 1 field basis
+    let has_at_least_1_field_basis = selected
+        .iter()
+        .find(|sel_id| sel_id.as_str().starts_with("f"))
+        .is_some();
+    let has_at_least_2_basis = selected.len() >= 3; // add one for operator
+    let has_zero_with_many = selected.len() != 3
+        && selected
             .iter()
-            .find(|sel_id| sel_id.as_str().starts_with("f"))
-            .is_some()
-            // must have at least 2 operands
-        && selected.len() > 1
+            .find(|sel_id| {
+                sel_id.as_str().starts_with("p") // must be a player card
+                    && matches!( // corresponding player card is zero
+                        player[get_key_val(sel_id).1],
+                        Card::BasisCard(BasisCard::Zero)
+                    )
+            })
+            .is_some();
+
+    if (id_key == "x" && id_val == 1)
+        && has_at_least_1_field_basis
+        && !has_zero_with_many
+        && has_at_least_2_basis
     {
         let result_basis = apply_multi_card(
             &multi_operator,
