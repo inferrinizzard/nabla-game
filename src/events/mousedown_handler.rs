@@ -285,8 +285,9 @@ fn multi_select_phase(multi_operator: Card, id: String, player_num: u32) {
             .for_each(|field_index| field[*field_index] = FieldBasis::none());
         if result_basis.is_num(0) {
             field[used_field_bases[0]] = FieldBasis::none();
+        } else {
+            field[used_field_bases[0]] = FieldBasis::new(&result_basis); // assign result basis to any newly empty field
         }
-        field[used_field_bases[0]] = FieldBasis::new(&result_basis); // assign result basis to any newly empty field
         end_turn();
     }
 }
