@@ -184,6 +184,7 @@ impl SettingsMenu {
             "ALLOW_LINEAR_DEPENDENCE",
             "ALLOW_LIMITS_BEYOND_BOUNDS",
             "FULL_COMPUTE",
+            "USE_FRACTIONAL_EXPONENTS",
             "LIMIT_FIELD_BASIS",
         ]
         .iter()
@@ -196,46 +197,28 @@ impl SettingsMenu {
 
         let mut checkbox_listeners: HashMap<String, EventListener> = HashMap::new();
         for element in checkboxes.iter() {
-            let element_target = element.dyn_ref::<Element>().unwrap();
-            let target_id = element_target.id();
+            let listener = EventListener::new(element, "change", move |e| {
+                let event_target = e.target().unwrap();
+                let event_target_element = event_target.dyn_ref::<HtmlInputElement>().unwrap();
 
-            // set initial checked value
-            unsafe {
-                let flag = match target_id.split("-").nth(1).unwrap() {
-                    "DISPLAY_LN_FOR_LOG" => DISPLAY_LN_FOR_LOG,
-                    "ALLOW_LINEAR_DEPENDENCE" => ALLOW_LINEAR_DEPENDENCE,
-                    "ALLOW_LIMITS_BEYOND_BOUNDS" => ALLOW_LIMITS_BEYOND_BOUNDS,
-                    "FULL_COMPUTE" => FULL_COMPUTE,
-                    "LIMIT_FIELD_BASIS" => LIMIT_FIELD_BASIS,
-                    _ => false,
-                };
-                if flag {
-                    element_target
-                        .set_attribute("checked", "true")
-                        .expect(format!("Failed to set checkbox {}", target_id).as_str());
-                }
-            }
-
-            let listener = EventListener::new(element, "change", move |_e| {
                 // split id from 'checkbox-FLAG'
+                let target_id = event_target_element.id();
                 let flag_name = target_id.split("-").nth(1).unwrap();
+                let flag_value = event_target_element.checked();
 
                 unsafe {
                     match flag_name {
-                        "DISPLAY_LN_FOR_LOG" => DISPLAY_LN_FOR_LOG = !DISPLAY_LN_FOR_LOG,
-                        "ALLOW_LINEAR_DEPENDENCE" => {
-                            ALLOW_LINEAR_DEPENDENCE = !ALLOW_LINEAR_DEPENDENCE
-                        }
-                        "ALLOW_LIMITS_BEYOND_BOUNDS" => {
-                            ALLOW_LIMITS_BEYOND_BOUNDS = !ALLOW_LIMITS_BEYOND_BOUNDS
-                        }
-                        "FULL_COMPUTE" => FULL_COMPUTE = !FULL_COMPUTE,
-                        "LIMIT_FIELD_BASIS" => LIMIT_FIELD_BASIS = !LIMIT_FIELD_BASIS,
+                        "DISPLAY_LN_FOR_LOG" => DISPLAY_LN_FOR_LOG = flag_value,
+                        "ALLOW_LINEAR_DEPENDENCE" => ALLOW_LINEAR_DEPENDENCE = flag_value,
+                        "ALLOW_LIMITS_BEYOND_BOUNDS" => ALLOW_LIMITS_BEYOND_BOUNDS = flag_value,
+                        "FULL_COMPUTE" => FULL_COMPUTE = flag_value,
+                        "USE_FRACTIONAL_EXPONENTS" => USE_FRACTIONAL_EXPONENTS = flag_value,
+                        "LIMIT_FIELD_BASIS" => LIMIT_FIELD_BASIS = flag_value,
                         _ => panic!("Unknown flag name: {}", flag_name),
                     }
                 }
             });
-            checkbox_listeners.insert(element_target.id(), listener);
+            checkbox_listeners.insert(element.id(), listener);
         }
 
         let colours: Vec<Element> = vec!["PLAYER_1", "PLAYER_2"]

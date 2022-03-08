@@ -9,6 +9,7 @@ use crate::render::render;
 use crate::GAME;
 // util imports
 use crate::util::get_key_val;
+use crate::util::js_log;
 
 /// delegates event handling based on turn num
 pub fn handle_mousedown(id: String) {
@@ -62,7 +63,7 @@ pub fn branch_turn_phase(id: String, player_num: u32) {
         TurnPhase::MULTISELECT(multi_operator) => {
             multi_select_phase(multi_operator, id, player_num)
         }
-        _ => unreachable!("Turn Phase Error: received {} on turn {:?}", id, turn),
+        _ => {} // js_log!("Turn Phase Error: received {} on turn {:?}", id, turn),
     }
 }
 
@@ -216,29 +217,41 @@ fn multi_select_phase(multi_operator: Card, id: String, player_num: u32) {
         &mut game.player_2
     };
     let field = &mut game.field;
+    let selected = &mut game.active.selected;
     let (id_key, id_val) = get_key_val(&id);
     if id_key == "f"
         || (id_key == format!("p{}", player_num) && matches!(player[id_val], Card::BasisCard(_)))
     {
-        game.active.selected.push(id.to_string());
+        selected.push(id.to_string());
         render::draw();
         // console::log_1(&JsValue::from(format!("added to multiselect: {}", id)));
     }
 
-    // TODO: prevent 0 * all or 0 / all
-    if id_key == "x"
-        && id_val == 1
-        && game // must have at least 1 field basis
-            .active
-            .selected
+    let has_at_least_1_field_basis = selected
+        .iter()
+        .find(|sel_id| sel_id.as_str().starts_with("f"))
+        .is_some();
+    let has_at_least_2_basis = selected.len() >= 3; // add one for operator
+    let has_zero_with_many = selected.len() != 3
+        && selected
             .iter()
-            .find(|sel_id| sel_id.as_str().starts_with("f"))
-            .is_some()
+            .find(|sel_id| {
+                sel_id.as_str().starts_with("p") // must be a player card
+                    && matches!( // corresponding player card is zero
+                        player[get_key_val(sel_id).1],
+                        Card::BasisCard(BasisCard::Zero)
+                    )
+            })
+            .is_some();
+
+    if (id_key == "x" && id_val == 1)
+        && has_at_least_1_field_basis
+        && !has_zero_with_many
+        && has_at_least_2_basis
     {
         let result_basis = apply_multi_card(
             &multi_operator,
-            game.active
-                .selected
+            selected
                 .iter()
                 .filter_map(|sel_id| {
                     let (sel_key, sel_val) = get_key_val(&sel_id);
@@ -257,9 +270,7 @@ fn multi_select_phase(multi_operator: Card, id: String, player_num: u32) {
                 })
                 .collect::<Vec<Basis>>(),
         );
-        let used_field_bases = game
-            .active
-            .selected
+        let used_field_bases = selected
             .iter()
             .filter_map(|sel_id| {
                 let (sel_key, sel_val) = get_key_val(&sel_id);

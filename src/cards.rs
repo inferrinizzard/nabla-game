@@ -23,7 +23,7 @@ pub fn apply_card(card: &Card) -> impl Fn(&Basis) -> Basis {
         Card::AlgebraicCard(AlgebraicCard::Log) => logarithm(&basis),
         Card::LimitCard(limit_card) => {
             let basis_limit = limit(&limit_card)(&basis).unwrap_or(
-                Basis::x(), // invalid limit placeholder
+                basis.clone(), // return original if limit is invalid, // TODO: points?
             );
             basis_limit
         }

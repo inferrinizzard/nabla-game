@@ -48,6 +48,9 @@ pub fn derivative(basis: &Basis) -> Basis {
             // log rule, du/u
             BasisOperator::Log => {
                 let u = operands[0].clone();
+                if u.is_frac(u.coefficient()) {
+                    return Basis::from(0);
+                }
                 (derivative(&u) * coefficient.n) / (u * coefficient.d)
             }
             // chain rule, f'(cos(f(y))) = -f'(y)sin(f(y))

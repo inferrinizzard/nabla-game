@@ -2,7 +2,7 @@
 use std::fmt::{Display, Formatter, Result};
 // outer crate imports
 use crate::cards::BasisCard;
-use crate::game::flags::DISPLAY_LN_FOR_LOG;
+use crate::game::flags::{DISPLAY_LN_FOR_LOG, USE_FRACTIONAL_EXPONENTS};
 use crate::math::fraction::Fraction;
 // util imports
 use crate::util::ToLatex;
@@ -281,7 +281,16 @@ impl ToLatex for BasisLeaf {
                     format!("{coefficient}", coefficient = self.coefficient.to_latex())
                 }
             }
-            BasisElement::X => format!("{}x", self.coefficient.to_latex()),
+            BasisElement::X => {
+                if self.coefficient.n == 1 && self.coefficient.d != 1 {
+                    format!(
+                        "\\frac{{x}}{{{denominator}}}",
+                        denominator = self.coefficient.d
+                    )
+                } else {
+                    format!("{}x", self.coefficient.to_latex())
+                }
+            }
             BasisElement::Inf => (if self.coefficient > 1 {
                 "\\infty"
             } else {
@@ -405,7 +414,7 @@ impl ToLatex for BasisNode {
             ),
             BasisOperator::Div => format!(
                 "{coefficient}\\frac{{{numerator}}}{{{denominator}}}",
-                coefficient = self.operator.to_latex(),
+                coefficient = self.coefficient.to_latex(),
                 numerator = self.operands[0].to_latex(),
                 denominator = self.operands[1].to_latex()
             ),
@@ -426,6 +435,20 @@ impl ToLatex for BasisNode {
                         denominator = self.operands[0].to_latex()
                     );
                 }
+
+                let flag = unsafe { USE_FRACTIONAL_EXPONENTS };
+                if !flag && pow.n == 1 {
+                    return format!(
+                        "\\sqrt{degree}{{{base}}}",
+                        degree = if pow.d == 2 {
+                            String::new()
+                        } else {
+                            format!("[{}]", pow.d)
+                        },
+                        base = self.operands[0].to_latex()
+                    );
+                }
+
                 match self.operands[0] {
                     Basis::BasisLeaf(_) => format!(
                         "{coefficient}{base}{exponent}",

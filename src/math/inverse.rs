@@ -12,7 +12,7 @@ fn operator_inverse(operator: BasisOperator) -> Option<BasisOperator> {
         BasisOperator::Acos => Some(BasisOperator::Cos),
         BasisOperator::Sin => Some(BasisOperator::Asin),
         BasisOperator::Asin => Some(BasisOperator::Sin),
-        BasisOperator::Pow(Fraction { n, d }) => Some(BasisOperator::Pow(Fraction { n: d, d: n })),
+        BasisOperator::Pow(Fraction { n, d }) => Some(BasisOperator::Pow(Fraction::from((d, n)))),
         _ => None,
     }
 }
@@ -63,11 +63,11 @@ pub fn inverse(basis: &Basis) -> Basis {
                     return InvBasisNode(basis);
                 }
                 let base = operands[0].clone();
+                operator_stack.push((coefficient, operator));
                 if operator == BasisOperator::E && base.coefficient() != 1 {
                     operator_stack
                         .push((Fraction::from(1), BasisOperator::Pow(base.coefficient())));
                 }
-                operator_stack.push((coefficient, operator));
                 ptr = base;
             }
         }
