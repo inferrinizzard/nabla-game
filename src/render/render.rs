@@ -32,6 +32,7 @@ pub fn draw() {
 /// main game render function, iterates through all game items to render
 pub fn render_play_screen() {
     let canvas = unsafe { CANVAS.as_mut().unwrap() };
+    let (player_1_colour, player_2_colour) = unsafe { (PLAYER_1_COLOUR, PLAYER_2_COLOUR) };
     let context = &canvas.context;
     let hit_context = &canvas.hit_context;
 
@@ -40,12 +41,25 @@ pub fn render_play_screen() {
 
     // draw field
     for i in 0..6 {
+        if i >= 3 {
+            context.set_stroke_style(&JsValue::from(player_1_colour));
+        } else {
+            context.set_stroke_style(&JsValue::from(player_2_colour));
+        }
         render_item(format!("f={}", i));
+        context.set_stroke_style(&JsValue::from("#000"));
     }
+    // draw players
     for i in 1..=2 {
+        if i == 1 {
+            context.set_stroke_style(&JsValue::from(player_1_colour));
+        } else if i == 2 {
+            context.set_stroke_style(&JsValue::from(player_2_colour));
+        }
         for j in 0..7 {
             render_item(format!("p{}={}", i, j));
         }
+        context.set_stroke_style(&JsValue::from("#000"));
     }
     render_item("d=1".to_string());
     render_item("x=0".to_string());
@@ -399,6 +413,9 @@ fn draw_field(val: usize, id: String) {
     if card.basis.is_none() {
         set_line_dash(context, 2, 10.0) // set line dash for empty field basis
     }
+    if game.active.selected.contains(&id) {
+        context.set_line_width(5.0);
+    }
     draw_rect(
         card_pos.x,
         card_pos.y,
@@ -407,6 +424,7 @@ fn draw_field(val: usize, id: String) {
         id.clone(),
     );
     set_line_dash(context, 0, 0.0);
+    context.set_line_width(1.0);
 
     let katex_element_id = format!("katex-item_{}", &id);
     if let Some(basis) = &card.basis {
@@ -482,8 +500,15 @@ fn get_player_card_bounds(player_num: u32, val: usize) -> (Vector2, Vector2) {
 
 /// renders player hands
 fn draw_hand(player_num: u32, val: usize, id: String) {
+    let (canvas, game) = unsafe { (CANVAS.as_ref().unwrap(), GAME.as_ref().unwrap()) };
     let (card_pos, card_size) = get_player_card_bounds(player_num, val);
+    if game.active.selected.contains(&id) {
+        canvas.context.set_line_width(5.0);
+    }
     draw_rect(card_pos.x, card_pos.y, card_size.x, card_size.y, id.clone());
+    if game.active.selected.contains(&id) {
+        canvas.context.set_line_width(1.0);
+    }
 }
 
 pub fn render_player_katex() {

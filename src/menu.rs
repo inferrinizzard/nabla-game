@@ -3,11 +3,12 @@ use std::collections::HashMap;
 // wasm-bindgen imports
 use gloo::events::EventListener;
 use wasm_bindgen::JsCast;
-use web_sys::{Document, Element};
+use web_sys::{Document, Element, HtmlInputElement};
 // outer crate imports
 use crate::game::flags::*;
 use crate::game::structs::{Game, GameState};
 use crate::render::katex::clear_katex_element;
+use crate::render::render_constants::{PLAYER_1_COLOUR, PLAYER_2_COLOUR};
 // root imports
 use super::{GAME, MENU};
 
@@ -170,6 +171,9 @@ impl MainMenu {
 pub struct SettingsMenu {
     checkboxes: Vec<Element>,
     checkbox_listeners: HashMap<String, EventListener>,
+
+    colours: Vec<Element>,
+    colour_listeners: HashMap<String, EventListener>,
 }
 
 impl SettingsMenu {
@@ -185,7 +189,7 @@ impl SettingsMenu {
         .iter()
         .map(|state| {
             document
-                .get_element_by_id(&format!("checkbox-{}", state).to_owned()[..])
+                .get_element_by_id(format!("checkbox-{}", state).as_str())
                 .unwrap()
         })
         .collect();
@@ -234,9 +238,37 @@ impl SettingsMenu {
             checkbox_listeners.insert(element_target.id(), listener);
         }
 
+        let colours: Vec<Element> = vec!["PLAYER_1", "PLAYER_2"]
+            .iter()
+            .map(|state| {
+                document
+                    .get_element_by_id(format!("colour-{}", state).as_str())
+                    .unwrap()
+            })
+            .collect();
+
+        let mut colour_listeners: HashMap<String, EventListener> = HashMap::new();
+        for i in 0..2 {
+            let player_target = colours[i].dyn_ref::<Element>().unwrap();
+            let listener = EventListener::new(&colours[i], "change", move |e| {
+                let event_target = e.target().unwrap();
+                let player_colour = event_target.dyn_ref::<HtmlInputElement>().unwrap().value();
+                unsafe {
+                    if i == 0 {
+                        PLAYER_1_COLOUR = Box::leak(player_colour.clone().into_boxed_str());
+                    } else {
+                        PLAYER_2_COLOUR = Box::leak(player_colour.clone().into_boxed_str());
+                    }
+                }
+            });
+            colour_listeners.insert(player_target.id(), listener);
+        }
+
         Self {
             checkboxes,
             checkbox_listeners,
+            colours,
+            colour_listeners,
         }
     }
 }

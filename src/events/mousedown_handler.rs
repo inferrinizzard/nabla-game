@@ -221,6 +221,7 @@ fn multi_select_phase(multi_operator: Card, id: String, player_num: u32) {
         || (id_key == format!("p{}", player_num) && matches!(player[id_val], Card::BasisCard(_)))
     {
         game.active.selected.push(id.to_string());
+        render::draw();
         // console::log_1(&JsValue::from(format!("added to multiselect: {}", id)));
     }
 

@@ -29,3 +29,6 @@ impl Default for Sizes {
         }
     }
 }
+
+pub static mut PLAYER_1_COLOUR: &str = "#FF0000";
+pub static mut PLAYER_2_COLOUR: &str = "#0000FF";
