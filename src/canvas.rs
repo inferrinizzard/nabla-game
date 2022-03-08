@@ -20,6 +20,7 @@ pub struct Canvas {
     pub hit_region_map: HashMap<String, String>,
 
     pub mousedown_listener: Option<EventListener>,
+    pub mousemove_listener: Option<EventListener>,
 }
 
 impl Canvas {
@@ -70,6 +71,7 @@ impl Canvas {
             hit_context,
             hit_region_map,
             mousedown_listener: None,
+            mousemove_listener: None,
         }
     }
 

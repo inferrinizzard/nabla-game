@@ -6,7 +6,7 @@ use crate::cards::*;
 use crate::game::{field::FieldBasis, flags::ALLOW_LINEAR_DEPENDENCE, structs::*};
 use crate::render::render;
 // root imports
-use super::GAME;
+use crate::GAME;
 // util imports
 use crate::util::get_key_val;
 
@@ -62,7 +62,7 @@ pub fn branch_turn_phase(id: String, player_num: u32) {
         TurnPhase::MULTISELECT(multi_operator) => {
             multi_select_phase(multi_operator, id, player_num)
         }
-        _ => unreachable!("Turn Phase Error: received {} on turn {:?}", id, turn),
+        _ => {} // js_log!("Turn Phase Error: received {} on turn {:?}", id, turn),
     }
 }
 
