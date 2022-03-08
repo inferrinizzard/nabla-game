@@ -412,7 +412,7 @@ impl ToLatex for BasisNode {
             ),
             BasisOperator::Div => format!(
                 "{coefficient}\\frac{{{numerator}}}{{{denominator}}}",
-                coefficient = self.operator.to_latex(),
+                coefficient = self.coefficient.to_latex(),
                 numerator = self.operands[0].to_latex(),
                 denominator = self.operands[1].to_latex()
             ),

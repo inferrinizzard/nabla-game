@@ -216,28 +216,28 @@ fn multi_select_phase(multi_operator: Card, id: String, player_num: u32) {
         &mut game.player_2
     };
     let field = &mut game.field;
+    let selected = &mut game.active.selected;
     let (id_key, id_val) = get_key_val(&id);
     if id_key == "f"
         || (id_key == format!("p{}", player_num) && matches!(player[id_val], Card::BasisCard(_)))
     {
-        game.active.selected.push(id.to_string());
+        selected.push(id.to_string());
         // console::log_1(&JsValue::from(format!("added to multiselect: {}", id)));
     }
 
     // TODO: prevent 0 * all or 0 / all
     if id_key == "x"
         && id_val == 1
-        && game // must have at least 1 field basis
-            .active
-            .selected
+        && selected // must have at least 1 field basis
             .iter()
             .find(|sel_id| sel_id.as_str().starts_with("f"))
             .is_some()
+            // must have at least 2 operands
+        && selected.len() > 1
     {
         let result_basis = apply_multi_card(
             &multi_operator,
-            game.active
-                .selected
+            selected
                 .iter()
                 .filter_map(|sel_id| {
                     let (sel_key, sel_val) = get_key_val(&sel_id);
@@ -256,9 +256,7 @@ fn multi_select_phase(multi_operator: Card, id: String, player_num: u32) {
                 })
                 .collect::<Vec<Basis>>(),
         );
-        let used_field_bases = game
-            .active
-            .selected
+        let used_field_bases = selected
             .iter()
             .filter_map(|sel_id| {
                 let (sel_key, sel_val) = get_key_val(&sel_id);
