@@ -429,6 +429,9 @@ fn draw_field(val: usize, id: String) {
     if card.basis.is_none() {
         set_line_dash(context, 2, 10.0) // set line dash for empty field basis
     }
+    if game.active.selected.contains(&id) {
+        context.set_line_width(5.0);
+    }
     draw_rect(
         card_pos.x,
         card_pos.y,
@@ -437,6 +440,7 @@ fn draw_field(val: usize, id: String) {
         id.clone(),
     );
     set_line_dash(context, 0, 0.0);
+    context.set_line_width(1.0);
 
     let katex_element_id = format!("katex-item_{}", &id);
     if let Some(basis) = &card.basis {
@@ -512,7 +516,14 @@ fn draw_hand(player_num: u32, val: usize, id: String) {
             },
         y: start_pos.y,
     };
+
+    if game.active.selected.contains(&id) {
+        canvas.context.set_line_width(5.0);
+    }
     draw_rect(card_pos.x, card_pos.y, card_size.x, card_size.y, id.clone());
+    if game.active.selected.contains(&id) {
+        canvas.context.set_line_width(1.0);
+    }
 
     let katex_element_id = format!("katex-item_{}", &id);
     draw_katex(
