@@ -30,5 +30,5 @@ impl Default for Sizes {
     }
 }
 
-pub const PLAYER_1_COLOUR: &str = "#FF0000";
-pub const PLAYER_2_COLOUR: &str = "#0000FF";
+pub static mut PLAYER_1_COLOUR: &str = "#FF0000";
+pub static mut PLAYER_2_COLOUR: &str = "#0000FF";

@@ -32,6 +32,7 @@ pub fn draw() {
 /// main game render function, iterates through all game items to render
 pub fn render_play_screen() {
     let canvas = unsafe { CANVAS.as_mut().unwrap() };
+    let (player_1_colour, player_2_colour) = unsafe { (PLAYER_1_COLOUR, PLAYER_2_COLOUR) };
     let context = &canvas.context;
     let hit_context = &canvas.hit_context;
 
@@ -41,9 +42,9 @@ pub fn render_play_screen() {
     // draw field
     for i in 0..6 {
         if i >= 3 {
-            context.set_stroke_style(&JsValue::from(PLAYER_1_COLOUR));
+            context.set_stroke_style(&JsValue::from(player_1_colour));
         } else {
-            context.set_stroke_style(&JsValue::from(PLAYER_2_COLOUR));
+            context.set_stroke_style(&JsValue::from(player_2_colour));
         }
         render_item(format!("f={}", i));
         context.set_stroke_style(&JsValue::from("#000"));
@@ -51,9 +52,9 @@ pub fn render_play_screen() {
     // draw players
     for i in 1..=2 {
         if i == 1 {
-            context.set_stroke_style(&JsValue::from(PLAYER_1_COLOUR));
+            context.set_stroke_style(&JsValue::from(player_1_colour));
         } else if i == 2 {
-            context.set_stroke_style(&JsValue::from(PLAYER_2_COLOUR));
+            context.set_stroke_style(&JsValue::from(player_2_colour));
         }
         for j in 0..7 {
             render_item(format!("p{}={}", i, j));
