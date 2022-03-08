@@ -120,6 +120,11 @@ fn draw_cancel() {
         return;
     }
 
+    let Sizes {
+        width: PLAYER_CARD_WIDTH,
+        height: PLAYER_CARD_HEIGHT,
+        gutter: PLAYER_CARD_GUTTER,
+    } = canvas.render_constants.player_sizes;
     let player_num = game.get_current_player_num();
     let cancel_size = Vector2 {
         x: PLAYER_CARD_WIDTH,
@@ -163,6 +168,11 @@ fn draw_multi_done() {
         return;
     }
 
+    let Sizes {
+        width: PLAYER_CARD_WIDTH,
+        height: PLAYER_CARD_HEIGHT,
+        gutter: PLAYER_CARD_GUTTER,
+    } = canvas.render_constants.player_sizes;
     let player_num = game.get_current_player_num();
     let multidone_size = Vector2 {
         x: PLAYER_CARD_WIDTH,
@@ -202,6 +212,11 @@ fn draw_multi_done() {
 /// draw marker to show whose turn it is
 fn draw_turn_indicator() {
     let (canvas, game) = unsafe { (CANVAS.as_mut().unwrap(), GAME.as_ref().unwrap()) };
+    let Sizes {
+        width: PLAYER_CARD_WIDTH,
+        height: PLAYER_CARD_HEIGHT,
+        gutter: PLAYER_CARD_GUTTER,
+    } = canvas.render_constants.player_sizes;
 
     let player_num = game.get_current_player_num();
     let turn_indicator_size = Vector2 {
@@ -245,6 +260,11 @@ fn draw_turn_indicator() {
 /// draws deck and num cards remaining
 fn draw_deck() {
     let (canvas, game) = unsafe { (CANVAS.as_mut().unwrap(), GAME.as_ref().unwrap()) };
+    let Sizes {
+        width: FIELD_BASIS_WIDTH,
+        height: FIELD_BASIS_HEIGHT,
+        gutter: FIELD_BASIS_GUTTER,
+    } = canvas.render_constants.field_sizes;
 
     let center = &canvas.canvas_center;
     let deck_pos = Vector2 {
@@ -275,6 +295,16 @@ fn draw_deck() {
 /// draws graveyard and last 3 cards played
 fn draw_graveyard() {
     let (canvas, game) = unsafe { (CANVAS.as_mut().unwrap(), GAME.as_ref().unwrap()) };
+    let Sizes {
+        width: PLAYER_CARD_WIDTH,
+        height: PLAYER_CARD_HEIGHT,
+        gutter: PLAYER_CARD_GUTTER,
+    } = canvas.render_constants.player_sizes;
+    let Sizes {
+        width: FIELD_BASIS_WIDTH,
+        height: FIELD_BASIS_HEIGHT,
+        gutter: FIELD_BASIS_GUTTER,
+    } = canvas.render_constants.field_sizes;
 
     let center = &canvas.canvas_center;
 
@@ -366,6 +396,11 @@ fn draw_field(val: usize, id: String) {
     let (canvas, game) = unsafe { (CANVAS.as_ref().unwrap(), GAME.as_mut().unwrap()) };
     let field = &game.field;
     let context = &canvas.context;
+    let Sizes {
+        width: FIELD_BASIS_WIDTH,
+        height: FIELD_BASIS_HEIGHT,
+        gutter: FIELD_BASIS_GUTTER,
+    } = canvas.render_constants.field_sizes;
 
     let card_pos = Vector2 {
         x: canvas.canvas_center.x + ((val % 3) as f64) * (FIELD_BASIS_WIDTH + FIELD_BASIS_GUTTER)
@@ -408,6 +443,11 @@ fn draw_field(val: usize, id: String) {
 /// renders player hands
 fn draw_hand(player_num: u32, val: usize, id: String) {
     let (canvas, game) = unsafe { (CANVAS.as_ref().unwrap(), GAME.as_mut().unwrap()) };
+    let Sizes {
+        width: PLAYER_CARD_WIDTH,
+        height: PLAYER_CARD_HEIGHT,
+        gutter: PLAYER_CARD_GUTTER,
+    } = canvas.render_constants.player_sizes;
     let hand = if player_num == 1 {
         &game.player_1
     } else {

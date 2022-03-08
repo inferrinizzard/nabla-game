@@ -1,11 +1,34 @@
-// size dimensions for Field cards
+use wasm_bindgen::prelude::*;
 
-pub const FIELD_BASIS_WIDTH: f64 = 150.0;
-pub const FIELD_BASIS_HEIGHT: f64 = 200.0;
-pub const FIELD_BASIS_GUTTER: f64 = 50.0;
+#[wasm_bindgen(module = "/js/render.js")]
+extern "C" {
+    fn js_rem_to_px(string: String) -> f64;
+}
 
-// size dimensions for player hand cards
+pub fn rem_to_px(string: String) -> f64 {
+    js_rem_to_px(string)
+}
 
-pub const PLAYER_CARD_WIDTH: f64 = 75.0;
-pub const PLAYER_CARD_HEIGHT: f64 = 100.0;
-pub const PLAYER_CARD_GUTTER: f64 = 25.0;
+// Golden number
+pub const PHI: f64 = 1.618;
+
+pub struct RenderConstants {
+    pub field_sizes: Sizes,
+    pub player_sizes: Sizes,
+}
+
+pub struct Sizes {
+    pub width: f64,
+    pub height: f64,
+    pub gutter: f64,
+}
+
+impl Default for Sizes {
+    fn default() -> Self {
+        Sizes {
+            width: 0.0,
+            height: 0.0,
+            gutter: 0.0,
+        }
+    }
+}
