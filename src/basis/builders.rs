@@ -661,6 +661,10 @@ pub fn LogBasisNode(base: &Basis) -> Basis {
 /// handles E BasisNodes, simple constructor for E BasisNodes
 #[allow(non_snake_case)]
 pub fn EBasisNode(operand: &Basis) -> Basis {
+    if operand.is_num(0) {
+        return Basis::from(1);
+    }
+
     Basis::BasisNode(BasisNode {
         coefficient: Fraction::from(1),
         operator: BasisOperator::E,
