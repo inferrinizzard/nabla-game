@@ -613,7 +613,7 @@ pub fn PowBasisNode(n: i32, d: i32, base: &Basis) -> Basis {
                 Basis::BasisNode(BasisNode {
                     coefficient: Fraction::from(1),
                     operator: BasisOperator::Pow(pow),
-                    operands: vec![base.clone()],
+                    operands: vec![base.with_coefficient(1)],
                 }),
             ],
         })

@@ -2,7 +2,7 @@
 use std::fmt::{Display, Formatter, Result};
 // outer crate imports
 use crate::cards::BasisCard;
-use crate::game::flags::DISPLAY_LN_FOR_LOG;
+use crate::game::flags::{DISPLAY_LN_FOR_LOG, USE_FRACTIONAL_EXPONENTS};
 use crate::math::fraction::Fraction;
 // util imports
 use crate::util::ToLatex;
@@ -433,6 +433,20 @@ impl ToLatex for BasisNode {
                         denominator = self.operands[0].to_latex()
                     );
                 }
+
+                let flag = unsafe { USE_FRACTIONAL_EXPONENTS };
+                if !flag && pow.n == 1 {
+                    return format!(
+                        "\\sqrt{degree}{{{base}}}",
+                        degree = if pow.d == 2 {
+                            String::new()
+                        } else {
+                            format!("[{}]", pow.d)
+                        },
+                        base = self.operands[0].to_latex()
+                    );
+                }
+
                 match self.operands[0] {
                     Basis::BasisLeaf(_) => format!(
                         "{coefficient}{base}{exponent}",

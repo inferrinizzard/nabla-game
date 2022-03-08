@@ -175,6 +175,7 @@ impl SettingsMenu {
             "ALLOW_LINEAR_DEPENDENCE",
             "ALLOW_LIMITS_BEYOND_BOUNDS",
             "FULL_COMPUTE",
+            "USE_FRACTIONAL_EXPONENTS",
             "LIMIT_FIELD_BASIS",
         ]
         .iter()
@@ -202,6 +203,7 @@ impl SettingsMenu {
                         "ALLOW_LINEAR_DEPENDENCE" => ALLOW_LINEAR_DEPENDENCE = flag_value,
                         "ALLOW_LIMITS_BEYOND_BOUNDS" => ALLOW_LIMITS_BEYOND_BOUNDS = flag_value,
                         "FULL_COMPUTE" => FULL_COMPUTE = flag_value,
+                        "USE_FRACTIONAL_EXPONENTS" => USE_FRACTIONAL_EXPONENTS = flag_value,
                         "LIMIT_FIELD_BASIS" => LIMIT_FIELD_BASIS = flag_value,
                         _ => panic!("Unknown flag name: {}", flag_name),
                     }
