@@ -6,7 +6,7 @@ use crate::cards::*;
 use crate::game::{field::FieldBasis, flags::ALLOW_LINEAR_DEPENDENCE, structs::*};
 use crate::render::render;
 // root imports
-use super::GAME;
+use crate::GAME;
 // util imports
 use crate::util::get_key_val;
 
@@ -368,6 +368,9 @@ pub fn next_turn() {
     };
     game.active.clear();
     render::draw();
+
+    // render player hand katex
+    render::render_player_katex();
 
     let field = game.field.basis.iter();
     if field.clone().take(3).all(|f| f.basis.is_none()) {

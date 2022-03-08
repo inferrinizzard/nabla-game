@@ -1,3 +1,3 @@
-mod katex;
+pub mod katex;
 pub mod render;
-mod render_constants;
+pub mod render_constants;

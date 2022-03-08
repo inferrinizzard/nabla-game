@@ -1,5 +1,5 @@
 /// util struct to store a position-based coordinate
-#[derive(Default)]
+#[derive(Default, Clone)]
 pub struct Vector2 {
     pub x: f64,
     pub y: f64,
