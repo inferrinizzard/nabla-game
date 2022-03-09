@@ -397,12 +397,14 @@ fn assemble_mult(coefficient: Fraction, numerator: Vec<Basis>, denominator: Vec<
             coefficient: Fraction::from(1),
             operator: BasisOperator::Div,
             operands: vec![
-                if final_numerator.len() > 0 {
+                if final_numerator.len() > 1 {
                     Basis::BasisNode(BasisNode {
                         coefficient: Fraction::from(final_coefficient.n),
                         operator: BasisOperator::Mult,
                         operands: final_numerator,
                     })
+                } else if final_numerator.len() == 1 {
+                    final_numerator[0].clone() * final_coefficient.n
                 } else {
                     Basis::from(final_coefficient.n)
                 },
