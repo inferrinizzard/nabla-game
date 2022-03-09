@@ -50,17 +50,25 @@ pub fn inverse(basis_node: &BasisNode, u: &Basis, dv: &Basis) -> Option<Basis> {
 
 /// tries integration with a power component, skips if doesn't match pattern
 pub fn algebraic(_basis_node: &BasisNode, u: &Basis, dv: &Basis) -> Option<Basis> {
-    // any fractional exponent is not accepted
-    if let Basis::BasisNode(BasisNode {
-        operator: BasisOperator::Pow(Fraction { n, d: 1 }),
-        ..
-    }) = u
-    {
-        let flag = unsafe { FULL_COMPUTE };
-        // skip if too complex
-        if flag || *n < 4 {
-            return Some(tabular_integration(u, dv));
+    match u {
+        Basis::BasisNode(BasisNode {
+            // any fractional exponent is not accepted
+            operator: BasisOperator::Pow(Fraction { n, d: 1 }),
+            ..
+        }) => {
+            let flag = unsafe { FULL_COMPUTE };
+            // skip if too complex
+            if flag || *n < 4 {
+                return Some(tabular_integration(u, dv));
+            }
         }
+        Basis::BasisLeaf(BasisLeaf {
+            element: BasisElement::X,
+            ..
+        }) => {
+            return Some(integration_by_parts(u, dv));
+        }
+        _ => {}
     }
 
     None

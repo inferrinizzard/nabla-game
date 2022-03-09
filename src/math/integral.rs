@@ -45,9 +45,10 @@ pub fn integral(basis: &Basis) -> Basis {
                     }
                 }
                 if let Basis::BasisNode(basis_node) = basis {
-                    substitution_integration(basis_node);
+                    substitution_integration(basis_node)
+                } else {
+                    IntBasisNode(&basis.clone())
                 }
-                unreachable!("Tried: integral of {:?} with operator {}", basis, operator)
             }
             BasisOperator::Pow(Fraction { n, d }) => {
                 let base = operands[0].clone();
@@ -83,11 +84,11 @@ pub fn integral(basis: &Basis) -> Basis {
             }
             BasisOperator::Cos if operands[0].is_x() => {
                 // I(cos(x)) = sin(x)
-                SinBasisNode(&operands[0]) / operands[0].coefficient()
+                SinBasisNode(&operands[0]) / operands[0].coefficient() * *coefficient
             }
             BasisOperator::Sin if operands[0].is_x() => {
                 // I(sin(x)) = -cos(x)
-                -CosBasisNode(&operands[0]) / operands[0].coefficient()
+                -CosBasisNode(&operands[0]) / operands[0].coefficient() * *coefficient
             }
             BasisOperator::Inv => {
                 // I(f-1(x)) = xf-1(x) - I(xf-1(x))
@@ -122,6 +123,10 @@ fn find_basis_weight(basis: &Basis) -> i32 {
             BasisOperator::E => 10,
             _ => 00, // Add/Minus, Mult/Div, Int are invalid here
         },
+        Basis::BasisLeaf(BasisLeaf {
+            element: BasisElement::X,
+            ..
+        }) => 31,
         _ => 00,
     }
 }
@@ -189,8 +194,8 @@ fn substitution_integration(basis_node: &BasisNode) -> Basis {
         return logarithmic.unwrap();
     }
     let inv_trig = liate::inv_trig(basis_node);
-    if inv_trig.is_none() {
-        return IntBasisNode(&Basis::BasisNode(basis_node.clone()));
+    if inv_trig.is_some() {
+        return inv_trig.unwrap();
     }
     let algebraic = liate::algebraic(basis_node, &u, &dv);
     if algebraic.is_some() {
@@ -216,21 +221,19 @@ fn substitution_integration(basis_node: &BasisNode) -> Basis {
 /// performs tabular integration for repeated integration by parts
 pub fn tabular_integration(u: &Basis, dv: &Basis) -> Basis {
     if let Basis::BasisNode(BasisNode {
-        coefficient,
         operator: BasisOperator::Pow(Fraction { n, d: 1 }),
         ..
     }) = u
     {
         let mut elements: Vec<Basis> = vec![];
         let mut v = dv.clone();
-        for i in 0..*n {
+        let mut u = u.clone();
+        for i in 0..=*n {
             v = integral(&v);
-            elements.push(
-                (Basis::x() ^ (n - i))
-                    .with_frac(*coefficient * if i % 2 == 1 { -1 } else { 1 }) // alternate minus sign
-                    * v.clone(),
-            )
+            elements.push(u.clone() * v.clone() * if i % 2 == 1 { -1 } else { 1 });
+            u = derivative(&u);
         }
+        return AddBasisNode(elements);
     }
     Basis::from(0)
 }
@@ -251,5 +254,5 @@ fn polynomial_integration_by_parts(operands: Vec<Basis>) -> Basis {
     //     break;
     // }
 
-    // Basis::zero()
+    Basis::from(0)
 }
