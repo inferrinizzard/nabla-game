@@ -77,7 +77,7 @@ fn test_complex_inverses() {
 
     // e^2x
     a = e_x() ^ 2;
-    b = log(&(Basis::x() ^ (1, 2)));
+    b = log(&Basis::x()) / 2;
     println!("f-1({}) = {}", a, b);
     assert_eq!(inverse(&a), b);
 
