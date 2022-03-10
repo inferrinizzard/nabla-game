@@ -18,6 +18,7 @@ pub struct Sizes {
     pub width: f64,
     pub height: f64,
     pub gutter: f64,
+    pub radius: f64,
 }
 
 impl Default for Sizes {
@@ -26,6 +27,7 @@ impl Default for Sizes {
             width: 0.0,
             height: 0.0,
             gutter: 0.0,
+            radius: 0.0,
         }
     }
 }

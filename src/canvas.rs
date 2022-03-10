@@ -118,6 +118,7 @@ impl Canvas {
         let player_card_height = rem_to_px(String::from("9rem"));
         let player_card_width = player_card_height * 0.75;
         let gutter = player_card_width / 4.0;
+        let radius = gutter / 4.0;
 
         // TODO: add balancing and min sizes for smaller screens
         let field_gutter = gutter * 2.0;
@@ -125,17 +126,20 @@ impl Canvas {
             (self.canvas_bounds.y - player_card_height * 2.0 - gutter * 2.0 - field_gutter * 3.0)
                 / 2.0;
         let field_basis_width = field_basis_height * 0.75;
+        let field_radius = field_gutter / 4.0;
 
         self.render_constants = RenderConstants {
             field_sizes: Sizes {
                 width: field_basis_width,
                 height: field_basis_height,
                 gutter: field_gutter,
+                radius: field_radius,
             },
             player_sizes: Sizes {
                 width: player_card_width,
                 height: player_card_height,
                 gutter,
+                radius,
             },
         };
     }

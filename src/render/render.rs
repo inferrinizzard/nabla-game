@@ -106,14 +106,26 @@ fn random_hit_colour(hit_region_map: &HashMap<String, String>) -> String {
 }
 
 /// draws a rectangle of given size and sets hit region for id
-fn draw_rect(x: f64, y: f64, width: f64, height: f64, id: String) {
+fn draw_rect(x: f64, y: f64, width: f64, height: f64, radius: f64, id: String) {
     let canvas = unsafe { CANVAS.as_mut().unwrap() };
 
     let context = &canvas.context;
     let hit_context = &canvas.hit_context;
     let hit_region_map = &mut canvas.hit_region_map;
 
-    context.stroke_rect(x, y, width, height);
+    // draw rounded rectangle
+    context.begin_path();
+    context.move_to(x + radius, y);
+    context.line_to(x + width - radius, y);
+    context.quadratic_curve_to(x + width, y, x + width, y + radius);
+    context.line_to(x + width, y + height - radius);
+    context.quadratic_curve_to(x + width, y + height, x + width - radius, y + height);
+    context.line_to(x + radius, y + height);
+    context.quadratic_curve_to(x, y + height, x, y + height - radius);
+    context.line_to(x, y + radius);
+    context.quadratic_curve_to(x, y, x + radius, y);
+    context.close_path();
+    context.stroke();
 
     // draw rect onto hit canvas with random colour
     let existing_colour = hit_region_map.iter().find(|(_, v)| **v == id);
@@ -138,6 +150,7 @@ fn draw_cancel() {
         width: player_card_width,
         height: player_card_height,
         gutter: player_card_gutter,
+        radius: player_card_radius,
     } = canvas.render_constants.player_sizes;
     let player_num = game.get_current_player_num();
     let cancel_size = Vector2 {
@@ -158,6 +171,7 @@ fn draw_cancel() {
         cancel_pos.y,
         cancel_size.x,
         cancel_size.y,
+        player_card_radius / 2.0,
         "x=0".to_string(),
     );
 
@@ -186,6 +200,7 @@ fn draw_multi_done() {
         width: player_card_width,
         height: player_card_height,
         gutter: player_card_gutter,
+        radius: player_card_radius,
     } = canvas.render_constants.player_sizes;
     let player_num = game.get_current_player_num();
     let multidone_size = Vector2 {
@@ -206,6 +221,7 @@ fn draw_multi_done() {
         multidone_pos.y,
         multidone_size.x,
         multidone_size.y,
+        player_card_radius / 2.0,
         "x=1".to_string(),
     );
 
@@ -230,6 +246,7 @@ fn draw_turn_indicator() {
         width: player_card_width,
         height: player_card_height,
         gutter: player_card_gutter,
+        radius: player_card_radius,
     } = canvas.render_constants.player_sizes;
 
     let player_num = game.get_current_player_num();
@@ -254,6 +271,7 @@ fn draw_turn_indicator() {
         turn_indicator_pos.y,
         turn_indicator_size.x,
         turn_indicator_size.y,
+        player_card_radius / 2.0,
         "t=0".to_string(),
     );
 
@@ -278,6 +296,7 @@ fn draw_deck() {
         width: field_basis_width,
         height: field_basis_height,
         gutter: field_basis_gutter,
+        radius: field_basis_radius,
     } = canvas.render_constants.field_sizes;
 
     let center = &canvas.canvas_center;
@@ -290,6 +309,7 @@ fn draw_deck() {
         deck_pos.y,
         field_basis_width,
         field_basis_height,
+        field_basis_radius,
         "d=1".to_string(),
     );
 
@@ -312,12 +332,14 @@ fn draw_graveyard() {
     let Sizes {
         width: player_card_width,
         height: player_card_height,
+        radius: player_card_radius,
         ..
     } = canvas.render_constants.player_sizes;
     let Sizes {
         width: field_basis_width,
         height: field_basis_height,
         gutter: field_basis_gutter,
+        ..
     } = canvas.render_constants.field_sizes;
 
     let center = &canvas.canvas_center;
@@ -349,7 +371,14 @@ fn draw_graveyard() {
         canvas
             .context
             .clear_rect(card_pos.x, card_pos.y, card_size.x, card_size.y);
-        draw_rect(card_pos.x, card_pos.y, card_size.x, card_size.y, id.clone());
+        draw_rect(
+            card_pos.x,
+            card_pos.y,
+            card_size.x,
+            card_size.y,
+            player_card_radius * 1.5,
+            id.clone(),
+        );
 
         draw_katex(
             &graveyard[graveyard.len() - i - 1],
@@ -398,6 +427,7 @@ fn draw_field(val: usize, id: String) {
         width: field_basis_width,
         height: field_basis_height,
         gutter: field_basis_gutter,
+        radius: field_basis_radius,
     } = canvas.render_constants.field_sizes;
 
     let card_pos = Vector2 {
@@ -421,10 +451,11 @@ fn draw_field(val: usize, id: String) {
         card_pos.y,
         field_basis_width,
         field_basis_height,
+        field_basis_radius,
         id.clone(),
     );
     set_line_dash(context, 0, 0.0);
-    context.set_line_width(1.0);
+    context.set_line_width(2.0);
 
     let katex_element_id = format!("katex-item_{}", &id);
     if let Some(basis) = &card.basis {
@@ -442,12 +473,13 @@ fn draw_field(val: usize, id: String) {
     }
 }
 
-fn get_player_card_bounds(player_num: u32, val: usize) -> (Vector2, Vector2) {
+fn get_player_card_bounds(player_num: u32, val: usize) -> (Vector2, Vector2, f64) {
     let (canvas, game) = unsafe { (CANVAS.as_ref().unwrap(), GAME.as_ref().unwrap()) };
     let Sizes {
         width: player_card_width,
         height: player_card_height,
         gutter: player_card_gutter,
+        radius: player_card_radius,
     } = canvas.render_constants.player_sizes;
 
     let (hover_key, hover_val) =
@@ -495,19 +527,26 @@ fn get_player_card_bounds(player_num: u32, val: usize) -> (Vector2, Vector2) {
         y: start_pos.y,
     };
 
-    (card_pos, card_size)
+    (card_pos, card_size, player_card_radius)
 }
 
 /// renders player hands
 fn draw_hand(player_num: u32, val: usize, id: String) {
     let (canvas, game) = unsafe { (CANVAS.as_ref().unwrap(), GAME.as_ref().unwrap()) };
-    let (card_pos, card_size) = get_player_card_bounds(player_num, val);
+    let (card_pos, card_size, card_radius) = get_player_card_bounds(player_num, val);
     if game.active.selected.contains(&id) {
         canvas.context.set_line_width(5.0);
     }
-    draw_rect(card_pos.x, card_pos.y, card_size.x, card_size.y, id.clone());
+    draw_rect(
+        card_pos.x,
+        card_pos.y,
+        card_size.x,
+        card_size.y,
+        card_radius,
+        id.clone(),
+    );
     if game.active.selected.contains(&id) {
-        canvas.context.set_line_width(1.0);
+        canvas.context.set_line_width(2.0);
     }
 }
 
@@ -531,7 +570,7 @@ fn render_player_katex_item(player_num: u32, val: usize, id: String) {
         &game.player_2
     };
 
-    let (card_pos, card_size) = get_player_card_bounds(player_num, val);
+    let (card_pos, card_size, _) = get_player_card_bounds(player_num, val);
 
     draw_player_card_katex(
         &hand[val],
