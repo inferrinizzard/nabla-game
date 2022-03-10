@@ -25,9 +25,9 @@ impl Fraction {
     }
 
     /// helper function to find gcd of two numbers, uses Euclid's algorithm
-    fn gcd(&self) -> i32 {
-        let (abs_n, abs_d) = (self.n.abs(), self.d.abs());
-        let (mut a, mut b) = (max(abs_n, abs_d), (min(abs_n, abs_d)));
+    fn gcd(x: i32, y: i32) -> i32 {
+        let (abs_x, abs_y) = (x.abs(), y.abs());
+        let (mut a, mut b) = (max(abs_x, abs_y), (min(abs_x, abs_y)));
         // euclidian algorithm
         while b > 0 {
             let c = a;
@@ -39,7 +39,11 @@ impl Fraction {
 
     /// reduces fraction to lowest terms
     pub fn simplify(self) -> Self {
-        let gcd = self.gcd();
+        if self.n == 0 || self.d == 0 {
+            return self;
+        }
+
+        let gcd = Fraction::gcd(self.n, self.d);
         let (mut n, mut d) = (self.n, self.d);
         if d < 0 {
             // (n, d) = (-n, -d);
@@ -59,10 +63,10 @@ impl From<i32> for Fraction {
         Fraction { n, d: 1 }
     }
 }
-/// creates a new Fractin with given tuple elements as numerator and denominator
+/// creates a new Fraction with given tuple elements as numerator and denominator
 impl From<(i32, i32)> for Fraction {
     fn from((n, d): (i32, i32)) -> Self {
-        Fraction { n, d }
+        Fraction { n, d }.simplify()
     }
 }
 
@@ -120,8 +124,9 @@ impl PartialOrd for Fraction {
         } else if left.n < right.n {
             Some(Ordering::Less)
         } else {
-            // TODO: use LCM to compare denominators
-            Some(Ordering::Equal)
+            let gcd = Fraction::gcd(left.d, right.d);
+            let lcm = left.d * right.d / gcd;
+            (left.n * lcm).partial_cmp(&(right.n * lcm))
         }
     }
 }

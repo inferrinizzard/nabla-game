@@ -2,7 +2,7 @@
 use std::fmt::{Display, Formatter, Result};
 // outer crate imports
 use crate::cards::BasisCard;
-use crate::game::flags::DISPLAY_LN_FOR_LOG;
+use crate::game::flags::{DISPLAY_LN_FOR_LOG, USE_FRACTIONAL_EXPONENTS};
 use crate::math::fraction::Fraction;
 // util imports
 use crate::util::ToLatex;
@@ -275,11 +275,22 @@ impl ToLatex for BasisLeaf {
             BasisElement::Num => {
                 if self.coefficient == 1 {
                     String::from("1")
+                } else if self.coefficient == -1 {
+                    String::from("-1")
                 } else {
                     format!("{coefficient}", coefficient = self.coefficient.to_latex())
                 }
             }
-            BasisElement::X => format!("{}x", self.coefficient.to_latex()),
+            BasisElement::X => {
+                if self.coefficient.n == 1 && self.coefficient.d != 1 {
+                    format!(
+                        "\\frac{{x}}{{{denominator}}}",
+                        denominator = self.coefficient.d
+                    )
+                } else {
+                    format!("{}x", self.coefficient.to_latex())
+                }
+            }
             BasisElement::Inf => (if self.coefficient > 1 {
                 "\\infty"
             } else {
@@ -403,7 +414,7 @@ impl ToLatex for BasisNode {
             ),
             BasisOperator::Div => format!(
                 "{coefficient}\\frac{{{numerator}}}{{{denominator}}}",
-                coefficient = self.operator.to_latex(),
+                coefficient = self.coefficient.to_latex(),
                 numerator = self.operands[0].to_latex(),
                 denominator = self.operands[1].to_latex()
             ),
@@ -424,6 +435,20 @@ impl ToLatex for BasisNode {
                         denominator = self.operands[0].to_latex()
                     );
                 }
+
+                let flag = unsafe { USE_FRACTIONAL_EXPONENTS };
+                if !flag && pow.n == 1 {
+                    return format!(
+                        "\\sqrt{degree}{{{base}}}",
+                        degree = if pow.d == 2 {
+                            String::new()
+                        } else {
+                            format!("[{}]", pow.d)
+                        },
+                        base = self.operands[0].to_latex()
+                    );
+                }
+
                 match self.operands[0] {
                     Basis::BasisLeaf(_) => format!(
                         "{coefficient}{base}{exponent}",
@@ -458,61 +483,24 @@ impl PartialEq for BasisNode {
         if self.operator != other.operator {
             return false;
         }
-        // Basis cannot be sorted so we sort stringwise
-        let (mut self_string_operands, self_node_operands) =
-            self.operands
-                .iter()
-                .fold((vec![], vec![]), |(mut strs, mut nodes), op| {
-                    match op {
-                        Basis::BasisNode(basis_node)
-                            if matches!(
-                                basis_node.operator,
-                                BasisOperator::Mult
-                                    | BasisOperator::Div
-                                    | BasisOperator::Add
-                                    | BasisOperator::Minus
-                            ) =>
-                        {
-                            nodes.push(basis_node)
-                        }
-                        _ => strs.push(op.to_string()),
-                    }
-                    (strs, nodes)
-                });
-        self_string_operands.sort();
-        let (mut other_string_operands, other_node_operands) =
-            other
-                .operands
-                .iter()
-                .fold((vec![], vec![]), |(mut strs, mut nodes), op| {
-                    match op {
-                        Basis::BasisNode(basis_node)
-                            if matches!(
-                                basis_node.operator,
-                                BasisOperator::Mult
-                                    | BasisOperator::Div
-                                    | BasisOperator::Add
-                                    | BasisOperator::Minus
-                            ) =>
-                        {
-                            nodes.push(basis_node)
-                        }
-                        _ => strs.push(op.to_string()),
-                    }
-                    (strs, nodes)
-                });
-        other_string_operands.sort();
-
-        if self_string_operands != other_string_operands {
+        if self.operands.len() != other.operands.len() {
             return false;
         }
 
-        // assumes no duplicates
-        self_node_operands.iter().all(|self_op| {
-            other_node_operands
-                .iter()
-                .any(|other_op| self_op == other_op)
-        })
+        if self.operator == BasisOperator::Div {
+            // compare numerator & denominator
+            if self.operands[0] != other.operands[0] || self.operands[1] != other.operands[1] {
+                return false;
+            } else if self.operands[0] == other.operands[0] && self.operands[1] == other.operands[1]
+            {
+                return true;
+            }
+        }
+
+        // no duplicate operands
+        self.operands
+            .iter()
+            .all(|self_op| other.operands.iter().any(|other_op| self_op == other_op))
     }
 }
 

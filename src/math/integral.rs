@@ -8,6 +8,8 @@ use super::derivative::derivative;
 use super::fraction::Fraction;
 use super::liate;
 
+use crate::util::js_log;
+
 /// finds integral of given Basis if possible, returns IntBasisNode if not
 pub fn integral(basis: &Basis) -> Basis {
     match basis {
@@ -22,39 +24,26 @@ pub fn integral(basis: &Basis) -> Basis {
             operands,
         }) => match operator {
             BasisOperator::Add => AddBasisNode(operands.iter().map(|op| integral(&op)).collect()),
-            //  AddBasisNode(operands.iter().map(|op| coefficient * integral(&op)).collect()),
             BasisOperator::Minus => {
                 MinusBasisNode(operands.iter().map(|op| integral(&op)).collect())
-                // MinusBasisNode(operands.iter().map(|op| coefficient * integral(&op)).collect())
             }
             BasisOperator::Mult | BasisOperator::Div => {
                 // TODO: support multi op
-                // cosx/x^n | sinx/x^n
-                if matches!(operator, BasisOperator::Div)
-                    && (operands[0].is_node(BasisOperator::Cos)
-                        | operands[0].is_node(BasisOperator::Sin))
-                {
-                    match &operands[1] {
-                        base if base.is_x() => return IntBasisNode(basis),
-                        Basis::BasisNode(BasisNode {
-                            operator: BasisOperator::Pow(..),
-                            operands: inner_operands,
-                            ..
-                        }) if inner_operands[0].is_x() => return IntBasisNode(basis),
-                        _ => {}
-                    }
-                }
                 if let Basis::BasisNode(basis_node) = basis {
-                    substitution_integration(basis_node);
+                    substitution_integration(basis_node)
+                } else {
+                    js_log!("Tried: integral of {:?} with operator {}", basis, operator);
+                    IntBasisNode(&basis.clone())
                 }
-                unreachable!("Tried: integral of {:?} with operator {}", basis, operator)
             }
             BasisOperator::Pow(Fraction { n, d }) => {
                 let base = operands[0].clone();
                 if base.is_x() {
                     if *n == -1 && *d == 1 {
+                        // I(1/x) = log(x)
                         return LogBasisNode(&Basis::x()) * *coefficient;
                     }
+                    // I(x^n) = x^(n+1)/(n+1)
                     return (base ^ (n + d, *d)).with_frac(*coefficient * *d / (n + d));
                 }
                 if base.is_node(BasisOperator::Log) {
@@ -83,11 +72,11 @@ pub fn integral(basis: &Basis) -> Basis {
             }
             BasisOperator::Cos if operands[0].is_x() => {
                 // I(cos(x)) = sin(x)
-                SinBasisNode(&operands[0]) / operands[0].coefficient()
+                SinBasisNode(&operands[0]) / operands[0].coefficient() * *coefficient
             }
             BasisOperator::Sin if operands[0].is_x() => {
                 // I(sin(x)) = -cos(x)
-                -CosBasisNode(&operands[0]) / operands[0].coefficient()
+                -CosBasisNode(&operands[0]) / operands[0].coefficient() * *coefficient
             }
             BasisOperator::Inv => {
                 // I(f-1(x)) = xf-1(x) - I(xf-1(x))
@@ -122,6 +111,10 @@ fn find_basis_weight(basis: &Basis) -> i32 {
             BasisOperator::E => 10,
             _ => 00, // Add/Minus, Mult/Div, Int are invalid here
         },
+        Basis::BasisLeaf(BasisLeaf {
+            element: BasisElement::X,
+            ..
+        }) => 31,
         _ => 00,
     }
 }
@@ -184,27 +177,27 @@ fn substitution_integration(basis_node: &BasisNode) -> Basis {
 
     let (u, dv) = get_u_dv(&basis_node.operands[0], &basis_node.operands[1], operator);
 
-    let logarithmic = liate::logarithmic(basis_node, &u, &dv);
+    let logarithmic = liate::logarithmic(operator, &u, &dv);
     if logarithmic.is_some() {
         return logarithmic.unwrap();
     }
-    let inv_trig = liate::inv_trig(basis_node);
-    if inv_trig.is_none() {
-        return IntBasisNode(&Basis::BasisNode(basis_node.clone()));
+    let inv_trig = liate::inv_trig(operator, &u, &dv);
+    if inv_trig.is_some() {
+        return inv_trig.unwrap();
     }
-    let algebraic = liate::algebraic(basis_node, &u, &dv);
+    let algebraic = liate::algebraic(operator, &u, &dv);
     if algebraic.is_some() {
         return algebraic.unwrap();
     }
     let trig = if operator == BasisOperator::Mult {
-        liate::trig(basis_node, &u, &dv)
+        liate::trig(operator, &u, &dv)
     } else {
         None
     };
     if trig.is_some() {
         return trig.unwrap();
     }
-    let exponential = liate::exponential(basis_node, &u, &dv);
+    let exponential = liate::exponential(operator, &u, &dv);
     if exponential.is_some() {
         return exponential.unwrap();
     }
@@ -215,22 +208,21 @@ fn substitution_integration(basis_node: &BasisNode) -> Basis {
 
 /// performs tabular integration for repeated integration by parts
 pub fn tabular_integration(u: &Basis, dv: &Basis) -> Basis {
+    // currently only supports x^n * f(x)
     if let Basis::BasisNode(BasisNode {
-        coefficient,
         operator: BasisOperator::Pow(Fraction { n, d: 1 }),
         ..
     }) = u
     {
         let mut elements: Vec<Basis> = vec![];
         let mut v = dv.clone();
-        for i in 0..*n {
+        let mut u = u.clone();
+        for i in 0..=*n {
             v = integral(&v);
-            elements.push(
-                (Basis::x() ^ (n - i))
-                    .with_frac(*coefficient * if i % 2 == 1 { -1 } else { 1 }) // alternate minus sign
-                    * v.clone(),
-            )
+            elements.push(u.clone() * v.clone() * if i % 2 == 1 { -1 } else { 1 });
+            u = derivative(&u);
         }
+        return AddBasisNode(elements);
     }
     Basis::from(0)
 }
@@ -251,5 +243,5 @@ fn polynomial_integration_by_parts(operands: Vec<Basis>) -> Basis {
     //     break;
     // }
 
-    // Basis::zero()
+    // Basis::from(0)
 }

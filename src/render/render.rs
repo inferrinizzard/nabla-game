@@ -32,6 +32,7 @@ pub fn draw() {
 /// main game render function, iterates through all game items to render
 pub fn render_play_screen() {
     let canvas = unsafe { CANVAS.as_mut().unwrap() };
+    let (player_1_colour, player_2_colour) = unsafe { (PLAYER_1_COLOUR, PLAYER_2_COLOUR) };
     let context = &canvas.context;
     let hit_context = &canvas.hit_context;
 
@@ -40,12 +41,25 @@ pub fn render_play_screen() {
 
     // draw field
     for i in 0..6 {
+        if i >= 3 {
+            context.set_stroke_style(&JsValue::from(player_1_colour));
+        } else {
+            context.set_stroke_style(&JsValue::from(player_2_colour));
+        }
         render_item(format!("f={}", i));
+        context.set_stroke_style(&JsValue::from("#000"));
     }
+    // draw players
     for i in 1..=2 {
+        if i == 1 {
+            context.set_stroke_style(&JsValue::from(player_1_colour));
+        } else if i == 2 {
+            context.set_stroke_style(&JsValue::from(player_2_colour));
+        }
         for j in 0..7 {
             render_item(format!("p{}={}", i, j));
         }
+        context.set_stroke_style(&JsValue::from("#000"));
     }
     render_item("d=1".to_string());
     render_item("x=0".to_string());
@@ -120,17 +134,22 @@ fn draw_cancel() {
         return;
     }
 
+    let Sizes {
+        width: player_card_width,
+        height: player_card_height,
+        gutter: player_card_gutter,
+    } = canvas.render_constants.player_sizes;
     let player_num = game.get_current_player_num();
     let cancel_size = Vector2 {
-        x: PLAYER_CARD_WIDTH,
-        y: (PLAYER_CARD_HEIGHT - PLAYER_CARD_GUTTER) / 2.0,
+        x: player_card_width,
+        y: (player_card_height - player_card_gutter) / 2.0,
     };
     let cancel_pos = Vector2 {
-        x: canvas.canvas_center.x + PLAYER_CARD_WIDTH * 3.5 + PLAYER_CARD_GUTTER * 4.0,
+        x: canvas.canvas_center.x + player_card_width * 3.5 + player_card_gutter * 4.0,
         y: if player_num == 1 {
-            canvas.canvas_bounds.y - PLAYER_CARD_HEIGHT - PLAYER_CARD_GUTTER
+            canvas.canvas_bounds.y - player_card_height - player_card_gutter
         } else {
-            PLAYER_CARD_GUTTER
+            player_card_gutter
         },
     };
 
@@ -163,17 +182,22 @@ fn draw_multi_done() {
         return;
     }
 
+    let Sizes {
+        width: player_card_width,
+        height: player_card_height,
+        gutter: player_card_gutter,
+    } = canvas.render_constants.player_sizes;
     let player_num = game.get_current_player_num();
     let multidone_size = Vector2 {
-        x: PLAYER_CARD_WIDTH,
-        y: (PLAYER_CARD_HEIGHT - PLAYER_CARD_GUTTER) / 2.0,
+        x: player_card_width,
+        y: (player_card_height - player_card_gutter) / 2.0,
     };
     let multidone_pos = Vector2 {
-        x: canvas.canvas_center.x + PLAYER_CARD_WIDTH * 3.5 + PLAYER_CARD_GUTTER * 4.0,
+        x: canvas.canvas_center.x + player_card_width * 3.5 + player_card_gutter * 4.0,
         y: if player_num == 1 {
-            canvas.canvas_bounds.y - PLAYER_CARD_GUTTER - multidone_size.y
+            canvas.canvas_bounds.y - player_card_gutter - multidone_size.y
         } else {
-            PLAYER_CARD_GUTTER * 2.0 + multidone_size.y
+            player_card_gutter * 2.0 + multidone_size.y
         },
     };
 
@@ -202,21 +226,26 @@ fn draw_multi_done() {
 /// draw marker to show whose turn it is
 fn draw_turn_indicator() {
     let (canvas, game) = unsafe { (CANVAS.as_mut().unwrap(), GAME.as_ref().unwrap()) };
+    let Sizes {
+        width: player_card_width,
+        height: player_card_height,
+        gutter: player_card_gutter,
+    } = canvas.render_constants.player_sizes;
 
     let player_num = game.get_current_player_num();
     let turn_indicator_size = Vector2 {
-        x: PLAYER_CARD_WIDTH + PLAYER_CARD_GUTTER,
-        y: (PLAYER_CARD_HEIGHT - PLAYER_CARD_GUTTER) / 2.0,
+        x: player_card_width + player_card_gutter,
+        y: (player_card_height - player_card_gutter) / 2.0,
     };
     let turn_indicator_pos = Vector2 {
         x: canvas.canvas_center.x
-            - PLAYER_CARD_WIDTH * 3.5
-            - PLAYER_CARD_GUTTER * 4.0
+            - player_card_width * 3.5
+            - player_card_gutter * 4.0
             - turn_indicator_size.x,
         y: if player_num == 1 {
-            canvas.canvas_bounds.y - PLAYER_CARD_HEIGHT - PLAYER_CARD_GUTTER
+            canvas.canvas_bounds.y - player_card_height - player_card_gutter
         } else {
-            PLAYER_CARD_GUTTER
+            player_card_gutter
         },
     };
 
@@ -245,17 +274,22 @@ fn draw_turn_indicator() {
 /// draws deck and num cards remaining
 fn draw_deck() {
     let (canvas, game) = unsafe { (CANVAS.as_mut().unwrap(), GAME.as_ref().unwrap()) };
+    let Sizes {
+        width: field_basis_width,
+        height: field_basis_height,
+        gutter: field_basis_gutter,
+    } = canvas.render_constants.field_sizes;
 
     let center = &canvas.canvas_center;
     let deck_pos = Vector2 {
-        x: center.x - FIELD_BASIS_WIDTH * 2.5 - FIELD_BASIS_GUTTER * 2.0,
-        y: center.y - FIELD_BASIS_HEIGHT / 2.0,
+        x: center.x - field_basis_width * 2.5 - field_basis_gutter * 2.0,
+        y: center.y - field_basis_height / 2.0,
     };
     draw_rect(
         deck_pos.x,
         deck_pos.y,
-        FIELD_BASIS_WIDTH,
-        FIELD_BASIS_HEIGHT,
+        field_basis_width,
+        field_basis_height,
         "d=1".to_string(),
     );
 
@@ -266,8 +300,8 @@ fn draw_deck() {
     context
         .fill_text(
             game.deck.len().to_string().as_str(),
-            deck_pos.x + FIELD_BASIS_WIDTH / 2.0,
-            deck_pos.y + FIELD_BASIS_HEIGHT / 2.0,
+            deck_pos.x + field_basis_width / 2.0,
+            deck_pos.y + field_basis_height / 2.0,
         )
         .expect(&format!("Cannot printsize for deck"));
 }
@@ -275,20 +309,30 @@ fn draw_deck() {
 /// draws graveyard and last 3 cards played
 fn draw_graveyard() {
     let (canvas, game) = unsafe { (CANVAS.as_mut().unwrap(), GAME.as_ref().unwrap()) };
+    let Sizes {
+        width: player_card_width,
+        height: player_card_height,
+        ..
+    } = canvas.render_constants.player_sizes;
+    let Sizes {
+        width: field_basis_width,
+        height: field_basis_height,
+        gutter: field_basis_gutter,
+    } = canvas.render_constants.field_sizes;
 
     let center = &canvas.canvas_center;
 
     let card_size = Vector2 {
-        x: PLAYER_CARD_WIDTH * 1.5,
-        y: PLAYER_CARD_HEIGHT * 1.5,
+        x: player_card_width * 1.5,
+        y: player_card_height * 1.5,
     };
     let graveyard_start = Vector2 {
-        x: center.x + FIELD_BASIS_WIDTH * 3.0 - FIELD_BASIS_GUTTER * 2.0,
-        y: center.y - FIELD_BASIS_HEIGHT + FIELD_BASIS_GUTTER / 2.0,
+        x: center.x + field_basis_width * 3.0 - field_basis_gutter * 2.0,
+        y: center.y - field_basis_height + field_basis_gutter / 2.0,
     };
     let graveyard_end = Vector2 {
         x: graveyard_start.x,
-        y: center.y + FIELD_BASIS_GUTTER / 2.0 + FIELD_BASIS_HEIGHT - card_size.y,
+        y: center.y + field_basis_gutter / 2.0 + field_basis_height - card_size.y,
     };
 
     let graveyard = &game.graveyard;
@@ -299,7 +343,7 @@ fn draw_graveyard() {
 
         let id = format!("g={}", i + 1);
         let card_pos = Vector2 {
-            x: graveyard_start.x + FIELD_BASIS_GUTTER / 4.0 * i as f64,
+            x: graveyard_start.x + field_basis_gutter / 4.0 * i as f64,
             y: graveyard_start.y + (graveyard_end.y - graveyard_start.y) / 2.0 * i as f64,
         };
         canvas
@@ -325,8 +369,8 @@ fn draw_graveyard() {
     context
         .fill_text(
             "Last 3 cards played:",
-            graveyard_start.x + FIELD_BASIS_WIDTH / 2.0,
-            graveyard_start.y - FIELD_BASIS_GUTTER / 2.0,
+            graveyard_start.x + field_basis_width / 2.0,
+            graveyard_start.y - field_basis_gutter / 2.0,
         )
         .expect(&format!("Cannot print header for graveyard"));
 }
@@ -345,49 +389,42 @@ fn set_line_dash(context: &CanvasRenderingContext2d, dash_num: u32, dash_size: f
         .expect("Cannot set line dash");
 }
 
-/// renders KaTeX item at pos with given size & id
-fn draw_katex<T>(item: &T, id: String, size: &str, pos: Vector2) -> Element
-where
-    T: ToLatex,
-    T: Clone,
-    T: std::fmt::Debug,
-{
-    let element = render_katex_element(item.clone(), id, size);
-    let style_string = format!("position: absolute; top: {}px; left: {}px;", pos.y, pos.x);
-    element
-        .set_attribute("style", style_string.as_str())
-        .expect(format!("Cannot set style for {:?}", item).as_str());
-
-    element
-}
-
 /// renders 6 field basis slots
 fn draw_field(val: usize, id: String) {
     let (canvas, game) = unsafe { (CANVAS.as_ref().unwrap(), GAME.as_mut().unwrap()) };
     let field = &game.field;
     let context = &canvas.context;
+    let Sizes {
+        width: field_basis_width,
+        height: field_basis_height,
+        gutter: field_basis_gutter,
+    } = canvas.render_constants.field_sizes;
 
     let card_pos = Vector2 {
-        x: canvas.canvas_center.x + ((val % 3) as f64) * (FIELD_BASIS_WIDTH + FIELD_BASIS_GUTTER)
-            - FIELD_BASIS_WIDTH * 1.5
-            - FIELD_BASIS_GUTTER,
-        y: canvas.canvas_center.y + ((val / 3) as f64) * (FIELD_BASIS_HEIGHT + FIELD_BASIS_GUTTER)
-            - FIELD_BASIS_HEIGHT
-            - FIELD_BASIS_GUTTER / 2.0,
+        x: canvas.canvas_center.x + ((val % 3) as f64) * (field_basis_width + field_basis_gutter)
+            - field_basis_width * 1.5
+            - field_basis_gutter,
+        y: canvas.canvas_center.y + ((val / 3) as f64) * (field_basis_height + field_basis_gutter)
+            - field_basis_height
+            - field_basis_gutter / 2.0,
     };
 
     let card = &field[val];
     if card.basis.is_none() {
         set_line_dash(context, 2, 10.0) // set line dash for empty field basis
     }
+    if game.active.selected.contains(&id) {
+        context.set_line_width(5.0);
+    }
     draw_rect(
         card_pos.x,
         card_pos.y,
-        FIELD_BASIS_WIDTH,
-        FIELD_BASIS_HEIGHT,
+        field_basis_width,
+        field_basis_height,
         id.clone(),
     );
     set_line_dash(context, 0, 0.0);
+    context.set_line_width(1.0);
 
     let katex_element_id = format!("katex-item_{}", &id);
     if let Some(basis) = &card.basis {
@@ -396,8 +433,8 @@ fn draw_field(val: usize, id: String) {
             katex_element_id,
             "Huge",
             Vector2 {
-                y: card_pos.y + FIELD_BASIS_HEIGHT / 2.0,
-                x: card_pos.x + FIELD_BASIS_WIDTH / 2.0,
+                y: card_pos.y + field_basis_height / 2.0,
+                x: card_pos.x + field_basis_width / 2.0,
             },
         );
     } else {
@@ -405,44 +442,114 @@ fn draw_field(val: usize, id: String) {
     }
 }
 
+fn get_player_card_bounds(player_num: u32, val: usize) -> (Vector2, Vector2) {
+    let (canvas, game) = unsafe { (CANVAS.as_ref().unwrap(), GAME.as_ref().unwrap()) };
+    let Sizes {
+        width: player_card_width,
+        height: player_card_height,
+        gutter: player_card_gutter,
+    } = canvas.render_constants.player_sizes;
+
+    let (hover_key, hover_val) =
+        get_key_val(game.active.hover.as_ref().unwrap_or(&"p0=69".to_string())); // 69 shall be NULL
+    let hover_player_num = hover_key.chars().nth(1).unwrap().to_digit(10).unwrap();
+
+    let hover_card_size = Vector2 {
+        x: player_card_width + player_card_gutter,
+        y: player_card_height + player_card_gutter,
+    };
+    let card_size = if hover_player_num == player_num && hover_val == val {
+        hover_card_size.clone()
+    } else {
+        Vector2 {
+            x: player_card_width,
+            y: player_card_height,
+        }
+    };
+
+    let start_pos = Vector2 {
+        x: canvas.canvas_center.x
+            - ((player_card_gutter * 6.0 + player_card_width * 6.0) // width of 6 cards
+                + if hover_player_num == player_num && hover_val != 69 { // width of potential hover card
+                    hover_card_size.x
+                } else {
+                    player_card_width
+                })
+                / 2.0, // divide by 2 for distance from center
+        y: if player_num == 1 {
+            canvas.canvas_bounds.y - player_card_gutter - card_size.y // bottom of canvas if p1
+        } else {
+            player_card_gutter // top of canvas if p2
+        },
+    };
+
+    let card_pos = Vector2 {
+        x: start_pos.x
+            + (val as f64) * (player_card_width + player_card_gutter)
+            // add extra space for cards after hover
+            + if hover_player_num == player_num && val > hover_val {
+                hover_card_size.x - player_card_width
+            } else {
+                0.0
+            },
+        y: start_pos.y,
+    };
+
+    (card_pos, card_size)
+}
+
 /// renders player hands
 fn draw_hand(player_num: u32, val: usize, id: String) {
-    let (canvas, game) = unsafe { (CANVAS.as_ref().unwrap(), GAME.as_mut().unwrap()) };
+    let (canvas, game) = unsafe { (CANVAS.as_ref().unwrap(), GAME.as_ref().unwrap()) };
+    let (card_pos, card_size) = get_player_card_bounds(player_num, val);
+    if game.active.selected.contains(&id) {
+        canvas.context.set_line_width(5.0);
+    }
+    draw_rect(card_pos.x, card_pos.y, card_size.x, card_size.y, id.clone());
+    if game.active.selected.contains(&id) {
+        canvas.context.set_line_width(1.0);
+    }
+}
+
+pub fn render_player_katex() {
+    for i in 1..=2 {
+        for j in 0..7 {
+            render_player_katex_item(i, j, format!("p{}={}", i, j));
+        }
+    }
+}
+
+fn render_player_katex_item(player_num: u32, val: usize, id: String) {
+    let (canvas, game) = unsafe { (CANVAS.as_ref().unwrap(), GAME.as_ref().unwrap()) };
+    let Sizes {
+        gutter: player_card_gutter,
+        ..
+    } = canvas.render_constants.player_sizes;
     let hand = if player_num == 1 {
         &game.player_1
     } else {
         &game.player_2
     };
 
-    let y_pos = if player_num == 1 {
-        canvas.canvas_bounds.y - PLAYER_CARD_GUTTER - PLAYER_CARD_HEIGHT
-    } else {
-        PLAYER_CARD_GUTTER
-    };
+    let (card_pos, card_size) = get_player_card_bounds(player_num, val);
 
-    let card = &hand[val];
-    let card_pos = Vector2 {
-        x: canvas.canvas_center.x - (PLAYER_CARD_WIDTH * 3.5) - PLAYER_CARD_GUTTER * 3.0
-            + (val as f64) * (PLAYER_CARD_WIDTH + PLAYER_CARD_GUTTER),
-        y: y_pos,
-    };
-
-    draw_rect(
-        card_pos.x,
-        card_pos.y,
-        PLAYER_CARD_WIDTH,
-        PLAYER_CARD_HEIGHT,
-        id.clone(),
-    );
-
-    let katex_element_id = format!("katex-item_{}", &id);
-    draw_katex(
-        card,
-        katex_element_id,
-        "Large",
+    draw_player_card_katex(
+        &hand[val],
+        id,
+        // middle of card
         Vector2 {
-            y: card_pos.y + PLAYER_CARD_HEIGHT / 2.0,
-            x: card_pos.x + PLAYER_CARD_WIDTH / 2.0,
+            x: card_pos.x + card_size.x / 2.0,
+            y: card_pos.y + card_size.y / 2.0,
         },
-    );
+        // top left of card
+        Vector2 {
+            x: card_pos.x + player_card_gutter * 0.75,
+            y: card_pos.y + player_card_gutter * 0.75,
+        },
+        // bottom right of card
+        Vector2 {
+            x: card_pos.x + card_size.x - player_card_gutter * 0.75,
+            y: card_pos.y + card_size.y - player_card_gutter * 0.75,
+        },
+    )
 }

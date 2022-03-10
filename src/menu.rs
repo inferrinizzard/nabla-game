@@ -3,10 +3,12 @@ use std::collections::HashMap;
 // wasm-bindgen imports
 use gloo::events::EventListener;
 use wasm_bindgen::JsCast;
-use web_sys::{Document, Element};
+use web_sys::{Document, Element, HtmlInputElement};
 // outer crate imports
 use crate::game::flags::*;
 use crate::game::structs::{Game, GameState};
+use crate::render::katex::clear_katex_element;
+use crate::render::render_constants::{PLAYER_1_COLOUR, PLAYER_2_COLOUR};
 // root imports
 use super::{GAME, MENU};
 
@@ -64,6 +66,10 @@ impl Menu {
                     menu_ref.unwrap().activate("MENU".to_string());
                     unsafe {
                         GAME = Some(Game::new());
+                        // clear graveyard katex items
+                        ["g=1", "g=2", "g=3"].iter().for_each(|id| {
+                            clear_katex_element(format!("katex-item_{}", id));
+                        })
                     }
                 }
             },
@@ -165,6 +171,9 @@ impl MainMenu {
 pub struct SettingsMenu {
     checkboxes: Vec<Element>,
     checkbox_listeners: HashMap<String, EventListener>,
+
+    colours: Vec<Element>,
+    colour_listeners: HashMap<String, EventListener>,
 }
 
 impl SettingsMenu {
@@ -175,63 +184,74 @@ impl SettingsMenu {
             "ALLOW_LINEAR_DEPENDENCE",
             "ALLOW_LIMITS_BEYOND_BOUNDS",
             "FULL_COMPUTE",
+            "USE_FRACTIONAL_EXPONENTS",
             "LIMIT_FIELD_BASIS",
         ]
         .iter()
         .map(|state| {
             document
-                .get_element_by_id(&format!("checkbox-{}", state).to_owned()[..])
+                .get_element_by_id(format!("checkbox-{}", state).as_str())
                 .unwrap()
         })
         .collect();
 
         let mut checkbox_listeners: HashMap<String, EventListener> = HashMap::new();
         for element in checkboxes.iter() {
-            let element_target = element.dyn_ref::<Element>().unwrap();
-            let target_id = element_target.id();
+            let listener = EventListener::new(element, "change", move |e| {
+                let event_target = e.target().unwrap();
+                let event_target_element = event_target.dyn_ref::<HtmlInputElement>().unwrap();
 
-            // set initial checked value
-            unsafe {
-                let flag = match target_id.split("-").nth(1).unwrap() {
-                    "DISPLAY_LN_FOR_LOG" => DISPLAY_LN_FOR_LOG,
-                    "ALLOW_LINEAR_DEPENDENCE" => ALLOW_LINEAR_DEPENDENCE,
-                    "ALLOW_LIMITS_BEYOND_BOUNDS" => ALLOW_LIMITS_BEYOND_BOUNDS,
-                    "FULL_COMPUTE" => FULL_COMPUTE,
-                    "LIMIT_FIELD_BASIS" => LIMIT_FIELD_BASIS,
-                    _ => false,
-                };
-                if flag {
-                    element_target
-                        .set_attribute("checked", "true")
-                        .expect(format!("Failed to set checkbox {}", target_id).as_str());
-                }
-            }
-
-            let listener = EventListener::new(element, "change", move |_e| {
                 // split id from 'checkbox-FLAG'
+                let target_id = event_target_element.id();
                 let flag_name = target_id.split("-").nth(1).unwrap();
+                let flag_value = event_target_element.checked();
 
                 unsafe {
                     match flag_name {
-                        "DISPLAY_LN_FOR_LOG" => DISPLAY_LN_FOR_LOG = !DISPLAY_LN_FOR_LOG,
-                        "ALLOW_LINEAR_DEPENDENCE" => {
-                            ALLOW_LINEAR_DEPENDENCE = !ALLOW_LINEAR_DEPENDENCE
-                        }
-                        "ALLOW_LIMITS_BEYOND_BOUNDS" => {
-                            ALLOW_LIMITS_BEYOND_BOUNDS = !ALLOW_LIMITS_BEYOND_BOUNDS
-                        }
-                        "FULL_COMPUTE" => FULL_COMPUTE = !FULL_COMPUTE,
-                        "LIMIT_FIELD_BASIS" => LIMIT_FIELD_BASIS = !LIMIT_FIELD_BASIS,
+                        "DISPLAY_LN_FOR_LOG" => DISPLAY_LN_FOR_LOG = flag_value,
+                        "ALLOW_LINEAR_DEPENDENCE" => ALLOW_LINEAR_DEPENDENCE = flag_value,
+                        "ALLOW_LIMITS_BEYOND_BOUNDS" => ALLOW_LIMITS_BEYOND_BOUNDS = flag_value,
+                        "FULL_COMPUTE" => FULL_COMPUTE = flag_value,
+                        "USE_FRACTIONAL_EXPONENTS" => USE_FRACTIONAL_EXPONENTS = flag_value,
+                        "LIMIT_FIELD_BASIS" => LIMIT_FIELD_BASIS = flag_value,
                         _ => panic!("Unknown flag name: {}", flag_name),
                     }
                 }
             });
-            checkbox_listeners.insert(element_target.id(), listener);
+            checkbox_listeners.insert(element.id(), listener);
+        }
+
+        let colours: Vec<Element> = vec!["PLAYER_1", "PLAYER_2"]
+            .iter()
+            .map(|state| {
+                document
+                    .get_element_by_id(format!("colour-{}", state).as_str())
+                    .unwrap()
+            })
+            .collect();
+
+        let mut colour_listeners: HashMap<String, EventListener> = HashMap::new();
+        for i in 0..2 {
+            let player_target = colours[i].dyn_ref::<Element>().unwrap();
+            let listener = EventListener::new(&colours[i], "change", move |e| {
+                let event_target = e.target().unwrap();
+                let player_colour = event_target.dyn_ref::<HtmlInputElement>().unwrap().value();
+                unsafe {
+                    if i == 0 {
+                        PLAYER_1_COLOUR = Box::leak(player_colour.clone().into_boxed_str());
+                    } else {
+                        PLAYER_2_COLOUR = Box::leak(player_colour.clone().into_boxed_str());
+                    }
+                }
+            });
+            colour_listeners.insert(player_target.id(), listener);
         }
 
         Self {
             checkboxes,
             checkbox_listeners,
+            colours,
+            colour_listeners,
         }
     }
 }

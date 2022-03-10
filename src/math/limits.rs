@@ -1,10 +1,8 @@
 // outer crate imports
-use crate::basis::{
-    builders::{AddBasisNode, MultBasisNode},
-    structs::*,
-};
+use crate::basis::{builders::*, structs::*};
 use crate::cards::LimitCard;
 use crate::game::flags::ALLOW_LIMITS_BEYOND_BOUNDS;
+use crate::math::logarithm::logarithm;
 
 /// find limits of arccos and arcsin
 fn limit_arccos_arcsin(
@@ -76,10 +74,9 @@ pub fn limit(limit_card: &LimitCard) -> impl Fn(&Basis) -> Option<Basis> {
 
                         // short circuit 0 or INF or -INF
                         let try_inf = operand_limits.iter().find(|op| {
-                            op.as_ref().unwrap().is_inf(1)
-                                || op.as_ref().unwrap().is_inf(-1)
-                                || (*operator == BasisOperator::Mult
-                                    && op.as_ref().unwrap().is_num(0))
+                            let op = op.as_ref().unwrap();
+                            (op.is_inf(1) || op.is_inf(-1))
+                                || (*operator == BasisOperator::Mult && op.is_num(0))
                         });
                         if try_inf.is_some() {
                             return Some(try_inf.unwrap().as_ref().unwrap().clone());
@@ -131,7 +128,14 @@ pub fn limit(limit_card: &LimitCard) -> impl Fn(&Basis) -> Option<Basis> {
                         {
                             return Some(base_limit.unwrap() ^ (frac.n, frac.d));
                         }
-                        Some(Basis::from(*coefficient)) // should be coefficient * e^(some constant)
+
+                        match operands[0] {
+                            Basis::BasisLeaf(BasisLeaf {
+                                element: BasisElement::Num,
+                                ..
+                            }) => Some(basis.clone()),
+                            _ => Some((base_limit.unwrap() ^ *frac) * *coefficient),
+                        }
                     }
                     BasisOperator::E => {
                         if base_limit.is_none() {
@@ -142,7 +146,7 @@ pub fn limit(limit_card: &LimitCard) -> impl Fn(&Basis) -> Option<Basis> {
                         } else if base_limit.as_ref().unwrap().is_inf(-1) {
                             return Some(Basis::from(0));
                         }
-                        Some(Basis::from(*coefficient)) // should be coefficient * e^(some constant)
+                        Some(EBasisNode(&base_limit.unwrap()) * *coefficient)
                     }
                     BasisOperator::Log => {
                         if base_limit.is_none() || base_limit.as_ref().unwrap().is_inf(-1) {
@@ -152,7 +156,13 @@ pub fn limit(limit_card: &LimitCard) -> impl Fn(&Basis) -> Option<Basis> {
                         } else if base_limit.as_ref().unwrap().is_num(0) {
                             return Some(Basis::inf(-1));
                         }
-                        Some(Basis::from(*coefficient)) // should be coefficient * log(some constant)
+                        match operands[0] {
+                            Basis::BasisLeaf(BasisLeaf {
+                                element: BasisElement::Num,
+                                ..
+                            }) => Some(basis.clone()),
+                            _ => Some(logarithm(&base_limit.unwrap()) * *coefficient),
+                        }
                     }
                     BasisOperator::Cos | BasisOperator::Sin => {
                         if matches!(limit_card, LimitCard::LimPosInf | LimitCard::LimNegInf) {
@@ -168,7 +178,11 @@ pub fn limit(limit_card: &LimitCard) -> impl Fn(&Basis) -> Option<Basis> {
                                 return Some(Basis::from(0));
                             }
                         }
-                        Some(Basis::from(*coefficient)) // coefficient * some cos(n) | sin(n)
+                        if *operator == BasisOperator::Cos {
+                            Some(CosBasisNode(&base_limit.unwrap()) * *coefficient)
+                        } else {
+                            Some(SinBasisNode(&base_limit.unwrap()) * *coefficient)
+                        }
                     }
                     BasisOperator::Acos | BasisOperator::Asin => {
                         let flag = unsafe { ALLOW_LIMITS_BEYOND_BOUNDS };
@@ -200,7 +214,7 @@ pub fn limit(limit_card: &LimitCard) -> impl Fn(&Basis) -> Option<Basis> {
                     }
                     BasisOperator::Int => {
                         // assume that the limits of integration are from 0 to x for INF, x to 0 for -INF, what for 0?
-                        let res = integral_limit(basis);
+                        let _res = integral_limit(basis);
                         Some(Basis::from(0))
                     }
                 }
@@ -210,6 +224,6 @@ pub fn limit(limit_card: &LimitCard) -> impl Fn(&Basis) -> Option<Basis> {
 }
 
 /// calculates integral limits using squeeze theorem and comparing to a smaller/larger function with known limit
-fn integral_limit(basis: &Basis) -> Option<Basis> {
+fn integral_limit(_basis: &Basis) -> Option<Basis> {
     None
 }

@@ -12,7 +12,7 @@ fn operator_inverse(operator: BasisOperator) -> Option<BasisOperator> {
         BasisOperator::Acos => Some(BasisOperator::Cos),
         BasisOperator::Sin => Some(BasisOperator::Asin),
         BasisOperator::Asin => Some(BasisOperator::Sin),
-        BasisOperator::Pow(Fraction { n, d }) => Some(BasisOperator::Pow(Fraction { n: d, d: n })),
+        BasisOperator::Pow(Fraction { n, d }) => Some(BasisOperator::Pow(Fraction::from((d, n)))),
         _ => None,
     }
 }
@@ -27,15 +27,15 @@ pub fn inverse(basis: &Basis) -> Basis {
         return basis.clone();
     }
 
-    let mut operator_stack = vec![];
-    let mut ptr = basis.clone();
+    let mut operator_stack: Vec<(Fraction, BasisOperator)> = vec![];
+    let mut ptr = basis;
     let mut add_ops = vec![];
     // drill down to base leaf
     while let Basis::BasisNode(BasisNode {
         operator,
         operands,
         coefficient,
-    }) = ptr.clone()
+    }) = ptr
     {
         match operator {
             // only matches f(x) + integers
@@ -45,30 +45,25 @@ pub fn inverse(basis: &Basis) -> Basis {
             {
                 // n + f(x)
                 if operands[0].is_frac(operands[0].coefficient()) {
-                    ptr = operands[1].clone();
+                    ptr = &operands[1];
                     add_ops.push(operands[0].clone());
                 }
                 // f(x) + n
                 else {
-                    ptr = operands[0].clone();
+                    ptr = &operands[0];
                     add_ops.push(operands[1].clone());
                 }
-                operator_stack.push((Fraction::from(1), operator));
+                operator_stack.push((Fraction::from(1), *operator));
             }
-            BasisOperator::Inv => operator_stack.push((coefficient, operator)),
+            BasisOperator::Inv => operator_stack.push((*coefficient, *operator)),
             _ => {
-                let try_operator_inverse = operator_inverse(operator);
+                let try_operator_inverse = operator_inverse(*operator);
                 // all other operators are non-invertible
                 if try_operator_inverse.is_none() {
                     return InvBasisNode(basis);
                 }
-                let base = operands[0].clone();
-                if operator == BasisOperator::E && base.coefficient() != 1 {
-                    operator_stack
-                        .push((Fraction::from(1), BasisOperator::Pow(base.coefficient())));
-                }
-                operator_stack.push((coefficient, operator));
-                ptr = base;
+                operator_stack.push((*coefficient, *operator));
+                ptr = &operands[0];
             }
         }
     }
@@ -98,5 +93,5 @@ pub fn inverse(basis: &Basis) -> Basis {
         }
     }
 
-    out
+    out / ptr.coefficient() // divide by coefficient from base ptr
 }

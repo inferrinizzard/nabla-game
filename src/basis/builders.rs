@@ -397,12 +397,14 @@ fn assemble_mult(coefficient: Fraction, numerator: Vec<Basis>, denominator: Vec<
             coefficient: Fraction::from(1),
             operator: BasisOperator::Div,
             operands: vec![
-                if final_numerator.len() > 0 {
+                if final_numerator.len() > 1 {
                     Basis::BasisNode(BasisNode {
                         coefficient: Fraction::from(final_coefficient.n),
                         operator: BasisOperator::Mult,
                         operands: final_numerator,
                     })
+                } else if final_numerator.len() == 1 {
+                    final_numerator[0].clone() * final_coefficient.n
                 } else {
                     Basis::from(final_coefficient.n)
                 },
@@ -548,11 +550,30 @@ pub fn PowBasisNode(n: i32, d: i32, base: &Basis) -> Basis {
                 if pow == 1 {
                     return Basis::x();
                 }
-                return Basis::BasisNode(BasisNode {
-                    coefficient: *inner_coefficient ^ pow.n, // TODO:C handle fractional roots
-                    operator: BasisOperator::Pow(pow),
-                    operands: vec![Basis::x()],
-                });
+                if pow.d == 1 || *inner_coefficient == 1 {
+                    return Basis::BasisNode(BasisNode {
+                        coefficient: *inner_coefficient ^ pow.n,
+                        operator: BasisOperator::Pow(pow),
+                        operands: vec![Basis::x()],
+                    });
+                } else {
+                    return Basis::BasisNode(BasisNode {
+                        coefficient: Fraction::from(1),
+                        operator: BasisOperator::Mult,
+                        operands: vec![
+                            Basis::BasisNode(BasisNode {
+                                coefficient: Fraction::from(1),
+                                operator: BasisOperator::Pow(Fraction::from((n, d))),
+                                operands: vec![Basis::from(*inner_coefficient)],
+                            }),
+                            Basis::BasisNode(BasisNode {
+                                coefficient: Fraction::from(1),
+                                operator: BasisOperator::Pow(pow),
+                                operands: vec![Basis::x()],
+                            }),
+                        ],
+                    });
+                }
             }
             BasisOperator::Pow(inner_pow) if pow * *inner_pow == 1 => {
                 return inner_operands[0].clone();
@@ -575,11 +596,30 @@ pub fn PowBasisNode(n: i32, d: i32, base: &Basis) -> Basis {
         _ => {}
     }
 
-    Basis::BasisNode(BasisNode {
-        coefficient: base.coefficient() ^ pow.n, // TODO:C handle fractional roots
-        operator: BasisOperator::Pow(pow),
-        operands: vec![base.clone()],
-    })
+    if pow.d == 1 || base.coefficient() == 1 {
+        Basis::BasisNode(BasisNode {
+            coefficient: base.coefficient() ^ pow.n,
+            operator: BasisOperator::Pow(pow),
+            operands: vec![base.clone()],
+        })
+    } else {
+        Basis::BasisNode(BasisNode {
+            coefficient: Fraction::from(1),
+            operator: BasisOperator::Mult,
+            operands: vec![
+                Basis::BasisNode(BasisNode {
+                    coefficient: Fraction::from(1),
+                    operator: BasisOperator::Pow(Fraction::from((n, d))),
+                    operands: vec![Basis::from(base.coefficient())],
+                }),
+                Basis::BasisNode(BasisNode {
+                    coefficient: Fraction::from(1),
+                    operator: BasisOperator::Pow(pow),
+                    operands: vec![base.with_coefficient(1)],
+                }),
+            ],
+        })
+    }
 }
 
 /// handles Sqrt exponents, wrapper for PowBasisNode
@@ -591,8 +631,12 @@ pub fn SqrtBasisNode(n: i32, base: &Basis) -> Basis {
 /// handles Log BasisNodes
 #[allow(non_snake_case)]
 pub fn LogBasisNode(base: &Basis) -> Basis {
+    // log(1) = 0
+    if base.is_num(1) {
+        return Basis::from(0);
+    }
     // log(e^x) = x
-    if let Basis::BasisNode(BasisNode {
+    else if let Basis::BasisNode(BasisNode {
         coefficient: e_coefficient,
         operator: BasisOperator::E,
         operands: e_operands,
@@ -609,7 +653,6 @@ pub fn LogBasisNode(base: &Basis) -> Basis {
         return Basis::inf(-1);
     }
 
-    // TODO:D base.clone() + logarithm(base.coefficient())]) // could use a log node here
     Basis::BasisNode(BasisNode {
         coefficient: Fraction::from(1),
         operator: BasisOperator::Log,
@@ -620,6 +663,10 @@ pub fn LogBasisNode(base: &Basis) -> Basis {
 /// handles E BasisNodes, simple constructor for E BasisNodes
 #[allow(non_snake_case)]
 pub fn EBasisNode(operand: &Basis) -> Basis {
+    if operand.is_num(0) {
+        return Basis::from(1);
+    }
+
     Basis::BasisNode(BasisNode {
         coefficient: Fraction::from(1),
         operator: BasisOperator::E,

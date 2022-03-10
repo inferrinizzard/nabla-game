@@ -6,7 +6,7 @@ use crate::cards::*;
 use crate::game::{field::FieldBasis, flags::ALLOW_LINEAR_DEPENDENCE, structs::*};
 use crate::render::render;
 // root imports
-use super::GAME;
+use crate::GAME;
 // util imports
 use crate::util::get_key_val;
 
@@ -62,7 +62,7 @@ pub fn branch_turn_phase(id: String, player_num: u32) {
         TurnPhase::MULTISELECT(multi_operator) => {
             multi_select_phase(multi_operator, id, player_num)
         }
-        _ => unreachable!("Turn Phase Error: received {} on turn {:?}", id, turn),
+        _ => {} // js_log!("Turn Phase Error: received {} on turn {:?}", id, turn),
     }
 }
 
@@ -149,7 +149,7 @@ fn select_turn_phase(select_operator: Card, (id_key, id_val): (String, usize)) {
 }
 
 /// handles field select turn phase, player can choose side of field to target with selected card
-fn field_select_phase(field_operator: Card, (id_key, id_val): (String, usize)) {
+fn field_select_phase(field_operator: Card, (_id_key, id_val): (String, usize)) {
     let card_range = if id_val < 3 { 0..3 } else { 3..6 };
     // for each basis on one half of the field
     for i in card_range {
@@ -216,28 +216,41 @@ fn multi_select_phase(multi_operator: Card, id: String, player_num: u32) {
         &mut game.player_2
     };
     let field = &mut game.field;
+    let selected = &mut game.active.selected;
     let (id_key, id_val) = get_key_val(&id);
     if id_key == "f"
         || (id_key == format!("p{}", player_num) && matches!(player[id_val], Card::BasisCard(_)))
     {
-        game.active.selected.push(id.to_string());
+        selected.push(id.to_string());
+        render::draw();
         // console::log_1(&JsValue::from(format!("added to multiselect: {}", id)));
     }
 
-    // TODO: prevent 0 * all or 0 / all
-    if id_key == "x"
-        && id_val == 1
-        && game // must have at least 1 field basis
-            .active
-            .selected
+    let has_at_least_1_field_basis = selected
+        .iter()
+        .find(|sel_id| sel_id.as_str().starts_with("f"))
+        .is_some();
+    let has_at_least_2_basis = selected.len() >= 3; // add one for operator
+    let has_zero_with_many = selected.len() != 3
+        && selected
             .iter()
-            .find(|sel_id| sel_id.as_str().starts_with("f"))
-            .is_some()
+            .find(|sel_id| {
+                sel_id.as_str().starts_with("p") // must be a player card
+                    && matches!( // corresponding player card is zero
+                        player[get_key_val(sel_id).1],
+                        Card::BasisCard(BasisCard::Zero)
+                    )
+            })
+            .is_some();
+
+    if (id_key == "x" && id_val == 1)
+        && has_at_least_1_field_basis
+        && !has_zero_with_many
+        && has_at_least_2_basis
     {
         let result_basis = apply_multi_card(
             &multi_operator,
-            game.active
-                .selected
+            selected
                 .iter()
                 .filter_map(|sel_id| {
                     let (sel_key, sel_val) = get_key_val(&sel_id);
@@ -256,9 +269,7 @@ fn multi_select_phase(multi_operator: Card, id: String, player_num: u32) {
                 })
                 .collect::<Vec<Basis>>(),
         );
-        let used_field_bases = game
-            .active
-            .selected
+        let used_field_bases = selected
             .iter()
             .filter_map(|sel_id| {
                 let (sel_key, sel_val) = get_key_val(&sel_id);
@@ -273,8 +284,9 @@ fn multi_select_phase(multi_operator: Card, id: String, player_num: u32) {
             .for_each(|field_index| field[*field_index] = FieldBasis::none());
         if result_basis.is_num(0) {
             field[used_field_bases[0]] = FieldBasis::none();
+        } else {
+            field[used_field_bases[0]] = FieldBasis::new(&result_basis); // assign result basis to any newly empty field
         }
-        field[used_field_bases[0]] = FieldBasis::new(&result_basis); // assign result basis to any newly empty field
         end_turn();
     }
 }
@@ -368,6 +380,9 @@ pub fn next_turn() {
     };
     game.active.clear();
     render::draw();
+
+    // render player hand katex
+    render::render_player_katex();
 
     let field = game.field.basis.iter();
     if field.clone().take(3).all(|f| f.basis.is_none()) {

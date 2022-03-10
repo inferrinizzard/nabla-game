@@ -18,12 +18,12 @@ export const js_render_katex = str => {
 /**
  * Finds the element with id `id`, creating one if not present and renders a KaTeX expression to it
  * @param {String} str - The KaTeX expression to render
- * @param {String} id - The id of the element on whcih to render the expression
+ * @param {String} id - The id of the element on which to render the expression
  * @returns DOMElement - The rendered element
  */
 export const js_render_katex_element = (str, id) => {
 	let element = document.getElementById(id);
-	if (!element) {
+	if (!element && str.length) {
 		element = document.createElement('div');
 		element.className += 'katex-item';
 		element.id = id;

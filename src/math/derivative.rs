@@ -45,7 +45,7 @@ pub fn derivative(basis: &Basis) -> Basis {
             }
             // chain rule, f'(e^f(y)) = f'(y)e^f(y)
             BasisOperator::E => derivative(&operands[0]) * EBasisNode(&operands[0]) * *coefficient,
-            // log rule, du/u
+            // log rule, f'(log(f(x))) = f'(x)/f(x)
             BasisOperator::Log => {
                 let u = operands[0].clone();
                 (derivative(&u) * coefficient.n) / (u * coefficient.d)
@@ -58,12 +58,12 @@ pub fn derivative(basis: &Basis) -> Basis {
             BasisOperator::Sin => {
                 derivative(&operands[0]) * CosBasisNode(&operands[0]) * *coefficient
             }
-            // d/dx arccos(f(x))|arcsin(f(x)) = -f'(x)/sqrt(1-f(x)^2)
+            // d/dx arccos(f(x)) = -f'(x)/sqrt(1-f(x)^2)
             BasisOperator::Acos => {
                 (-operands[0].clone() * coefficient.n)
                     / (((Basis::from(1) - (operands[0].clone() ^ 2)) ^ (1, 2)) * coefficient.d)
             }
-            // d/dx arccos(f(x))|arcsin(f(x)) = -f'(x)/sqrt(1-f(x)^2)
+            // d/dx arcsin(f(x)) = f'(x)/sqrt(1-f(x)^2)
             BasisOperator::Asin => {
                 (operands[0].clone() * coefficient.n)
                     / (((Basis::from(1) - (operands[0].clone() ^ 2)) ^ (1, 2)) * coefficient.d)

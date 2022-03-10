@@ -4,9 +4,10 @@ use std::collections::HashMap;
 use gloo::events::EventListener;
 use wasm_bindgen::JsCast;
 use web_sys::*;
-// root imports
-use super::util::Vector2;
-use super::CANVAS;
+// outer crate imports
+use crate::render::render_constants::*;
+// util imports
+use crate::util::Vector2;
 
 /// Controller for canvas elements, related contexts, and event listeners
 pub struct Canvas {
@@ -20,6 +21,9 @@ pub struct Canvas {
     pub hit_region_map: HashMap<String, String>,
 
     pub mousedown_listener: Option<EventListener>,
+    pub mousemove_listener: Option<EventListener>,
+
+    pub render_constants: RenderConstants,
 }
 
 impl Canvas {
@@ -70,6 +74,11 @@ impl Canvas {
             hit_context,
             hit_region_map,
             mousedown_listener: None,
+            mousemove_listener: None,
+            render_constants: RenderConstants {
+                field_sizes: Sizes::default(),
+                player_sizes: Sizes::default(),
+            },
         }
     }
 
@@ -85,10 +94,11 @@ impl Canvas {
         self.hit_canvas_element.set_height(inner_height);
 
         self.rebounds();
+        self.update_render_constants();
     }
 
     /// recalculate canvas bounds and center on resize
-    pub fn rebounds(&mut self) {
+    fn rebounds(&mut self) {
         let canvas_bounds = Vector2 {
             x: f64::from(self.canvas_element.width()),
             y: f64::from(self.canvas_element.height()),
@@ -101,5 +111,32 @@ impl Canvas {
 
         self.canvas_bounds = canvas_bounds;
         self.canvas_center = canvas_center;
+    }
+
+    /// update sizes for player cards and field bases
+    fn update_render_constants(&mut self) {
+        let player_card_height = rem_to_px(String::from("9rem"));
+        let player_card_width = player_card_height * 0.75;
+        let gutter = player_card_width / 4.0;
+
+        // TODO: add balancing and min sizes for smaller screens
+        let field_gutter = gutter * 2.0;
+        let field_basis_height =
+            (self.canvas_bounds.y - player_card_height * 2.0 - gutter * 2.0 - field_gutter * 3.0)
+                / 2.0;
+        let field_basis_width = field_basis_height * 0.75;
+
+        self.render_constants = RenderConstants {
+            field_sizes: Sizes {
+                width: field_basis_width,
+                height: field_basis_height,
+                gutter: field_gutter,
+            },
+            player_sizes: Sizes {
+                width: player_card_width,
+                height: player_card_height,
+                gutter,
+            },
+        };
     }
 }

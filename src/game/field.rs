@@ -67,6 +67,8 @@ impl Field {
                 .insert(self.inverses[basis].clone(), basis.clone());
             self.basis[i].basis = Some(self.inverses[basis].clone());
         }
+
+        self.basis[i].history = HashMap::default();
     }
 }
 
