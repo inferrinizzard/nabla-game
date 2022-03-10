@@ -9,7 +9,6 @@ use crate::render::render;
 use crate::GAME;
 // util imports
 use crate::util::get_key_val;
-use crate::util::js_log;
 
 /// delegates event handling based on turn num
 pub fn handle_mousedown(id: String) {
@@ -150,7 +149,7 @@ fn select_turn_phase(select_operator: Card, (id_key, id_val): (String, usize)) {
 }
 
 /// handles field select turn phase, player can choose side of field to target with selected card
-fn field_select_phase(field_operator: Card, (id_key, id_val): (String, usize)) {
+fn field_select_phase(field_operator: Card, (_id_key, id_val): (String, usize)) {
     let card_range = if id_val < 3 { 0..3 } else { 3..6 };
     // for each basis on one half of the field
     for i in card_range {

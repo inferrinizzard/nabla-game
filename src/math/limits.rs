@@ -214,7 +214,7 @@ pub fn limit(limit_card: &LimitCard) -> impl Fn(&Basis) -> Option<Basis> {
                     }
                     BasisOperator::Int => {
                         // assume that the limits of integration are from 0 to x for INF, x to 0 for -INF, what for 0?
-                        let res = integral_limit(basis);
+                        let _res = integral_limit(basis);
                         Some(Basis::from(0))
                     }
                 }
@@ -224,6 +224,6 @@ pub fn limit(limit_card: &LimitCard) -> impl Fn(&Basis) -> Option<Basis> {
 }
 
 /// calculates integral limits using squeeze theorem and comparing to a smaller/larger function with known limit
-fn integral_limit(basis: &Basis) -> Option<Basis> {
+fn integral_limit(_basis: &Basis) -> Option<Basis> {
     None
 }
