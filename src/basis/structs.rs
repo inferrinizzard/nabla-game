@@ -483,61 +483,24 @@ impl PartialEq for BasisNode {
         if self.operator != other.operator {
             return false;
         }
-        // Basis cannot be sorted so we sort stringwise
-        let (mut self_string_operands, self_node_operands) =
-            self.operands
-                .iter()
-                .fold((vec![], vec![]), |(mut strs, mut nodes), op| {
-                    match op {
-                        Basis::BasisNode(basis_node)
-                            if matches!(
-                                basis_node.operator,
-                                BasisOperator::Mult
-                                    | BasisOperator::Div
-                                    | BasisOperator::Add
-                                    | BasisOperator::Minus
-                            ) =>
-                        {
-                            nodes.push(basis_node)
-                        }
-                        _ => strs.push(op.to_string()),
-                    }
-                    (strs, nodes)
-                });
-        self_string_operands.sort();
-        let (mut other_string_operands, other_node_operands) =
-            other
-                .operands
-                .iter()
-                .fold((vec![], vec![]), |(mut strs, mut nodes), op| {
-                    match op {
-                        Basis::BasisNode(basis_node)
-                            if matches!(
-                                basis_node.operator,
-                                BasisOperator::Mult
-                                    | BasisOperator::Div
-                                    | BasisOperator::Add
-                                    | BasisOperator::Minus
-                            ) =>
-                        {
-                            nodes.push(basis_node)
-                        }
-                        _ => strs.push(op.to_string()),
-                    }
-                    (strs, nodes)
-                });
-        other_string_operands.sort();
-
-        if self_string_operands != other_string_operands {
+        if self.operands.len() != other.operands.len() {
             return false;
         }
 
-        // assumes no duplicates
-        self_node_operands.iter().all(|self_op| {
-            other_node_operands
-                .iter()
-                .any(|other_op| self_op == other_op)
-        })
+        if self.operator == BasisOperator::Div {
+            // compare numerator & denominator
+            if self.operands[0] != other.operands[0] || self.operands[1] != other.operands[1] {
+                return false;
+            } else if self.operands[0] == other.operands[0] && self.operands[1] == other.operands[1]
+            {
+                return true;
+            }
+        }
+
+        // no duplicate operands
+        self.operands
+            .iter()
+            .all(|self_op| other.operands.iter().any(|other_op| self_op == other_op))
     }
 }
 
