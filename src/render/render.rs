@@ -61,11 +61,9 @@ pub fn render_play_screen() {
         }
         context.set_stroke_style(&JsValue::from("#000"));
     }
-    render_item("d=1".to_string());
-    render_item("x=0".to_string());
-    render_item("x=1".to_string());
-    render_item("g=0".to_string());
-    render_item("t=0".to_string());
+    ["d=1", "x=0", "x=1", "g=0", "t=0"].iter().for_each(|id| {
+        render_item(id.to_string());
+    });
 }
 
 /// id-based render, dispatches to component render fns based on id
@@ -73,19 +71,14 @@ fn render_item(id: String) {
     let (key, val) = get_key_val(&id);
 
     match key.as_str() {
-        "d" => draw_deck(),
-        "g" => draw_graveyard(),
+        "d" => draw_deck(id),
+        "g" => draw_graveyard(id),
         "f" => draw_field(val, id),
         "p1" => draw_hand(1, val, id),
         "p2" => draw_hand(2, val, id),
-        "t" => draw_turn_indicator(),
-        "x" => {
-            if val == 0 {
-                draw_cancel();
-            } else if val == 1 {
-                draw_multi_done();
-            }
-        }
+        "t" => draw_turn_indicator(id),
+        "x" if val == 0 => draw_cancel(id),
+        "x" if val == 1 => draw_multi_done(id),
         _ => {}
     }
 }
@@ -140,7 +133,7 @@ fn draw_rect(x: f64, y: f64, width: f64, height: f64, radius: f64, id: String) {
 }
 
 /// draws the escape button for SELECT phase
-fn draw_cancel() {
+fn draw_cancel(id: String) {
     let (canvas, game) = unsafe { (CANVAS.as_mut().unwrap(), GAME.as_ref().unwrap()) };
     if game.active.selected.is_empty() {
         return;
@@ -172,7 +165,7 @@ fn draw_cancel() {
         cancel_size.x,
         cancel_size.y,
         player_card_radius / 2.0,
-        "x=0".to_string(),
+        id,
     );
 
     let context = &mut canvas.context;
@@ -190,7 +183,7 @@ fn draw_cancel() {
 }
 
 /// draws the button that ends MULTI_SELECT phase
-fn draw_multi_done() {
+fn draw_multi_done(id: String) {
     let (canvas, game) = unsafe { (CANVAS.as_mut().unwrap(), GAME.as_ref().unwrap()) };
     if !matches!(game.turn.phase, TurnPhase::MULTISELECT(_)) {
         return;
@@ -222,7 +215,7 @@ fn draw_multi_done() {
         multidone_size.x,
         multidone_size.y,
         player_card_radius / 2.0,
-        "x=1".to_string(),
+        id,
     );
 
     let context = &mut canvas.context;
@@ -240,7 +233,7 @@ fn draw_multi_done() {
 }
 
 /// draw marker to show whose turn it is
-fn draw_turn_indicator() {
+fn draw_turn_indicator(id: String) {
     let (canvas, game) = unsafe { (CANVAS.as_mut().unwrap(), GAME.as_ref().unwrap()) };
     let Sizes {
         width: player_card_width,
@@ -272,7 +265,7 @@ fn draw_turn_indicator() {
         turn_indicator_size.x,
         turn_indicator_size.y,
         player_card_radius / 2.0,
-        "t=0".to_string(),
+        id,
     );
 
     let context = &mut canvas.context;
@@ -290,7 +283,7 @@ fn draw_turn_indicator() {
 }
 
 /// draws deck and num cards remaining
-fn draw_deck() {
+fn draw_deck(id: String) {
     let (canvas, game) = unsafe { (CANVAS.as_mut().unwrap(), GAME.as_ref().unwrap()) };
     let Sizes {
         width: field_basis_width,
@@ -310,7 +303,7 @@ fn draw_deck() {
         field_basis_width,
         field_basis_height,
         field_basis_radius,
-        "d=1".to_string(),
+        id,
     );
 
     let context = &mut canvas.context;
@@ -327,7 +320,7 @@ fn draw_deck() {
 }
 
 /// draws graveyard and last 3 cards played
-fn draw_graveyard() {
+fn draw_graveyard(_id: String) {
     let (canvas, game) = unsafe { (CANVAS.as_mut().unwrap(), GAME.as_ref().unwrap()) };
     let Sizes {
         width: player_card_width,
