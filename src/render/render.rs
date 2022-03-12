@@ -99,7 +99,7 @@ fn random_hit_colour(hit_region_map: &HashMap<String, String>) -> String {
 }
 
 /// draws a rectangle of given size and sets hit region for id
-fn draw_rect(x: f64, y: f64, width: f64, height: f64, radius: f64, id: String) {
+pub fn draw_rect(x: f64, y: f64, width: f64, height: f64, radius: f64, id: String) {
     let canvas = unsafe { CANVAS.as_mut().unwrap() };
 
     let context = &canvas.context;

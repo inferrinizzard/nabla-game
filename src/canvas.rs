@@ -6,7 +6,7 @@ use gloo::render::{request_animation_frame, AnimationFrame};
 use wasm_bindgen::JsCast;
 use web_sys::*;
 // outer crate imports
-use crate::render::anim::on_animation_frame;
+use crate::render::anim::{on_animation_frame, AnimAttribute, AnimItem};
 use crate::render::render_constants::*;
 // util imports
 use crate::util::Vector2;
@@ -28,6 +28,7 @@ pub struct Canvas {
     pub render_constants: RenderConstants,
 
     pub render_animation_frame_handle: AnimationFrame,
+    pub anim_items: HashMap<String, AnimItem>,
 }
 
 impl Canvas {
@@ -84,6 +85,7 @@ impl Canvas {
                 player_sizes: Sizes::default(),
             },
             render_animation_frame_handle: request_animation_frame(on_animation_frame),
+            anim_items: HashMap::default(),
         }
     }
 
@@ -147,5 +149,9 @@ impl Canvas {
                 radius,
             },
         };
+    }
+
+    pub fn start_anim(&mut self) {
+        self.render_animation_frame_handle = request_animation_frame(on_animation_frame);
     }
 }
