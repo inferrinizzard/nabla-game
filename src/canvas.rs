@@ -2,9 +2,11 @@
 use std::collections::HashMap;
 // wasm-bindgen imports
 use gloo::events::EventListener;
+use gloo::render::{request_animation_frame, AnimationFrame};
 use wasm_bindgen::JsCast;
 use web_sys::*;
 // outer crate imports
+use crate::render::anim::on_animation_frame;
 use crate::render::render_constants::*;
 // util imports
 use crate::util::Vector2;
@@ -24,6 +26,8 @@ pub struct Canvas {
     pub mousemove_listener: Option<EventListener>,
 
     pub render_constants: RenderConstants,
+
+    pub render_animation_frame_handle: AnimationFrame,
 }
 
 impl Canvas {
@@ -79,6 +83,7 @@ impl Canvas {
                 field_sizes: Sizes::default(),
                 player_sizes: Sizes::default(),
             },
+            render_animation_frame_handle: request_animation_frame(on_animation_frame),
         }
     }
 
