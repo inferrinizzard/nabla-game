@@ -1,5 +1,4 @@
 // std imports
-use crate::render::render_constants::RenderItem;
 use std::collections::HashMap;
 use std::fmt::Display;
 use std::fmt::Formatter;
@@ -8,12 +7,9 @@ use gloo::render::request_animation_frame;
 // local imports
 use super::pos;
 use super::render;
-use super::render::draw_rect;
-use super::render_constants::RenderId;
+use super::util::{RenderId, RenderItem};
 // root imports
 use crate::CANVAS;
-
-use crate::util::*;
 
 fn min(a: f64, b: f64) -> f64 {
     if a < b {
@@ -67,7 +63,6 @@ pub fn on_animation_frame(time: f64) {
 
 pub fn animate_hover(id: Option<RenderId>) {
     let canvas = unsafe { CANVAS.as_mut().unwrap() };
-    let sizes = &canvas.render_constants.player_sizes;
     let render_items = &canvas.render_items;
 
     let target_pos = if id.is_some() {

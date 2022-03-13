@@ -8,7 +8,7 @@ use web_sys::*;
 // outer crate imports
 use crate::render::anim::{on_animation_frame, AnimItem};
 use crate::render::pos::*;
-use crate::render::render_constants::*;
+use crate::render::util::*;
 // util imports
 use crate::util::Vector2;
 

@@ -11,7 +11,7 @@ use crate::util::*;
 use crate::{CANVAS, GAME, MENU};
 // internal crate imports
 use super::katex::*;
-use super::render_constants::*;
+use super::util::*;
 
 /// main draw function, delegates to respective draw functions based on game state
 #[wasm_bindgen]

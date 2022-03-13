@@ -1,13 +1,16 @@
-use crate::render::anim::AnimAttribute;
+// std imports
 use std::collections::HashMap;
 use std::fmt::{Display, Error, Formatter};
-use std::ops::Index;
-use std::ops::IndexMut;
-
+use std::ops::{Index, IndexMut};
+// wasm-bindgen imports
 use wasm_bindgen::prelude::*;
-
+// local imports
+use super::anim::AnimAttribute;
+// util imports
 use crate::util::get_key_val;
-use crate::util::Vector2;
+
+pub static mut PLAYER_1_COLOUR: &str = "#FF0000";
+pub static mut PLAYER_2_COLOUR: &str = "#0000FF";
 
 #[wasm_bindgen(module = "/js/render.js")]
 extern "C" {
@@ -18,32 +21,20 @@ pub fn rem_to_px(string: String) -> f64 {
     remToPx(string)
 }
 
+#[derive(Debug)]
 pub struct RenderConstants {
     pub field_sizes: Sizes,
     pub player_sizes: Sizes,
     pub button_sizes: Sizes,
 }
 
+#[derive(Debug, Default)]
 pub struct Sizes {
     pub width: f64,
     pub height: f64,
     pub gutter: f64,
     pub radius: f64,
 }
-
-impl Default for Sizes {
-    fn default() -> Self {
-        Sizes {
-            width: 0.0,
-            height: 0.0,
-            gutter: 0.0,
-            radius: 0.0,
-        }
-    }
-}
-
-pub static mut PLAYER_1_COLOUR: &str = "#FF0000";
-pub static mut PLAYER_2_COLOUR: &str = "#0000FF";
 
 pub type RenderHash = HashMap<RenderId, RenderItem>;
 
@@ -81,6 +72,7 @@ impl IndexMut<String> for RenderItem {
         }
     }
 }
+
 impl Index<AnimAttribute> for RenderItem {
     type Output = f64;
     fn index(&self, index: AnimAttribute) -> &Self::Output {

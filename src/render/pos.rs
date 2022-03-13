@@ -4,7 +4,7 @@ use std::collections::HashMap;
 use crate::util::*;
 use crate::{CANVAS, GAME};
 // internal crate imports
-use super::render_constants::*;
+use super::util::*;
 
 pub fn get_base_player_pos() -> RenderHash {
     let canvas = unsafe { CANVAS.as_mut().unwrap() };
