@@ -20,20 +20,73 @@ pub fn get_base_player_pos() -> RenderPosHash {
 
     let mut player_pos: RenderPosHash = HashMap::new();
     for player_num in 1..=2 {
+        let start_pos = Vector2 {
+            x: center.x - 3.5 * player_card_width - 3.0 * player_card_gutter,
+            y: if player_num == 1 {
+                bounds.y - player_card_height - player_card_gutter // bottom of canvas if p1
+            } else {
+                player_card_gutter // top of canvas if p2
+            },
+        };
+
         for i in 0..7 {
             player_pos.insert(
                 RenderId::from(format!("p{player_num}={i}")),
                 Vector2 {
-                    x: center.x - 2.5 * player_card_width * 3.0 * player_card_gutter
-                        + (i as f64) * (player_card_width + player_card_gutter),
-                    y: if player_num == 1 {
-                        bounds.y - player_card_height - player_card_gutter // bottom of canvas if p1
-                    } else {
-                        player_card_gutter // top of canvas if p2
-                    },
+                    x: start_pos.x + (i as f64) * (player_card_width + player_card_gutter),
+                    y: start_pos.y,
                 },
             );
         }
+    }
+
+    player_pos
+}
+
+pub fn get_hover_player_pos(player_num: u32, hover_val: usize) -> RenderPosHash {
+    let canvas = unsafe { CANVAS.as_ref().unwrap() };
+
+    let Sizes {
+        width: player_card_width,
+        height: player_card_height,
+        gutter: player_card_gutter,
+        ..
+    } = canvas.render_constants.player_sizes;
+
+    let start_pos = Vector2 {
+        x: canvas.canvas_center.x
+            - (
+                (player_card_gutter * 7.0 + player_card_width * 7.0)
+                // width of 6 cards
+            ) / 2.0, // divide by 2 for distance from center
+        y: if player_num == 1 {
+            canvas.canvas_bounds.y - player_card_gutter - player_card_height // bottom of canvas if p1
+        } else {
+            player_card_gutter // top of canvas if p2
+        },
+    };
+
+    let mut player_pos: RenderPosHash = HashMap::new();
+    for i in 0..7 {
+        player_pos.insert(
+            RenderId::from(format!("p{player_num}={i}")),
+            Vector2 {
+                x: start_pos.x
+                + (i as f64) * (player_card_width + player_card_gutter)
+                // add extra space for cards after hover
+                + if i > hover_val {
+                    player_card_gutter
+                } else {
+                    0.0
+                },
+                y: start_pos.y
+                    - if i == hover_val {
+                        player_card_gutter
+                    } else {
+                        0.0
+                    },
+            },
+        );
     }
 
     player_pos

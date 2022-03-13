@@ -409,79 +409,27 @@ fn draw_field(id: RenderId) {
     }
 }
 
-fn get_player_card_bounds(player_num: u32, val: usize) -> (Vector2, Vector2, f64) {
+/// renders player hands
+fn draw_hand(id: RenderId) {
     let (canvas, game) = unsafe { (CANVAS.as_ref().unwrap(), GAME.as_ref().unwrap()) };
+
     let Sizes {
         width: player_card_width,
         height: player_card_height,
-        gutter: player_card_gutter,
         radius: player_card_radius,
+        ..
     } = canvas.render_constants.player_sizes;
+    let card_pos = &canvas.render_items[&id];
 
-    let (hover_key, hover_val) =
-        get_key_val(game.active.hover.as_ref().unwrap_or(&"p0=69".to_string())); // 69 shall be NULL
-    let hover_player_num = hover_key.chars().nth(1).unwrap().to_digit(10).unwrap();
-
-    let hover_card_size = Vector2 {
-        x: player_card_width + player_card_gutter,
-        y: player_card_height + player_card_gutter,
-    };
-    let card_size = if hover_player_num == player_num && hover_val == val {
-        hover_card_size.clone()
-    } else {
-        Vector2 {
-            x: player_card_width,
-            y: player_card_height,
-        }
-    };
-
-    let start_pos = Vector2 {
-        x: canvas.canvas_center.x
-            - ((player_card_gutter * 6.0 + player_card_width * 6.0) // width of 6 cards
-                + if hover_player_num == player_num && hover_val != 69 { // width of potential hover card
-                    hover_card_size.x
-                } else {
-                    player_card_width
-                })
-                / 2.0, // divide by 2 for distance from center
-        y: if player_num == 1 {
-            canvas.canvas_bounds.y - player_card_gutter - card_size.y // bottom of canvas if p1
-        } else {
-            player_card_gutter // top of canvas if p2
-        },
-    };
-
-    let card_pos = Vector2 {
-        x: start_pos.x
-            + (val as f64) * (player_card_width + player_card_gutter)
-            // add extra space for cards after hover
-            + if hover_player_num == player_num && val > hover_val {
-                hover_card_size.x - player_card_width
-            } else {
-                0.0
-            },
-        y: start_pos.y,
-    };
-
-    (card_pos, card_size, player_card_radius)
-}
-
-/// renders player hands
-fn draw_hand(id: RenderId) {
-    let (key, val) = id.key_val();
-    let player_num = key.chars().nth(1).unwrap().to_digit(10).unwrap();
-
-    let (canvas, game) = unsafe { (CANVAS.as_ref().unwrap(), GAME.as_ref().unwrap()) };
-    let (card_pos, card_size, card_radius) = get_player_card_bounds(player_num, val);
     if game.active.selected.contains(&id.to_string()) {
         canvas.context.set_line_width(5.0);
     }
     draw_rect(
         card_pos.x,
         card_pos.y,
-        card_size.x,
-        card_size.y,
-        card_radius,
+        player_card_width,
+        player_card_height,
+        player_card_radius,
         id.to_string(),
     );
     if game.active.selected.contains(&id.to_string()) {
@@ -492,14 +440,16 @@ fn draw_hand(id: RenderId) {
 pub fn render_player_katex() {
     for i in 1..=2 {
         for j in 0..7 {
-            render_player_katex_item(i, j, format!("p{}={}", i, j));
+            render_player_katex_item(i, j, RenderId::from(format!("p{}={}", i, j)));
         }
     }
 }
 
-fn render_player_katex_item(player_num: u32, val: usize, id: String) {
+fn render_player_katex_item(player_num: u32, val: usize, id: RenderId) {
     let (canvas, game) = unsafe { (CANVAS.as_ref().unwrap(), GAME.as_ref().unwrap()) };
     let Sizes {
+        width: player_card_width,
+        height: player_card_height,
         gutter: player_card_gutter,
         ..
     } = canvas.render_constants.player_sizes;
@@ -509,15 +459,16 @@ fn render_player_katex_item(player_num: u32, val: usize, id: String) {
         &game.player_2
     };
 
-    let (card_pos, card_size, _) = get_player_card_bounds(player_num, val);
+    // let (card_pos, card_size, _) = get_player_card_bounds(player_num, val);
+    let card_pos = &canvas.render_items[&id];
 
     draw_player_card_katex(
         &hand[val],
-        id,
+        id.to_string(),
         // middle of card
         Vector2 {
-            x: card_pos.x + card_size.x / 2.0,
-            y: card_pos.y + card_size.y / 2.0,
+            x: card_pos.x + player_card_width / 2.0,
+            y: card_pos.y + player_card_height / 2.0,
         },
         // top left of card
         Vector2 {
@@ -526,8 +477,8 @@ fn render_player_katex_item(player_num: u32, val: usize, id: String) {
         },
         // bottom right of card
         Vector2 {
-            x: card_pos.x + card_size.x - player_card_gutter * 0.75,
-            y: card_pos.y + card_size.y - player_card_gutter * 0.75,
+            x: card_pos.x + player_card_width - player_card_gutter * 0.75,
+            y: card_pos.y + player_card_height - player_card_gutter * 0.75,
         },
     )
 }

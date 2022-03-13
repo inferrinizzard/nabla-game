@@ -3,12 +3,14 @@ use std::collections::HashMap;
 // wasm-bindgen imports
 use gloo::render::request_animation_frame;
 // local imports
+use super::pos;
 use super::render;
 use super::render::draw_rect;
+use super::render_constants::RenderId;
 // root imports
 use crate::CANVAS;
 
-use crate::util::js_log;
+use crate::util::*;
 
 fn min(a: f64, b: f64) -> f64 {
     if a < b {
@@ -68,6 +70,39 @@ pub fn on_animation_frame(time: f64) {
     if canvas.anim_items.len() > 0 {
         canvas.render_animation_frame_handle = request_animation_frame(on_animation_frame);
     }
+}
+
+pub fn animate_hover(id: Option<RenderId>) {
+    let canvas = unsafe { CANVAS.as_mut().unwrap() };
+    let sizes = &canvas.render_constants.player_sizes;
+    let render_items = &canvas.render_items;
+
+    let target_pos = if id.is_some() {
+        let (key, val) = id.unwrap().key_val();
+        let player_num = key.chars().nth(1).unwrap().to_digit(10).unwrap();
+        pos::get_hover_player_pos(player_num, val)
+    } else {
+        pos::get_base_player_pos()
+    };
+
+    canvas.anim_items.extend(target_pos.iter().map(|(id, pos)| {
+        (
+            id.to_string(),
+            AnimItem {
+                start: None,
+                duration: 1.0,
+                attributes: HashMap::from([
+                    (AnimAttribute::X, (render_items[id].x, pos.x)),
+                    (AnimAttribute::Y, (render_items[id].y, pos.y)),
+                    (AnimAttribute::W, (sizes.width, sizes.width)),
+                    (AnimAttribute::H, (sizes.height, sizes.height)),
+                    (AnimAttribute::R, (sizes.radius, sizes.radius)),
+                ]),
+            },
+        )
+    }));
+
+    canvas.start_anim();
 }
 
 #[derive(Clone, Debug)]
