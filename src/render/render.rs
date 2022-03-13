@@ -39,46 +39,37 @@ pub fn render_play_screen() {
     context.clear_rect(0.0, 0.0, canvas.canvas_bounds.x, canvas.canvas_bounds.y);
     hit_context.clear_rect(0.0, 0.0, canvas.canvas_bounds.x, canvas.canvas_bounds.y);
 
-    // draw field
-    for i in 0..6 {
-        if i >= 3 {
-            context.set_stroke_style(&JsValue::from(player_1_colour));
-        } else {
-            context.set_stroke_style(&JsValue::from(player_2_colour));
-        }
-        render_item(format!("f={}", i));
-        context.set_stroke_style(&JsValue::from("#000"));
-    }
-    // draw players
-    for i in 1..=2 {
-        if i == 1 {
-            context.set_stroke_style(&JsValue::from(player_1_colour));
-        } else if i == 2 {
-            context.set_stroke_style(&JsValue::from(player_2_colour));
-        }
-        for j in 0..7 {
-            render_item(format!("p{}={}", i, j));
-        }
-        context.set_stroke_style(&JsValue::from("#000"));
-    }
-    ["d=1", "x=0", "x=1", "g=0", "t=0"].iter().for_each(|id| {
-        render_item(id.to_string());
-    });
+    let render_ids = &canvas.render_items;
+
+    // draw player 1 cards
+    context.set_stroke_style(&JsValue::from(player_1_colour));
+    (render_ids.keys())
+        .filter(|id| id.to_string().starts_with("p1") || (id.is_field() && id.key_val().1 >= 3))
+        .for_each(|id| render_item(*id));
+
+    // draw player 2 cards
+    context.set_stroke_style(&JsValue::from(player_2_colour));
+    (render_ids.keys())
+        .filter(|id| id.to_string().starts_with("p2") || (id.is_field() && id.key_val().1 < 3))
+        .for_each(|id| render_item(*id));
+
+    // draw other items
+    context.set_stroke_style(&JsValue::from("#000"));
+    (render_ids.keys())
+        .filter(|id| !id.is_player() && !id.is_field())
+        .for_each(|id| render_item(*id));
 }
 
 /// id-based render, dispatches to component render fns based on id
-fn render_item(id: String) {
-    let (key, val) = get_key_val(&id);
-
-    match key.as_str() {
-        "d" => draw_deck(id),
-        "g" => draw_graveyard(id),
-        "f" => draw_field(val, id),
-        "p1" => draw_hand(1, val, id),
-        "p2" => draw_hand(2, val, id),
-        "t" => draw_turn_indicator(id),
-        "x" if val == 0 => draw_cancel(id),
-        "x" if val == 1 => draw_multi_done(id),
+fn render_item(id: RenderId) {
+    match id {
+        RenderId::Deck => draw_deck(id),
+        RenderId::TurnIndicator => draw_turn_indicator(id),
+        RenderId::Cancel => draw_cancel(id),
+        RenderId::Multidone => draw_multi_done(id),
+        _ if id.is_graveyard() => draw_graveyard(id),
+        _ if id.is_field() => draw_field(id),
+        _ if id.is_player() => draw_hand(id),
         _ => {}
     }
 }
@@ -133,39 +124,27 @@ pub fn draw_rect(x: f64, y: f64, width: f64, height: f64, radius: f64, id: Strin
 }
 
 /// draws the escape button for SELECT phase
-fn draw_cancel(id: String) {
+fn draw_cancel(id: RenderId) {
     let (canvas, game) = unsafe { (CANVAS.as_mut().unwrap(), GAME.as_ref().unwrap()) };
     if game.active.selected.is_empty() {
         return;
     }
 
     let Sizes {
-        width: player_card_width,
-        height: player_card_height,
-        gutter: player_card_gutter,
-        radius: player_card_radius,
-    } = canvas.render_constants.player_sizes;
-    let player_num = game.get_current_player_num();
-    let cancel_size = Vector2 {
-        x: player_card_width,
-        y: (player_card_height - player_card_gutter) / 2.0,
-    };
-    let cancel_pos = Vector2 {
-        x: canvas.canvas_center.x + player_card_width * 3.5 + player_card_gutter * 4.0,
-        y: if player_num == 1 {
-            canvas.canvas_bounds.y - player_card_height - player_card_gutter
-        } else {
-            player_card_gutter
-        },
-    };
+        width: button_width,
+        height: button_height,
+        radius: button_radius,
+        ..
+    } = canvas.render_constants.button_sizes;
+    let cancel_pos = &canvas.render_items[&id];
 
     draw_rect(
         cancel_pos.x,
         cancel_pos.y,
-        cancel_size.x,
-        cancel_size.y,
-        player_card_radius / 2.0,
-        id,
+        button_width,
+        button_height,
+        button_radius,
+        id.to_string(),
     );
 
     let context = &mut canvas.context;
@@ -176,46 +155,34 @@ fn draw_cancel(id: String) {
     context
         .fill_text(
             "Cancel",
-            cancel_pos.x + cancel_size.x / 2.0,
-            cancel_pos.y + cancel_size.y / 2.0,
+            cancel_pos.x + button_width / 2.0,
+            cancel_pos.y + button_height / 2.0,
         )
         .expect(&format!("Cannot print cancel"));
 }
 
 /// draws the button that ends MULTI_SELECT phase
-fn draw_multi_done(id: String) {
+fn draw_multi_done(id: RenderId) {
     let (canvas, game) = unsafe { (CANVAS.as_mut().unwrap(), GAME.as_ref().unwrap()) };
     if !matches!(game.turn.phase, TurnPhase::MULTISELECT(_)) {
         return;
     }
 
     let Sizes {
-        width: player_card_width,
-        height: player_card_height,
-        gutter: player_card_gutter,
-        radius: player_card_radius,
-    } = canvas.render_constants.player_sizes;
-    let player_num = game.get_current_player_num();
-    let multidone_size = Vector2 {
-        x: player_card_width,
-        y: (player_card_height - player_card_gutter) / 2.0,
-    };
-    let multidone_pos = Vector2 {
-        x: canvas.canvas_center.x + player_card_width * 3.5 + player_card_gutter * 4.0,
-        y: if player_num == 1 {
-            canvas.canvas_bounds.y - player_card_gutter - multidone_size.y
-        } else {
-            player_card_gutter * 2.0 + multidone_size.y
-        },
-    };
+        width: button_width,
+        height: button_height,
+        radius: button_radius,
+        ..
+    } = canvas.render_constants.button_sizes;
+    let multidone_pos = &canvas.render_items[&id];
 
     draw_rect(
         multidone_pos.x,
         multidone_pos.y,
-        multidone_size.x,
-        multidone_size.y,
-        player_card_radius / 2.0,
-        id,
+        button_width,
+        button_height,
+        button_radius,
+        id.to_string(),
     );
 
     let context = &mut canvas.context;
@@ -226,46 +193,30 @@ fn draw_multi_done(id: String) {
     context
         .fill_text(
             "Finish",
-            multidone_pos.x + multidone_size.x / 2.0,
-            multidone_pos.y + multidone_size.y / 2.0,
+            multidone_pos.x + button_width / 2.0,
+            multidone_pos.y + button_height / 2.0,
         )
         .expect(&format!("Cannot print multidone"));
 }
 
 /// draw marker to show whose turn it is
-fn draw_turn_indicator(id: String) {
-    let (canvas, game) = unsafe { (CANVAS.as_mut().unwrap(), GAME.as_ref().unwrap()) };
+fn draw_turn_indicator(id: RenderId) {
+    let canvas = unsafe { CANVAS.as_mut().unwrap() };
     let Sizes {
-        width: player_card_width,
-        height: player_card_height,
-        gutter: player_card_gutter,
-        radius: player_card_radius,
-    } = canvas.render_constants.player_sizes;
-
-    let player_num = game.get_current_player_num();
-    let turn_indicator_size = Vector2 {
-        x: player_card_width + player_card_gutter,
-        y: (player_card_height - player_card_gutter) / 2.0,
-    };
-    let turn_indicator_pos = Vector2 {
-        x: canvas.canvas_center.x
-            - player_card_width * 3.5
-            - player_card_gutter * 4.0
-            - turn_indicator_size.x,
-        y: if player_num == 1 {
-            canvas.canvas_bounds.y - player_card_height - player_card_gutter
-        } else {
-            player_card_gutter
-        },
-    };
+        width: button_width,
+        height: button_height,
+        radius: button_radius,
+        ..
+    } = canvas.render_constants.button_sizes;
+    let turn_indicator_pos = &canvas.render_items[&id];
 
     draw_rect(
         turn_indicator_pos.x,
         turn_indicator_pos.y,
-        turn_indicator_size.x,
-        turn_indicator_size.y,
-        player_card_radius / 2.0,
-        id,
+        button_width,
+        button_height,
+        button_radius,
+        id.to_string(),
     );
 
     let context = &mut canvas.context;
@@ -276,34 +227,31 @@ fn draw_turn_indicator(id: String) {
     context
         .fill_text(
             "Your Turn",
-            turn_indicator_pos.x + turn_indicator_size.x / 2.0,
-            turn_indicator_pos.y + turn_indicator_size.y / 2.0,
+            turn_indicator_pos.x + button_width / 2.0,
+            turn_indicator_pos.y + button_height / 2.0,
         )
         .expect(&format!("Cannot print cancel"));
 }
 
 /// draws deck and num cards remaining
-fn draw_deck(id: String) {
+fn draw_deck(id: RenderId) {
     let (canvas, game) = unsafe { (CANVAS.as_mut().unwrap(), GAME.as_ref().unwrap()) };
+
     let Sizes {
         width: field_basis_width,
         height: field_basis_height,
-        gutter: field_basis_gutter,
         radius: field_basis_radius,
+        ..
     } = canvas.render_constants.field_sizes;
+    let deck_pos = &canvas.render_items[&id];
 
-    let center = &canvas.canvas_center;
-    let deck_pos = Vector2 {
-        x: center.x - field_basis_width * 2.5 - field_basis_gutter * 2.0,
-        y: center.y - field_basis_height / 2.0,
-    };
     draw_rect(
         deck_pos.x,
         deck_pos.y,
         field_basis_width,
         field_basis_height,
         field_basis_radius,
-        id,
+        id.to_string(),
     );
 
     let context = &mut canvas.context;
@@ -320,7 +268,7 @@ fn draw_deck(id: String) {
 }
 
 /// draws graveyard and last 3 cards played
-fn draw_graveyard(_id: String) {
+fn draw_graveyard(_id: RenderId) {
     let (canvas, game) = unsafe { (CANVAS.as_mut().unwrap(), GAME.as_ref().unwrap()) };
     let Sizes {
         width: player_card_width,
@@ -412,31 +360,26 @@ fn set_line_dash(context: &CanvasRenderingContext2d, dash_num: u32, dash_size: f
 }
 
 /// renders 6 field basis slots
-fn draw_field(val: usize, id: String) {
+fn draw_field(id: RenderId) {
     let (canvas, game) = unsafe { (CANVAS.as_ref().unwrap(), GAME.as_mut().unwrap()) };
     let field = &game.field;
     let context = &canvas.context;
+
     let Sizes {
         width: field_basis_width,
         height: field_basis_height,
-        gutter: field_basis_gutter,
         radius: field_basis_radius,
+        ..
     } = canvas.render_constants.field_sizes;
 
-    let card_pos = Vector2 {
-        x: canvas.canvas_center.x + ((val % 3) as f64) * (field_basis_width + field_basis_gutter)
-            - field_basis_width * 1.5
-            - field_basis_gutter,
-        y: canvas.canvas_center.y + ((val / 3) as f64) * (field_basis_height + field_basis_gutter)
-            - field_basis_height
-            - field_basis_gutter / 2.0,
-    };
+    let card_pos = &canvas.render_items[&id];
+    let (_key, val) = id.key_val();
 
     let card = &field[val];
     if card.basis.is_none() {
         set_line_dash(context, 2, 10.0) // set line dash for empty field basis
     }
-    if game.active.selected.contains(&id) {
+    if game.active.selected.contains(&id.to_string()) {
         context.set_line_width(5.0);
     }
     draw_rect(
@@ -445,12 +388,12 @@ fn draw_field(val: usize, id: String) {
         field_basis_width,
         field_basis_height,
         field_basis_radius,
-        id.clone(),
+        id.to_string(),
     );
     set_line_dash(context, 0, 0.0);
     context.set_line_width(2.0);
 
-    let katex_element_id = format!("katex-item_{}", &id);
+    let katex_element_id = format!("katex-item_{}", id.to_string());
     if let Some(basis) = &card.basis {
         draw_katex(
             basis,
@@ -524,10 +467,13 @@ fn get_player_card_bounds(player_num: u32, val: usize) -> (Vector2, Vector2, f64
 }
 
 /// renders player hands
-fn draw_hand(player_num: u32, val: usize, id: String) {
+fn draw_hand(id: RenderId) {
+    let (key, val) = id.key_val();
+    let player_num = key.chars().nth(1).unwrap().to_digit(10).unwrap();
+
     let (canvas, game) = unsafe { (CANVAS.as_ref().unwrap(), GAME.as_ref().unwrap()) };
     let (card_pos, card_size, card_radius) = get_player_card_bounds(player_num, val);
-    if game.active.selected.contains(&id) {
+    if game.active.selected.contains(&id.to_string()) {
         canvas.context.set_line_width(5.0);
     }
     draw_rect(
@@ -536,9 +482,9 @@ fn draw_hand(player_num: u32, val: usize, id: String) {
         card_size.x,
         card_size.y,
         card_radius,
-        id.clone(),
+        id.to_string(),
     );
-    if game.active.selected.contains(&id) {
+    if game.active.selected.contains(&id.to_string()) {
         canvas.context.set_line_width(2.0);
     }
 }

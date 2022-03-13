@@ -1,7 +1,9 @@
 use std::collections::HashMap;
+use std::fmt::{Display, Error, Formatter};
 
 use wasm_bindgen::prelude::*;
 
+use crate::util::get_key_val;
 use crate::util::Vector2;
 
 #[wasm_bindgen(module = "/js/render.js")]
@@ -71,7 +73,24 @@ pub enum RenderId {
     Cancel,
     Multidone,
     TurnIndicator,
-    Null,
+}
+
+impl RenderId {
+    pub fn is_field(&self) -> bool {
+        self.to_string().starts_with("f")
+    }
+
+    pub fn is_player(&self) -> bool {
+        self.to_string().starts_with("p")
+    }
+
+    pub fn is_graveyard(&self) -> bool {
+        self.to_string().starts_with("g")
+    }
+
+    pub fn key_val(&self) -> (String, usize) {
+        get_key_val(&self.to_string())
+    }
 }
 
 impl From<String> for RenderId {
@@ -104,42 +123,46 @@ impl From<String> for RenderId {
             "x=0" => RenderId::Cancel,
             "x=1" => RenderId::Multidone,
             "t=0" => RenderId::TurnIndicator,
-            _ => RenderId::Null,
+            _ => panic!("Invalid render id: {}", s),
         }
     }
 }
 
-impl Into<String> for RenderId {
-    fn into(self) -> String {
-        String::from(match self {
-            RenderId::PlayerOne0 => "p1=0",
-            RenderId::PlayerOne1 => "p1=1",
-            RenderId::PlayerOne2 => "p1=2",
-            RenderId::PlayerOne3 => "p1=3",
-            RenderId::PlayerOne4 => "p1=4",
-            RenderId::PlayerOne5 => "p1=5",
-            RenderId::PlayerOne6 => "p1=6",
-            RenderId::PlayerTwo0 => "p2=0",
-            RenderId::PlayerTwo1 => "p2=1",
-            RenderId::PlayerTwo2 => "p2=2",
-            RenderId::PlayerTwo3 => "p2=3",
-            RenderId::PlayerTwo4 => "p2=4",
-            RenderId::PlayerTwo5 => "p2=5",
-            RenderId::PlayerTwo6 => "p2=6",
-            RenderId::Field0 => "f=0",
-            RenderId::Field1 => "f=1",
-            RenderId::Field2 => "f=2",
-            RenderId::Field3 => "f=3",
-            RenderId::Field4 => "f=4",
-            RenderId::Field5 => "f=5",
-            RenderId::Deck => "d-0",
-            RenderId::Graveyard0 => "g=0",
-            RenderId::Graveyard1 => "g=1",
-            RenderId::Graveyard2 => "g=2",
-            RenderId::Cancel => "x=0",
-            RenderId::Multidone => "x=1",
-            RenderId::TurnIndicator => "t=0",
-            _ => "",
-        })
+impl Display for RenderId {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), Error> {
+        write!(
+            f,
+            "{}",
+            match self {
+                RenderId::PlayerOne0 => "p1=0",
+                RenderId::PlayerOne1 => "p1=1",
+                RenderId::PlayerOne2 => "p1=2",
+                RenderId::PlayerOne3 => "p1=3",
+                RenderId::PlayerOne4 => "p1=4",
+                RenderId::PlayerOne5 => "p1=5",
+                RenderId::PlayerOne6 => "p1=6",
+                RenderId::PlayerTwo0 => "p2=0",
+                RenderId::PlayerTwo1 => "p2=1",
+                RenderId::PlayerTwo2 => "p2=2",
+                RenderId::PlayerTwo3 => "p2=3",
+                RenderId::PlayerTwo4 => "p2=4",
+                RenderId::PlayerTwo5 => "p2=5",
+                RenderId::PlayerTwo6 => "p2=6",
+                RenderId::Field0 => "f=0",
+                RenderId::Field1 => "f=1",
+                RenderId::Field2 => "f=2",
+                RenderId::Field3 => "f=3",
+                RenderId::Field4 => "f=4",
+                RenderId::Field5 => "f=5",
+                RenderId::Deck => "d-0",
+                RenderId::Graveyard0 => "g=0",
+                RenderId::Graveyard1 => "g=1",
+                RenderId::Graveyard2 => "g=2",
+                RenderId::Cancel => "x=0",
+                RenderId::Multidone => "x=1",
+                RenderId::TurnIndicator => "t=0",
+                // _ => panic!("Invalid render id: {:?}", self),
+            }
+        )
     }
 }
