@@ -7,6 +7,7 @@ use wasm_bindgen::JsCast;
 use web_sys::*;
 // outer crate imports
 use crate::render::anim::{on_animation_frame, AnimAttribute, AnimItem};
+use crate::render::pos::*;
 use crate::render::render_constants::*;
 // util imports
 use crate::util::Vector2;
@@ -26,6 +27,7 @@ pub struct Canvas {
     pub mousemove_listener: Option<EventListener>,
 
     pub render_constants: RenderConstants,
+    pub render_items: RenderPosHash,
 
     pub render_animation_frame_handle: AnimationFrame,
     pub anim_items: HashMap<String, AnimItem>,
@@ -83,7 +85,9 @@ impl Canvas {
             render_constants: RenderConstants {
                 field_sizes: Sizes::default(),
                 player_sizes: Sizes::default(),
+                button_sizes: Sizes::default(),
             },
+            render_items: HashMap::default(),
             render_animation_frame_handle: request_animation_frame(on_animation_frame),
             anim_items: HashMap::default(),
         }
@@ -102,6 +106,7 @@ impl Canvas {
 
         self.rebounds();
         self.update_render_constants();
+        self.calculate_render_positions();
     }
 
     /// recalculate canvas bounds and center on resize
@@ -148,7 +153,23 @@ impl Canvas {
                 gutter,
                 radius,
             },
+            button_sizes: Sizes {
+                width: player_card_width,
+                height: (player_card_height - gutter) / 2.0,
+                gutter,
+                radius: radius / 2.0,
+            },
         };
+    }
+
+    fn calculate_render_positions(&mut self) {
+        self.render_items.clear();
+        let field_pos = get_base_field_pos();
+        let player_pos = get_base_player_pos();
+        let button_pos = get_base_button_pos(&field_pos, &player_pos);
+        self.render_items.extend(field_pos);
+        self.render_items.extend(player_pos);
+        self.render_items.extend(button_pos);
     }
 
     pub fn start_anim(&mut self) {
