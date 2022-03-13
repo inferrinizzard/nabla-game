@@ -1,5 +1,8 @@
 // std imports
+use crate::render::render_constants::RenderItem;
 use std::collections::HashMap;
+use std::fmt::Display;
+use std::fmt::Formatter;
 // wasm-bindgen imports
 use gloo::render::request_animation_frame;
 // local imports
@@ -30,36 +33,26 @@ pub fn on_animation_frame(time: f64) {
             anim_item.start = Some(time);
         }
 
-        let mut current: HashMap<AnimAttribute, f64> = HashMap::new();
-
+        let mut current = RenderItem::default();
         for (attr, val) in anim_item.attributes.iter() {
             let (start, end) = val;
             let delta = min(
                 (time - anim_item.start.unwrap()) / anim_item.duration / 1000.0,
                 1.0,
             );
-            current.insert(*attr, start + delta * (end - start));
+            current[*attr] = start + delta * (end - start);
 
             if delta >= 1.0 {
                 finished.push(id.clone());
             }
         }
 
+        canvas
+            .render_items
+            .insert(RenderId::from(id.clone()), current);
+
         render::draw();
-        canvas.context.clear_rect(
-            current[&AnimAttribute::X],
-            current[&AnimAttribute::Y],
-            current[&AnimAttribute::W],
-            current[&AnimAttribute::H],
-        );
-        draw_rect(
-            current[&AnimAttribute::X],
-            current[&AnimAttribute::Y],
-            current[&AnimAttribute::W],
-            current[&AnimAttribute::H],
-            current[&AnimAttribute::R],
-            id.clone(),
-        )
+        // render::render_player_katex();
     }
 
     let anim_items = &mut canvas.anim_items;
@@ -85,22 +78,24 @@ pub fn animate_hover(id: Option<RenderId>) {
         pos::get_base_player_pos()
     };
 
-    canvas.anim_items.extend(target_pos.iter().map(|(id, pos)| {
-        (
-            id.to_string(),
-            AnimItem {
-                start: None,
-                duration: 1.0,
-                attributes: HashMap::from([
-                    (AnimAttribute::X, (render_items[id].x, pos.x)),
-                    (AnimAttribute::Y, (render_items[id].y, pos.y)),
-                    (AnimAttribute::W, (sizes.width, sizes.width)),
-                    (AnimAttribute::H, (sizes.height, sizes.height)),
-                    (AnimAttribute::R, (sizes.radius, sizes.radius)),
-                ]),
-            },
-        )
-    }));
+    canvas
+        .anim_items
+        .extend(target_pos.iter().map(|(id, item)| {
+            (
+                id.to_string(),
+                AnimItem {
+                    start: None,
+                    duration: 0.1,
+                    attributes: HashMap::from([
+                        (AnimAttribute::X, (render_items[id].x, item.x)),
+                        (AnimAttribute::Y, (render_items[id].y, item.y)),
+                        (AnimAttribute::W, (render_items[id].w, item.w)),
+                        (AnimAttribute::H, (render_items[id].h, item.h)),
+                        (AnimAttribute::R, (render_items[id].r, item.r)),
+                    ]),
+                },
+            )
+        }));
 
     canvas.start_anim();
 }
@@ -119,4 +114,16 @@ pub enum AnimAttribute {
     W,
     H,
     R,
+}
+
+impl Display for AnimAttribute {
+    fn fmt(&self, f: &mut Formatter) -> std::fmt::Result {
+        match self {
+            AnimAttribute::X => write!(f, "X"),
+            AnimAttribute::Y => write!(f, "Y"),
+            AnimAttribute::W => write!(f, "W"),
+            AnimAttribute::H => write!(f, "H"),
+            AnimAttribute::R => write!(f, "R"),
+        }
+    }
 }

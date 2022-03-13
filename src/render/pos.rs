@@ -87,7 +87,7 @@ pub fn get_hover_player_pos(player_num: u32, hover_val: usize) -> RenderHash {
                 } else {
                     0.0
                 },
-                y: start_pos.y - extra_size,
+                y: start_pos.y - if player_num == 1 { extra_size } else { 0.0 },
                 w: player_card_width + extra_size,
                 h: player_card_height + extra_size,
                 r: player_card_radius,
