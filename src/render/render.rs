@@ -129,21 +129,14 @@ fn draw_cancel(id: RenderId) {
     if game.active.selected.is_empty() {
         return;
     }
-
-    let Sizes {
-        width: button_width,
-        height: button_height,
-        radius: button_radius,
-        ..
-    } = canvas.render_constants.button_sizes;
-    let cancel_pos = &canvas.render_items[&id];
+    let cancel = &canvas.render_items[&id];
 
     draw_rect(
-        cancel_pos.x,
-        cancel_pos.y,
-        button_width,
-        button_height,
-        button_radius,
+        cancel.x,
+        cancel.y,
+        cancel.w,
+        cancel.h,
+        cancel.r,
         id.to_string(),
     );
 
@@ -155,8 +148,8 @@ fn draw_cancel(id: RenderId) {
     context
         .fill_text(
             "Cancel",
-            cancel_pos.x + button_width / 2.0,
-            cancel_pos.y + button_height / 2.0,
+            cancel.x + cancel.w / 2.0,
+            cancel.y + cancel.h / 2.0,
         )
         .expect(&format!("Cannot print cancel"));
 }
@@ -167,21 +160,14 @@ fn draw_multi_done(id: RenderId) {
     if !matches!(game.turn.phase, TurnPhase::MULTISELECT(_)) {
         return;
     }
-
-    let Sizes {
-        width: button_width,
-        height: button_height,
-        radius: button_radius,
-        ..
-    } = canvas.render_constants.button_sizes;
-    let multidone_pos = &canvas.render_items[&id];
+    let multidone = &canvas.render_items[&id];
 
     draw_rect(
-        multidone_pos.x,
-        multidone_pos.y,
-        button_width,
-        button_height,
-        button_radius,
+        multidone.x,
+        multidone.y,
+        multidone.w,
+        multidone.h,
+        multidone.r,
         id.to_string(),
     );
 
@@ -193,8 +179,8 @@ fn draw_multi_done(id: RenderId) {
     context
         .fill_text(
             "Finish",
-            multidone_pos.x + button_width / 2.0,
-            multidone_pos.y + button_height / 2.0,
+            multidone.x + multidone.w / 2.0,
+            multidone.y + multidone.h / 2.0,
         )
         .expect(&format!("Cannot print multidone"));
 }
@@ -202,20 +188,14 @@ fn draw_multi_done(id: RenderId) {
 /// draw marker to show whose turn it is
 fn draw_turn_indicator(id: RenderId) {
     let canvas = unsafe { CANVAS.as_mut().unwrap() };
-    let Sizes {
-        width: button_width,
-        height: button_height,
-        radius: button_radius,
-        ..
-    } = canvas.render_constants.button_sizes;
-    let turn_indicator_pos = &canvas.render_items[&id];
+    let turn_indicator = &canvas.render_items[&id];
 
     draw_rect(
-        turn_indicator_pos.x,
-        turn_indicator_pos.y,
-        button_width,
-        button_height,
-        button_radius,
+        turn_indicator.x,
+        turn_indicator.y,
+        turn_indicator.w,
+        turn_indicator.h,
+        turn_indicator.r,
         id.to_string(),
     );
 
@@ -227,8 +207,8 @@ fn draw_turn_indicator(id: RenderId) {
     context
         .fill_text(
             "Your Turn",
-            turn_indicator_pos.x + button_width / 2.0,
-            turn_indicator_pos.y + button_height / 2.0,
+            turn_indicator.x + turn_indicator.w / 2.0,
+            turn_indicator.y + turn_indicator.h / 2.0,
         )
         .expect(&format!("Cannot print cancel"));
 }
@@ -236,23 +216,9 @@ fn draw_turn_indicator(id: RenderId) {
 /// draws deck and num cards remaining
 fn draw_deck(id: RenderId) {
     let (canvas, game) = unsafe { (CANVAS.as_mut().unwrap(), GAME.as_ref().unwrap()) };
+    let deck = &canvas.render_items[&id];
 
-    let Sizes {
-        width: field_basis_width,
-        height: field_basis_height,
-        radius: field_basis_radius,
-        ..
-    } = canvas.render_constants.field_sizes;
-    let deck_pos = &canvas.render_items[&id];
-
-    draw_rect(
-        deck_pos.x,
-        deck_pos.y,
-        field_basis_width,
-        field_basis_height,
-        field_basis_radius,
-        id.to_string(),
-    );
+    draw_rect(deck.x, deck.y, deck.w, deck.h, deck.r, id.to_string());
 
     let context = &mut canvas.context;
     context.set_font("40px KaTeX_Main");
@@ -261,8 +227,8 @@ fn draw_deck(id: RenderId) {
     context
         .fill_text(
             game.deck.len().to_string().as_str(),
-            deck_pos.x + field_basis_width / 2.0,
-            deck_pos.y + field_basis_height / 2.0,
+            deck.x + deck.w / 2.0,
+            deck.y + deck.h / 2.0,
         )
         .expect(&format!("Cannot printsize for deck"));
 }
@@ -365,43 +331,29 @@ fn draw_field(id: RenderId) {
     let field = &game.field;
     let context = &canvas.context;
 
-    let Sizes {
-        width: field_basis_width,
-        height: field_basis_height,
-        radius: field_basis_radius,
-        ..
-    } = canvas.render_constants.field_sizes;
+    let card = &canvas.render_items[&id];
+    let val = id.key_val().1;
 
-    let card_pos = &canvas.render_items[&id];
-    let (_key, val) = id.key_val();
-
-    let card = &field[val];
-    if card.basis.is_none() {
+    let card_data = &field[val];
+    if card_data.basis.is_none() {
         set_line_dash(context, 2, 10.0) // set line dash for empty field basis
     }
     if game.active.selected.contains(&id.to_string()) {
         context.set_line_width(5.0);
     }
-    draw_rect(
-        card_pos.x,
-        card_pos.y,
-        field_basis_width,
-        field_basis_height,
-        field_basis_radius,
-        id.to_string(),
-    );
+    draw_rect(card.x, card.y, card.w, card.h, card.r, id.to_string());
     set_line_dash(context, 0, 0.0);
     context.set_line_width(2.0);
 
     let katex_element_id = format!("katex-item_{}", id.to_string());
-    if let Some(basis) = &card.basis {
+    if let Some(basis) = &card_data.basis {
         draw_katex(
             basis,
             katex_element_id,
             "Huge",
             Vector2 {
-                y: card_pos.y + field_basis_height / 2.0,
-                x: card_pos.x + field_basis_width / 2.0,
+                y: card.y + card.h / 2.0,
+                x: card.x + card.w / 2.0,
             },
         );
     } else {
@@ -412,26 +364,12 @@ fn draw_field(id: RenderId) {
 /// renders player hands
 fn draw_hand(id: RenderId) {
     let (canvas, game) = unsafe { (CANVAS.as_ref().unwrap(), GAME.as_ref().unwrap()) };
-
-    let Sizes {
-        width: player_card_width,
-        height: player_card_height,
-        radius: player_card_radius,
-        ..
-    } = canvas.render_constants.player_sizes;
-    let card_pos = &canvas.render_items[&id];
+    let card = &canvas.render_items[&id];
 
     if game.active.selected.contains(&id.to_string()) {
         canvas.context.set_line_width(5.0);
     }
-    draw_rect(
-        card_pos.x,
-        card_pos.y,
-        player_card_width,
-        player_card_height,
-        player_card_radius,
-        id.to_string(),
-    );
+    draw_rect(card.x, card.y, card.w, card.h, card.r, id.to_string());
     if game.active.selected.contains(&id.to_string()) {
         canvas.context.set_line_width(2.0);
     }
@@ -447,38 +385,31 @@ pub fn render_player_katex() {
 
 fn render_player_katex_item(player_num: u32, val: usize, id: RenderId) {
     let (canvas, game) = unsafe { (CANVAS.as_ref().unwrap(), GAME.as_ref().unwrap()) };
-    let Sizes {
-        width: player_card_width,
-        height: player_card_height,
-        gutter: player_card_gutter,
-        ..
-    } = canvas.render_constants.player_sizes;
+    let gutter = canvas.render_constants.player_sizes.gutter;
+    let card = &canvas.render_items[&id];
     let hand = if player_num == 1 {
         &game.player_1
     } else {
         &game.player_2
     };
 
-    // let (card_pos, card_size, _) = get_player_card_bounds(player_num, val);
-    let card_pos = &canvas.render_items[&id];
-
     draw_player_card_katex(
         &hand[val],
         id.to_string(),
         // middle of card
         Vector2 {
-            x: card_pos.x + player_card_width / 2.0,
-            y: card_pos.y + player_card_height / 2.0,
+            x: card.x + card.w / 2.0,
+            y: card.y + card.h / 2.0,
         },
         // top left of card
         Vector2 {
-            x: card_pos.x + player_card_gutter * 0.75,
-            y: card_pos.y + player_card_gutter * 0.75,
+            x: card.x + gutter * 0.75,
+            y: card.y + gutter * 0.75,
         },
         // bottom right of card
         Vector2 {
-            x: card_pos.x + player_card_width - player_card_gutter * 0.75,
-            y: card_pos.y + player_card_height - player_card_gutter * 0.75,
+            x: card.x + card.w - gutter * 0.75,
+            y: card.y + card.h - gutter * 0.75,
         },
     )
 }

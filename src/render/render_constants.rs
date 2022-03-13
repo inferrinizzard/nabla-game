@@ -1,5 +1,8 @@
+use crate::render::anim::AnimAttribute;
 use std::collections::HashMap;
 use std::fmt::{Display, Error, Formatter};
+use std::ops::Index;
+use std::ops::IndexMut;
 
 use wasm_bindgen::prelude::*;
 
@@ -42,7 +45,53 @@ impl Default for Sizes {
 pub static mut PLAYER_1_COLOUR: &str = "#FF0000";
 pub static mut PLAYER_2_COLOUR: &str = "#0000FF";
 
-pub type RenderPosHash = HashMap<RenderId, Vector2>;
+pub type RenderHash = HashMap<RenderId, RenderItem>;
+
+#[derive(Debug, Clone, Copy, Default)]
+pub struct RenderItem {
+    pub x: f64,
+    pub y: f64,
+    pub w: f64,
+    pub h: f64,
+    pub r: f64,
+}
+
+impl Index<String> for RenderItem {
+    type Output = f64;
+    fn index(&self, index: String) -> &Self::Output {
+        match index.to_lowercase().as_str() {
+            "x" => &self.x,
+            "y" => &self.y,
+            "w" => &self.w,
+            "h" => &self.h,
+            "r" => &self.r,
+            _ => panic!("Invalid index"),
+        }
+    }
+}
+impl IndexMut<String> for RenderItem {
+    fn index_mut(&mut self, index: String) -> &mut Self::Output {
+        match index.to_lowercase().as_str() {
+            "x" => &mut self.x,
+            "y" => &mut self.y,
+            "w" => &mut self.w,
+            "h" => &mut self.h,
+            "r" => &mut self.r,
+            _ => panic!("Invalid index"),
+        }
+    }
+}
+impl Index<AnimAttribute> for RenderItem {
+    type Output = f64;
+    fn index(&self, index: AnimAttribute) -> &Self::Output {
+        &self[index.to_string()]
+    }
+}
+impl IndexMut<AnimAttribute> for RenderItem {
+    fn index_mut(&mut self, index: AnimAttribute) -> &mut Self::Output {
+        &mut self[index.to_string()]
+    }
+}
 
 #[derive(Hash, Eq, PartialEq, Debug, Copy, Clone)]
 pub enum RenderId {

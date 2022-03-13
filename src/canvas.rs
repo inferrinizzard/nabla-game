@@ -6,7 +6,7 @@ use gloo::render::{request_animation_frame, AnimationFrame};
 use wasm_bindgen::JsCast;
 use web_sys::*;
 // outer crate imports
-use crate::render::anim::{on_animation_frame, AnimAttribute, AnimItem};
+use crate::render::anim::{on_animation_frame, AnimItem};
 use crate::render::pos::*;
 use crate::render::render_constants::*;
 // util imports
@@ -27,7 +27,7 @@ pub struct Canvas {
     pub mousemove_listener: Option<EventListener>,
 
     pub render_constants: RenderConstants,
-    pub render_items: RenderPosHash,
+    pub render_items: RenderHash,
 
     pub render_animation_frame_handle: AnimationFrame,
     pub anim_items: HashMap<String, AnimItem>,
