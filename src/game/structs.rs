@@ -5,6 +5,7 @@ use rand::thread_rng;
 use crate::cards::*;
 use crate::render::render;
 use crate::render::util::RenderId;
+// root imports
 use crate::MENU;
 // local imports
 use super::field::*;
@@ -115,8 +116,19 @@ impl Game {
 
     /// set new game state
     pub fn set_state(&mut self, state: GameState) {
+        let menu = unsafe { MENU.as_ref().unwrap() };
+
         self.state = state;
-        render::draw();
+        match self.state {
+            GameState::PLAYAI | GameState::PLAYVS => {
+                menu.close();
+                render::draw();
+            }
+            GameState::MENU => {
+                menu.open();
+            }
+            _ => {}
+        }
     }
 
     /// handle losing state

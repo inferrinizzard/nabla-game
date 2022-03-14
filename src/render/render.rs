@@ -8,29 +8,14 @@ use web_sys::*;
 // external crate imports
 use crate::game::structs::*;
 use crate::util::*;
-use crate::{CANVAS, GAME, MENU};
+use crate::{CANVAS, GAME};
 // internal crate imports
 use super::katex::*;
 use super::util::*;
 
-/// main draw function, delegates to respective draw functions based on game state
+/// main game render function, iterates through all game items to render
 #[wasm_bindgen]
 pub fn draw() {
-    let (game, menu) = unsafe { (GAME.as_ref().unwrap(), MENU.as_ref().unwrap()) };
-    match game.state {
-        GameState::PLAYAI | GameState::PLAYVS => {
-            menu.close();
-            render_play_screen()
-        }
-        GameState::MENU => {
-            menu.open();
-        }
-        _ => {}
-    }
-}
-
-/// main game render function, iterates through all game items to render
-pub fn render_play_screen() {
     let canvas = unsafe { CANVAS.as_mut().unwrap() };
     let (player_1_colour, player_2_colour) = unsafe { (PLAYER_1_COLOUR, PLAYER_2_COLOUR) };
     let context = &canvas.context;
