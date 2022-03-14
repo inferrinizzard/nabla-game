@@ -9,14 +9,8 @@ use super::render;
 use super::util::{RenderId, RenderItem};
 // root imports
 use crate::CANVAS;
-
-fn min(a: f64, b: f64) -> f64 {
-    if a < b {
-        a
-    } else {
-        b
-    }
-}
+// util imports
+use crate::util::min;
 
 /// requestAnimationFrame callback
 pub fn on_animation_frame(time: f64) {
@@ -33,20 +27,18 @@ pub fn on_animation_frame(time: f64) {
         for (attr, val) in anim_item.attributes.iter() {
             let (start, end) = val;
             // simple lerp
-            let delta = min(
+            let delta = min::<f64>(
                 (time - anim_item.start.unwrap()) / anim_item.duration / 1000.0,
                 1.0,
             );
             current[*attr] = start + delta * (end - start);
 
             if delta >= 1.0 {
-                finished.push(id.clone());
+                finished.push(*id);
             }
         }
 
-        canvas
-            .render_items
-            .insert(RenderId::from(id.clone()), current);
+        canvas.render_items.insert(*id, current);
 
         render::draw();
         // render::render_player_katex();

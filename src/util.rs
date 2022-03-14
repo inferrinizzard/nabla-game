@@ -16,6 +16,17 @@ pub fn get_key_val(id: &String) -> (String, usize) {
     (kvp[0].to_string(), kvp[1].parse::<usize>().unwrap())
 }
 
+pub fn min<T>(a: T, b: T) -> T
+where
+    T: PartialOrd,
+{
+    if a < b {
+        a
+    } else {
+        b
+    }
+}
+
 /// macro to print to js console
 macro_rules! js_log {
     ($($t:tt)*) => {

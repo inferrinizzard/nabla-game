@@ -1,4 +1,5 @@
 // std imports
+use rand::Rng;
 use std::collections::HashMap;
 use std::fmt::{Display, Error, Formatter};
 use std::ops::{Index, IndexMut};
@@ -20,6 +21,21 @@ extern "C" {
 /// calculates px from rem using js function
 pub fn rem_to_px(string: String) -> f64 {
     remToPx(string)
+}
+
+/// generates a random 6 digit Hex color code for Hit Region mapping
+pub fn random_hit_colour(hit_region_map: &HashMap<String, String>) -> String {
+    let mut hex_colour = String::new();
+
+    while hex_colour.is_empty() || hit_region_map.contains_key(&hex_colour) {
+        hex_colour = vec![0; 6]
+            .iter()
+            .map(|_| format!("{:X}", rand::thread_rng().gen_range(0..16)))
+            .collect::<Vec<String>>()
+            .join("");
+    }
+
+    format!("#{}", hex_colour)
 }
 
 /// container to group different render item sizes
