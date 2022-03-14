@@ -162,6 +162,7 @@ impl Canvas {
         };
     }
 
+    /// calculate default render positions for all render items
     fn calculate_render_positions(&mut self) {
         self.render_items.clear();
         let field_pos = get_base_field_pos();
@@ -172,6 +173,7 @@ impl Canvas {
         self.render_items.extend(button_pos);
     }
 
+    /// starts requestAnimationFrame callback
     pub fn start_anim(&mut self) {
         self.render_animation_frame_handle = request_animation_frame(on_animation_frame);
     }

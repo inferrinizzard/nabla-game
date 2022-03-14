@@ -18,6 +18,7 @@ fn min(a: f64, b: f64) -> f64 {
     }
 }
 
+/// requestAnimationFrame callback
 pub fn on_animation_frame(time: f64) {
     let canvas = unsafe { CANVAS.as_mut().unwrap() };
     let anim_items = &mut canvas.anim_items;
@@ -31,6 +32,7 @@ pub fn on_animation_frame(time: f64) {
         let mut current = RenderItem::default();
         for (attr, val) in anim_item.attributes.iter() {
             let (start, end) = val;
+            // simple lerp
             let delta = min(
                 (time - anim_item.start.unwrap()) / anim_item.duration / 1000.0,
                 1.0,
@@ -60,6 +62,7 @@ pub fn on_animation_frame(time: f64) {
     }
 }
 
+/// starts hover animation on player cards
 pub fn animate_hover(id: Option<RenderId>) {
     let canvas = unsafe { CANVAS.as_mut().unwrap() };
     let render_items = &canvas.render_items;
@@ -94,6 +97,7 @@ pub fn animate_hover(id: Option<RenderId>) {
     canvas.start_anim();
 }
 
+/// generic animation item container
 #[derive(Clone, Debug)]
 pub struct AnimItem {
     pub start: Option<f64>, // beginning timestamp of animation
@@ -101,13 +105,14 @@ pub struct AnimItem {
     pub attributes: HashMap<AnimAttribute, (f64, f64)>, // (start, end)
 }
 
+/// attributes of a render item that are able to be interpolated
 #[derive(Copy, Clone, Debug, Hash, Eq, PartialEq)]
 pub enum AnimAttribute {
-    X,
-    Y,
-    W,
-    H,
-    R,
+    X, // x position of animated component
+    Y, // y position of animated component
+    W, // width of animated component
+    H, // height of animated component
+    R, // border radius of animated component
 }
 
 impl Display for AnimAttribute {

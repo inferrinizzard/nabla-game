@@ -17,10 +17,12 @@ extern "C" {
     fn remToPx(string: String) -> f64;
 }
 
+/// calculates px from rem using js function
 pub fn rem_to_px(string: String) -> f64 {
     remToPx(string)
 }
 
+/// container to group different render item sizes
 #[derive(Debug)]
 pub struct RenderConstants {
     pub field_sizes: Sizes,
@@ -28,6 +30,7 @@ pub struct RenderConstants {
     pub button_sizes: Sizes,
 }
 
+/// stores calculated render item sizes based on canvas size + rem
 #[derive(Debug, Default)]
 pub struct Sizes {
     pub width: f64,
@@ -38,13 +41,14 @@ pub struct Sizes {
 
 pub type RenderHash = HashMap<RenderId, RenderItem>;
 
+/// stores render item dimension attributes
 #[derive(Debug, Clone, Copy, Default)]
 pub struct RenderItem {
-    pub x: f64,
-    pub y: f64,
-    pub w: f64,
-    pub h: f64,
-    pub r: f64,
+    pub x: f64, // x position
+    pub y: f64, // y position
+    pub w: f64, // width
+    pub h: f64, // height
+    pub r: f64, // border radius
 }
 
 impl Index<String> for RenderItem {
@@ -85,6 +89,7 @@ impl IndexMut<AnimAttribute> for RenderItem {
     }
 }
 
+/// enum to store unique id for each render item
 #[derive(Hash, Eq, PartialEq, Debug, Copy, Clone)]
 pub enum RenderId {
     PlayerOne0,
