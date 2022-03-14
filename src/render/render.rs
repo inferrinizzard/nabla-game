@@ -338,7 +338,7 @@ fn draw_field(id: RenderId) {
     if card_data.basis.is_none() {
         set_line_dash(context, 2, 10.0) // set line dash for empty field basis
     }
-    if game.active.selected.contains(&id.to_string()) {
+    if game.active.selected.contains(&id) {
         context.set_line_width(5.0);
     }
     draw_rect(card.x, card.y, card.w, card.h, card.r, id.to_string());
@@ -366,11 +366,11 @@ fn draw_hand(id: RenderId) {
     let (canvas, game) = unsafe { (CANVAS.as_ref().unwrap(), GAME.as_ref().unwrap()) };
     let card = &canvas.render_items[&id];
 
-    if game.active.selected.contains(&id.to_string()) {
+    if game.active.selected.contains(&id) {
         canvas.context.set_line_width(5.0);
     }
     draw_rect(card.x, card.y, card.w, card.h, card.r, id.to_string());
-    if game.active.selected.contains(&id.to_string()) {
+    if game.active.selected.contains(&id) {
         canvas.context.set_line_width(2.0);
     }
 }

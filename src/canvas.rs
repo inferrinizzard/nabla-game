@@ -30,7 +30,7 @@ pub struct Canvas {
     pub render_items: RenderHash,
 
     pub render_animation_frame_handle: AnimationFrame,
-    pub anim_items: HashMap<String, AnimItem>,
+    pub anim_items: HashMap<RenderId, AnimItem>,
 }
 
 impl Canvas {

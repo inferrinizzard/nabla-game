@@ -5,19 +5,15 @@ use crate::basis::structs::*;
 use crate::cards::*;
 use crate::game::{field::FieldBasis, flags::ALLOW_LINEAR_DEPENDENCE, structs::*};
 use crate::render::render;
+use crate::render::util::RenderId;
 // root imports
 use crate::GAME;
-// util imports
-use crate::util::get_key_val;
 
 /// delegates event handling based on turn num
-pub fn handle_mousedown(id: String) {
-    if id.is_empty() {
-        return;
-    }
-
+pub fn handle_mousedown(str_id: String) {
     let game = unsafe { GAME.as_mut().unwrap() };
     let turn = &game.turn;
+    let id = RenderId::from(str_id);
 
     match turn {
         Turn { number: n, .. } if n % 2 == 0 => {
@@ -33,7 +29,7 @@ pub fn handle_mousedown(id: String) {
 }
 
 /// further splits click event based on turn phase
-pub fn branch_turn_phase(id: String, player_num: u32) {
+pub fn branch_turn_phase(id: RenderId, player_num: u32) {
     let game = unsafe { GAME.as_mut().unwrap() };
     let turn = &game.turn;
     let player = if player_num == 1 {
@@ -42,7 +38,7 @@ pub fn branch_turn_phase(id: String, player_num: u32) {
         &game.player_2
     };
 
-    let (id_key, id_val) = get_key_val(&id);
+    let (id_key, id_val) = id.key_val();
 
     if id_key == "x" && id_val == 0 {
         game.active.clear();
@@ -52,7 +48,7 @@ pub fn branch_turn_phase(id: String, player_num: u32) {
 
     match turn.phase {
         TurnPhase::IDLE if id_key == format!("p{}", player_num) => {
-            game.active.selected.push(id.to_string());
+            game.active.selected.push(id);
             idle_turn_phase(player[id_val]);
         }
         TurnPhase::SELECT(select_operator) => select_turn_phase(select_operator, (id_key, id_val)),
@@ -208,7 +204,7 @@ fn handle_derivative_card(card: Card, i: usize) {
 }
 
 /// handles multiselect turn phase, player can choose multiple targets of selected operator (Mult/Div)
-fn multi_select_phase(multi_operator: Card, id: String, player_num: u32) {
+fn multi_select_phase(multi_operator: Card, id: RenderId, player_num: u32) {
     let game = unsafe { GAME.as_mut().unwrap() };
     let player = if &game.turn.number % 2 == 0 {
         &mut game.player_1
@@ -217,27 +213,24 @@ fn multi_select_phase(multi_operator: Card, id: String, player_num: u32) {
     };
     let field = &mut game.field;
     let selected = &mut game.active.selected;
-    let (id_key, id_val) = get_key_val(&id);
+    let (id_key, id_val) = id.key_val();
     if id_key == "f"
         || (id_key == format!("p{}", player_num) && matches!(player[id_val], Card::BasisCard(_)))
     {
-        selected.push(id.to_string());
+        selected.push(id);
         render::draw();
         // console::log_1(&JsValue::from(format!("added to multiselect: {}", id)));
     }
 
-    let has_at_least_1_field_basis = selected
-        .iter()
-        .find(|sel_id| sel_id.as_str().starts_with("f"))
-        .is_some();
+    let has_at_least_1_field_basis = selected.iter().find(|sel_id| sel_id.is_field()).is_some();
     let has_at_least_2_basis = selected.len() >= 3; // add one for operator
     let has_zero_with_many = selected.len() != 3
         && selected
             .iter()
             .find(|sel_id| {
-                sel_id.as_str().starts_with("p") // must be a player card
+                sel_id.is_player() // must be a player card
                     && matches!( // corresponding player card is zero
-                        player[get_key_val(sel_id).1],
+                        player[sel_id.key_val().1],
                         Card::BasisCard(BasisCard::Zero)
                     )
             })
@@ -253,7 +246,7 @@ fn multi_select_phase(multi_operator: Card, id: String, player_num: u32) {
             selected
                 .iter()
                 .filter_map(|sel_id| {
-                    let (sel_key, sel_val) = get_key_val(&sel_id);
+                    let (sel_key, sel_val) = sel_id.key_val();
 
                     if sel_key == "f" {
                         return Some(field[sel_val].basis.as_ref().unwrap().clone());
@@ -272,7 +265,7 @@ fn multi_select_phase(multi_operator: Card, id: String, player_num: u32) {
         let used_field_bases = selected
             .iter()
             .filter_map(|sel_id| {
-                let (sel_key, sel_val) = get_key_val(&sel_id);
+                let (sel_key, sel_val) = sel_id.key_val();
                 if sel_key == "f" {
                     return Some(sel_val);
                 }
@@ -299,12 +292,8 @@ fn end_turn() {
         .active
         .selected
         .iter()
-        .filter(|card| card.get(0..1).unwrap() == "p")
-        .map(|card| {
-            card.split("=").collect::<Vec<&str>>()[1]
-                .parse::<usize>()
-                .unwrap()
-        })
+        .filter(|card| card.is_player())
+        .map(|card| card.key_val().1)
         .collect::<Vec<usize>>();
     selected_indices.sort();
     selected_indices.reverse();

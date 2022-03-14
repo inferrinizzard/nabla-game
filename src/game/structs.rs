@@ -4,6 +4,7 @@ use rand::thread_rng;
 // outer crate imports
 use crate::cards::*;
 use crate::render::render;
+use crate::render::util::RenderId;
 use crate::MENU;
 // local imports
 use super::field::*;
@@ -152,8 +153,8 @@ pub enum TurnPhase {
 /// struct to store currently selected cards
 #[derive(Debug)]
 pub struct ActiveCards {
-    pub selected: Vec<String>,
-    pub hover: Option<String>,
+    pub selected: Vec<RenderId>,
+    pub hover: Option<RenderId>,
 }
 
 impl ActiveCards {

@@ -1,7 +1,6 @@
 // std imports
 use std::collections::HashMap;
-use std::fmt::Display;
-use std::fmt::Formatter;
+use std::fmt::{Display, Formatter};
 // wasm-bindgen imports
 use gloo::render::request_animation_frame;
 // local imports
@@ -22,7 +21,7 @@ fn min(a: f64, b: f64) -> f64 {
 pub fn on_animation_frame(time: f64) {
     let canvas = unsafe { CANVAS.as_mut().unwrap() };
     let anim_items = &mut canvas.anim_items;
-    let mut finished: Vec<String> = Vec::new();
+    let mut finished: Vec<RenderId> = Vec::new();
 
     for (id, anim_item) in anim_items {
         if anim_item.start.is_none() {
@@ -77,7 +76,7 @@ pub fn animate_hover(id: Option<RenderId>) {
         .anim_items
         .extend(target_pos.iter().map(|(id, item)| {
             (
-                id.to_string(),
+                *id,
                 AnimItem {
                     start: None,
                     duration: 0.1,
@@ -97,9 +96,9 @@ pub fn animate_hover(id: Option<RenderId>) {
 
 #[derive(Clone, Debug)]
 pub struct AnimItem {
-    pub start: Option<f64>,
-    pub duration: f64,
-    pub attributes: HashMap<AnimAttribute, (f64, f64)>,
+    pub start: Option<f64>, // beginning timestamp of animation
+    pub duration: f64,      // duration of animation in seconds
+    pub attributes: HashMap<AnimAttribute, (f64, f64)>, // (start, end)
 }
 
 #[derive(Copy, Clone, Debug, Hash, Eq, PartialEq)]
