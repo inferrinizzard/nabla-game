@@ -49,9 +49,9 @@ pub fn draw() {
 fn render_item(id: RenderId) {
     match id {
         RenderId::Deck => draw_deck(id),
-        RenderId::TurnIndicator => draw_turn_indicator(id),
-        RenderId::Cancel => draw_cancel(id),
-        RenderId::Multidone => draw_multi_done(id),
+        RenderId::TurnIndicator => draw_button(id, "Your Turn"),
+        RenderId::Cancel => draw_button(id, "Cancel"),
+        RenderId::Multidone => draw_button(id, "Finish"),
         _ if id.is_graveyard() => draw_graveyard(id),
         _ if id.is_field() => draw_field(id),
         _ if id.is_player() => draw_hand(id),
@@ -108,81 +108,29 @@ pub fn draw_rect(x: f64, y: f64, width: f64, height: f64, radius: f64, id: Strin
     hit_region_map.insert(hit_colour, id);
 }
 
-/// draws the escape button for SELECT phase
-fn draw_cancel(id: RenderId) {
+/// draws a button-like component
+fn draw_button(id: RenderId, text: &str) {
     let (canvas, game) = unsafe { (CANVAS.as_mut().unwrap(), GAME.as_ref().unwrap()) };
-    if game.active.selected.is_empty() {
+    if id == RenderId::Cancel && game.active.selected.is_empty() {
         return;
     }
-    let cancel = &canvas.render_items[&id];
-
-    draw_rect(
-        cancel.x,
-        cancel.y,
-        cancel.w,
-        cancel.h,
-        cancel.r,
-        id.to_string(),
-    );
-
-    let context = &mut canvas.context;
-    context.set_font("20px serif");
-    context.set_text_baseline("middle");
-    context.set_text_align("center");
-
-    context
-        .fill_text(
-            "Cancel",
-            cancel.x + cancel.w / 2.0,
-            cancel.y + cancel.h / 2.0,
-        )
-        .expect(&format!("Cannot print cancel"));
-}
-
-/// draws the button that ends MULTI_SELECT phase
-fn draw_multi_done(id: RenderId) {
-    let (canvas, game) = unsafe { (CANVAS.as_mut().unwrap(), GAME.as_ref().unwrap()) };
-    if !matches!(game.turn.phase, TurnPhase::MULTISELECT(_)) {
+    if id == RenderId::Multidone && !matches!(game.turn.phase, TurnPhase::MULTISELECT(_)) {
         return;
     }
-    let multidone = &canvas.render_items[&id];
+    let button = &canvas.render_items[&id];
 
-    draw_rect(
-        multidone.x,
-        multidone.y,
-        multidone.w,
-        multidone.h,
-        multidone.r,
-        id.to_string(),
-    );
+    let gutter = button.w / 4.0;
+    let y = if game.get_current_player_num() == 1 {
+        canvas.canvas_bounds.y - gutter * 2.0 - button.h * 2.0 // buttom of canvas for p1
+    } else {
+        gutter // top of canvas for p2
+    } + if id == RenderId::Multidone {
+        button.h + gutter // bottom half of card for multidone
+    } else {
+        0.0
+    };
 
-    let context = &mut canvas.context;
-    context.set_font("20px serif");
-    context.set_text_baseline("middle");
-    context.set_text_align("center");
-
-    context
-        .fill_text(
-            "Finish",
-            multidone.x + multidone.w / 2.0,
-            multidone.y + multidone.h / 2.0,
-        )
-        .expect(&format!("Cannot print multidone"));
-}
-
-/// draw marker to show whose turn it is
-fn draw_turn_indicator(id: RenderId) {
-    let canvas = unsafe { CANVAS.as_mut().unwrap() };
-    let turn_indicator = &canvas.render_items[&id];
-
-    draw_rect(
-        turn_indicator.x,
-        turn_indicator.y,
-        turn_indicator.w,
-        turn_indicator.h,
-        turn_indicator.r,
-        id.to_string(),
-    );
+    draw_rect(button.x, y, button.w, button.h, button.r, id.to_string());
 
     let context = &mut canvas.context;
     context.set_font("20px serif");
@@ -190,12 +138,8 @@ fn draw_turn_indicator(id: RenderId) {
     context.set_text_align("center");
 
     context
-        .fill_text(
-            "Your Turn",
-            turn_indicator.x + turn_indicator.w / 2.0,
-            turn_indicator.y + turn_indicator.h / 2.0,
-        )
-        .expect(&format!("Cannot print cancel"));
+        .fill_text(text, button.x + button.w / 2.0, y + button.h / 2.0)
+        .expect(&format!("Cannot print {}", id));
 }
 
 /// draws deck and num cards remaining
