@@ -4,6 +4,7 @@ use std::cmp::min;
 use crate::basis::structs::*;
 use crate::cards::*;
 use crate::game::{field::FieldBasis, flags::ALLOW_LINEAR_DEPENDENCE, structs::*};
+use crate::render::anim;
 use crate::render::render;
 use crate::render::util::RenderId;
 // root imports
@@ -298,7 +299,8 @@ fn end_turn() {
     selected_indices.sort();
     selected_indices.reverse();
 
-    let player = if &game.turn.number % 2 == 0 {
+    let player_num = game.get_current_player_num();
+    let player = if player_num == 1 {
         &mut game.player_1
     } else {
         &mut game.player_2
@@ -311,8 +313,13 @@ fn end_turn() {
 
     let deck = &mut game.deck;
     // replenish from deck if possible
-    for _ in player.len()..min(deck.len(), 7) {
-        player.push(deck.pop().unwrap());
+    for i in player.len()..min(deck.len(), 7) {
+        anim::animate_deal(RenderId::from(format!(
+            "p{player_num}={val}",
+            player_num = player_num,
+            val = i
+        )));
+        // player.push(deck.pop().unwrap());
     }
 
     let flag = unsafe { ALLOW_LINEAR_DEPENDENCE };

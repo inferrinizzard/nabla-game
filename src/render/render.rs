@@ -52,7 +52,18 @@ fn render_item(id: RenderId) {
         _ if id.is_graveyard() => draw_graveyard(id),
         _ if id.is_field() => draw_field(id),
         _ if id.is_player() => draw_hand(id),
-        _ => {}
+        _ => {
+            let canvas = unsafe { CANVAS.as_mut().unwrap() };
+            // if animation item is finished, remove from render list
+            if !canvas.anim_items.contains_key(&id) {
+                canvas.render_items.remove(&id);
+                return;
+            }
+
+            if id == RenderId::Deal {
+                draw_deal(id);
+            }
+        }
     }
 }
 
@@ -142,6 +153,15 @@ fn draw_deck(id: RenderId) {
             deck.y + deck.h / 2.0,
         )
         .expect(&format!("Cannot printsize for deck"));
+}
+
+/// draws deck and num cards remaining
+fn draw_deal(id: RenderId) {
+    let canvas = unsafe { CANVAS.as_mut().unwrap() };
+    let deal = &canvas.render_items[&id];
+
+    canvas.context.clear_rect(deal.x, deal.y, deal.w, deal.h);
+    draw_rect(deal.x, deal.y, deal.w, deal.h, deal.r, id.to_string());
 }
 
 /// draws graveyard and last 3 cards played
@@ -275,15 +295,28 @@ fn draw_field(id: RenderId) {
 /// renders player hands
 fn draw_hand(id: RenderId) {
     let (canvas, game) = unsafe { (CANVAS.as_ref().unwrap(), GAME.as_ref().unwrap()) };
+    let context = &canvas.context;
     let card = &canvas.render_items[&id];
+
+    let (key, val) = id.key_val();
+    let player_num = key.chars().nth(1).unwrap().to_digit(10).unwrap();
+    let hand = if player_num == 1 {
+        &game.player_1
+    } else {
+        &game.player_2
+    };
 
     if game.active.selected.contains(&id) {
         canvas.context.set_line_width(5.0);
+    }
+    if val >= hand.len() {
+        set_line_dash(context, 2, 10.0) // set line dash for empty field basis
     }
     draw_rect(card.x, card.y, card.w, card.h, card.r, id.to_string());
     if game.active.selected.contains(&id) {
         canvas.context.set_line_width(2.0);
     }
+    set_line_dash(context, 0, 0.0);
 }
 
 pub fn render_player_katex() {
@@ -303,6 +336,13 @@ fn render_player_katex_item(player_num: u32, val: usize, id: RenderId) {
     } else {
         &game.player_2
     };
+
+    if val >= hand.len() {
+        clear_katex_element(format!("katex-item_{}", id));
+        clear_katex_element(format!("katex-item_{}-corner_left", id));
+        clear_katex_element(format!("katex-item_{}-corner_right", id));
+        return;
+    }
 
     draw_player_card_katex(
         &hand[val],
