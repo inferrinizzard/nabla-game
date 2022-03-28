@@ -2,7 +2,7 @@
 use std::collections::HashMap;
 use std::fmt::{Display, Formatter};
 // wasm-bindgen imports
-use gloo::render::request_animation_frame;
+use gloo::render::{request_animation_frame, AnimationFrame};
 // local imports
 use super::pos;
 use super::render;
@@ -15,7 +15,7 @@ use crate::util::min;
 /// requestAnimationFrame callback
 pub fn on_animation_frame(time: f64) {
     let canvas = unsafe { CANVAS.as_mut().unwrap() };
-    let anim_items = &mut canvas.anim_items;
+    let anim_items = &mut canvas.anim_controller.anim_items;
     let mut finished: Vec<RenderId> = Vec::new();
 
     for (id, anim_item) in anim_items {
@@ -41,14 +41,15 @@ pub fn on_animation_frame(time: f64) {
         render::draw();
         // render::render_player_katex();
     }
-    let anim_items = &mut canvas.anim_items;
+    let anim_items = &mut canvas.anim_controller.anim_items;
     for id in finished {
         let removed = anim_items.remove(&id).unwrap();
         removed.callback.iter().for_each(|f| f());
     }
 
-    if canvas.anim_items.len() > 0 {
-        canvas.render_animation_frame_handle = request_animation_frame(on_animation_frame);
+    if canvas.anim_controller.anim_items.len() > 0 {
+        canvas.anim_controller.render_animation_frame_handle =
+            request_animation_frame(on_animation_frame);
     }
 }
 
@@ -66,6 +67,7 @@ pub fn animate_hover(id: Option<RenderId>) {
     };
 
     canvas
+        .anim_controller
         .anim_items
         .extend(target_pos.iter().map(|(id, item)| {
             (
@@ -85,7 +87,7 @@ pub fn animate_hover(id: Option<RenderId>) {
             )
         }));
 
-    canvas.start_anim();
+    canvas.anim_controller.start_anim();
 }
 
 pub fn animate_deal(id: RenderId) {
@@ -94,7 +96,7 @@ pub fn animate_deal(id: RenderId) {
     let deck_pos = &render_items[&RenderId::Deck];
     let target_pos = &render_items[&id];
 
-    canvas.anim_items.insert(
+    canvas.anim_controller.anim_items.insert(
         RenderId::Deal,
         AnimItem {
             start: None,
@@ -121,7 +123,21 @@ pub fn animate_deal(id: RenderId) {
         },
     );
 
-    canvas.start_anim();
+    canvas.anim_controller.start_anim();
+}
+
+#[derive(Debug)]
+pub struct AnimController {
+    pub anim_items: HashMap<RenderId, AnimItem>, // map of currently animated items
+    pub anim_chain: HashMap<RenderId, (RenderId, AnimItem)>, // map of chain animation callbacks
+    pub render_animation_frame_handle: AnimationFrame, // current raf handle
+}
+
+impl AnimController {
+    /// starts requestAnimationFrame callback
+    pub fn start_anim(&mut self) {
+        self.render_animation_frame_handle = request_animation_frame(on_animation_frame);
+    }
 }
 
 /// generic animation item container

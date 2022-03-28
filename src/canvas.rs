@@ -2,11 +2,11 @@
 use std::collections::HashMap;
 // wasm-bindgen imports
 use gloo::events::EventListener;
-use gloo::render::{request_animation_frame, AnimationFrame};
+use gloo::render::request_animation_frame;
 use wasm_bindgen::JsCast;
 use web_sys::*;
 // outer crate imports
-use crate::render::anim::{on_animation_frame, AnimItem};
+use crate::render::anim::{on_animation_frame, AnimController};
 use crate::render::pos::*;
 use crate::render::util::*;
 // util imports
@@ -29,8 +29,9 @@ pub struct Canvas {
     pub render_constants: RenderConstants,
     pub render_items: RenderHash,
 
-    pub render_animation_frame_handle: AnimationFrame,
-    pub anim_items: HashMap<RenderId, AnimItem>,
+    pub anim_controller: AnimController,
+    // pub render_animation_frame_handle: AnimationFrame,
+    // pub anim_items: HashMap<RenderId, AnimItem>,
 }
 
 impl Canvas {
@@ -88,8 +89,11 @@ impl Canvas {
                 button_sizes: Sizes::default(),
             },
             render_items: HashMap::default(),
-            render_animation_frame_handle: request_animation_frame(on_animation_frame),
-            anim_items: HashMap::default(),
+            anim_controller: AnimController {
+                anim_items: HashMap::default(),
+                anim_chain: HashMap::default(),
+                render_animation_frame_handle: request_animation_frame(on_animation_frame),
+            },
         }
     }
 
@@ -171,10 +175,5 @@ impl Canvas {
         self.render_items.extend(field_pos);
         self.render_items.extend(player_pos);
         self.render_items.extend(button_pos);
-    }
-
-    /// starts requestAnimationFrame callback
-    pub fn start_anim(&mut self) {
-        self.render_animation_frame_handle = request_animation_frame(on_animation_frame);
     }
 }

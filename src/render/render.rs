@@ -55,7 +55,7 @@ fn render_item(id: RenderId) {
         _ => {
             let canvas = unsafe { CANVAS.as_mut().unwrap() };
             // if animation item is finished, remove from render list
-            if !canvas.anim_items.contains_key(&id) {
+            if !canvas.anim_controller.anim_items.contains_key(&id) {
                 canvas.render_items.remove(&id);
                 return;
             }
