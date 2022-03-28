@@ -15,7 +15,8 @@ use crate::util::min;
 /// requestAnimationFrame callback
 pub fn on_animation_frame(time: f64) {
     let canvas = unsafe { CANVAS.as_mut().unwrap() };
-    let anim_items = &mut canvas.anim_controller.anim_items;
+    let anim_controller = &mut canvas.anim_controller;
+    let anim_items = &mut anim_controller.anim_items;
     let mut finished: Vec<RenderId> = Vec::new();
 
     for (id, anim_item) in anim_items {
@@ -41,10 +42,16 @@ pub fn on_animation_frame(time: f64) {
         render::draw();
         // render::render_player_katex();
     }
-    let anim_items = &mut canvas.anim_controller.anim_items;
+
     for id in finished {
-        let removed = anim_items.remove(&id).unwrap();
+        let removed = anim_controller.anim_items.remove(&id).unwrap();
         removed.callback.iter().for_each(|f| f());
+
+        if anim_controller.anim_chain.contains_key(&id) {
+            let anim_queue = anim_controller.anim_chain.entry(id).or_default();
+            let next_anim = anim_queue.remove(0);
+            anim_controller.anim_items.insert(id, next_anim);
+        }
     }
 
     if canvas.anim_controller.anim_items.len() > 0 {
@@ -90,13 +97,38 @@ pub fn animate_hover(id: Option<RenderId>) {
     canvas.anim_controller.start_anim();
 }
 
-pub fn animate_deal(id: RenderId) {
+pub fn animate_deal_cards(ids: Vec<RenderId>) {
+    let canvas = unsafe { CANVAS.as_mut().unwrap() };
+    let anim_controller = &mut canvas.anim_controller;
+
+    for (i, id) in ids.iter().enumerate() {
+        let (deal_id, anim_item) = animate_deal(*id);
+        if i < ids.len() - 1 {
+            let next_anim = animate_deal(ids[i + 1]).1;
+            if anim_controller.anim_chain.contains_key(&deal_id) {
+                anim_controller
+                    .anim_chain
+                    .entry(deal_id)
+                    .or_default()
+                    .push(next_anim);
+            } else {
+                anim_controller.anim_chain.insert(deal_id, vec![next_anim]);
+            }
+        }
+
+        anim_controller.anim_items.insert(deal_id, anim_item);
+    }
+
+    anim_controller.start_anim();
+}
+
+pub fn animate_deal(id: RenderId) -> (RenderId, AnimItem) {
     let canvas = unsafe { CANVAS.as_mut().unwrap() };
     let render_items = &canvas.render_items;
     let deck_pos = &render_items[&RenderId::Deck];
     let target_pos = &render_items[&id];
 
-    canvas.anim_controller.anim_items.insert(
+    (
         RenderId::Deal,
         AnimItem {
             start: None,
@@ -121,15 +153,13 @@ pub fn animate_deal(id: RenderId) {
                 render::render_player_katex();
             }],
         },
-    );
-
-    canvas.anim_controller.start_anim();
+    )
 }
 
 #[derive(Debug)]
 pub struct AnimController {
     pub anim_items: HashMap<RenderId, AnimItem>, // map of currently animated items
-    pub anim_chain: HashMap<RenderId, (RenderId, AnimItem)>, // map of chain animation callbacks
+    pub anim_chain: HashMap<RenderId, Vec<AnimItem>>, // map of chain animation callbacks
     pub render_animation_frame_handle: AnimationFrame, // current raf handle
 }
 
@@ -141,12 +171,12 @@ impl AnimController {
 }
 
 /// generic animation item container
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Default)]
 pub struct AnimItem {
     pub start: Option<f64>, // beginning timestamp of animation
     pub duration: f64,      // duration of animation in seconds
     pub attributes: HashMap<AnimAttribute, (f64, f64)>, // (start, end)
-    pub callback: Vec<fn()>, // callback list for animation end
+    pub callback: Vec<fn() -> ()>, // callback list for animation end
 }
 
 /// attributes of a render item that are able to be interpolated

@@ -313,14 +313,26 @@ fn end_turn() {
 
     let deck = &mut game.deck;
     // replenish from deck if possible
-    for i in player.len()..min(deck.len(), 7) {
-        anim::animate_deal(RenderId::from(format!(
-            "p{player_num}={val}",
-            player_num = player_num,
-            val = i
-        )));
-        // player.push(deck.pop().unwrap());
-    }
+    anim::animate_deal_cards(
+        (player.len()..min(deck.len(), 7))
+            .map(|i| {
+                RenderId::from(format!(
+                    "p{player_num}={val}",
+                    player_num = player_num,
+                    val = i
+                ))
+            })
+            .collect::<Vec<RenderId>>(),
+    );
+
+    // for i in player.len()..min(deck.len(), 7) {
+    //     anim::animate_deal(RenderId::from(format!(
+    //         "p{player_num}={val}",
+    //         player_num = player_num,
+    //         val = i
+    //     )));
+    //     // player.push(deck.pop().unwrap());
+    // }
 
     let flag = unsafe { ALLOW_LINEAR_DEPENDENCE };
     if !flag {
