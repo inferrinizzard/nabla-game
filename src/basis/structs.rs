@@ -67,6 +67,21 @@ impl Basis {
         }
     }
 
+    /// checks if basis is num, frac, or complex coefficient
+    pub fn is_numeric(&self) -> bool {
+        if self.is_frac(self.coefficient()) {
+            true
+        } else if let Basis::BasisNode(BasisNode {
+            operator: BasisOperator::Pow(_) | BasisOperator::Log | BasisOperator::E,
+            operands,
+            ..
+        }) = self
+        {
+            operands[0].is_numeric()
+        } else {
+            false
+        }
+    }
     /// checks if basis is num BasisLeaf equal to given integer
     pub fn is_num(&self, i: i32) -> bool {
         self.is_frac(Fraction::from(i))
