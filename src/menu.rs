@@ -8,7 +8,7 @@ use web_sys::{Document, Element, HtmlInputElement};
 use crate::game::flags::*;
 use crate::game::structs::{Game, GameState};
 use crate::render::katex::clear_katex_element;
-use crate::render::render_constants::{PLAYER_1_COLOUR, PLAYER_2_COLOUR};
+use crate::render::util::{PLAYER_1_COLOUR, PLAYER_2_COLOUR};
 // root imports
 use super::{GAME, MENU};
 

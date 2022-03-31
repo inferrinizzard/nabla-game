@@ -2,10 +2,13 @@
 use std::collections::HashMap;
 // wasm-bindgen imports
 use gloo::events::EventListener;
+use gloo::render::request_animation_frame;
 use wasm_bindgen::JsCast;
 use web_sys::*;
 // outer crate imports
-use crate::render::render_constants::*;
+use crate::render::anim::{on_animation_frame, AnimController};
+use crate::render::pos::*;
+use crate::render::util::*;
 // util imports
 use crate::util::Vector2;
 
@@ -24,6 +27,11 @@ pub struct Canvas {
     pub mousemove_listener: Option<EventListener>,
 
     pub render_constants: RenderConstants,
+    pub render_items: RenderHash,
+
+    pub anim_controller: AnimController,
+    // pub render_animation_frame_handle: AnimationFrame,
+    // pub anim_items: HashMap<RenderId, AnimItem>,
 }
 
 impl Canvas {
@@ -78,6 +86,13 @@ impl Canvas {
             render_constants: RenderConstants {
                 field_sizes: Sizes::default(),
                 player_sizes: Sizes::default(),
+                button_sizes: Sizes::default(),
+            },
+            render_items: HashMap::default(),
+            anim_controller: AnimController {
+                anim_items: HashMap::default(),
+                anim_chain: HashMap::default(),
+                render_animation_frame_handle: request_animation_frame(on_animation_frame),
             },
         }
     }
@@ -95,6 +110,7 @@ impl Canvas {
 
         self.rebounds();
         self.update_render_constants();
+        self.calculate_render_positions();
     }
 
     /// recalculate canvas bounds and center on resize
@@ -118,6 +134,7 @@ impl Canvas {
         let player_card_height = rem_to_px(String::from("9rem"));
         let player_card_width = player_card_height * 0.75;
         let gutter = player_card_width / 4.0;
+        let radius = gutter / 4.0;
 
         // TODO: add balancing and min sizes for smaller screens
         let field_gutter = gutter * 2.0;
@@ -125,18 +142,38 @@ impl Canvas {
             (self.canvas_bounds.y - player_card_height * 2.0 - gutter * 2.0 - field_gutter * 3.0)
                 / 2.0;
         let field_basis_width = field_basis_height * 0.75;
+        let field_radius = field_gutter / 4.0;
 
         self.render_constants = RenderConstants {
             field_sizes: Sizes {
                 width: field_basis_width,
                 height: field_basis_height,
                 gutter: field_gutter,
+                radius: field_radius,
             },
             player_sizes: Sizes {
                 width: player_card_width,
                 height: player_card_height,
                 gutter,
+                radius,
+            },
+            button_sizes: Sizes {
+                width: player_card_width,
+                height: (player_card_height - gutter) / 2.0,
+                gutter,
+                radius: radius / 2.0,
             },
         };
+    }
+
+    /// calculate default render positions for all render items
+    fn calculate_render_positions(&mut self) {
+        self.render_items.clear();
+        let field_pos = get_base_field_pos();
+        let player_pos = get_base_player_pos();
+        let button_pos = get_base_button_pos(&field_pos, &player_pos);
+        self.render_items.extend(field_pos);
+        self.render_items.extend(player_pos);
+        self.render_items.extend(button_pos);
     }
 }
