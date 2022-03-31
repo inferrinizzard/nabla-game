@@ -12,7 +12,10 @@ body {
 
 body {
 	margin: 0;
-	font: 'KaTeX_Main', 'Helvetica Neue';
+}
+
+body * {
+	font-family: 'KaTeX_Main', 'Helvetica Neue';
 }
 
 #canvas,
@@ -68,11 +71,17 @@ body {
 	z-index: 4;
 }
 
-#menu > h1 {
+#menu > h1.title {
 	margin: auto;
-	margin-top: 25vh;
+	margin-top: min(20vh, 20%);
 	color: black;
 	text-align: center;
+
+	letter-spacing: 0.1rem;
+	font-size: 4rem;
+	font-weight: bold;
+	font-family: 'Roboto Slab';
+	color: var(--color-dark);
 }
 
 #menu > .button-wrapper {
