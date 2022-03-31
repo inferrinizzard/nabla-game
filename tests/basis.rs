@@ -162,3 +162,80 @@ fn test_div() {
     println!("{} = {}", a, b);
     assert_eq!(a, b);
 }
+
+#[test]
+#[ignore]
+fn test_special_coefficients() {
+    let (mut a, mut b);
+
+    // test sqrt coefficient (simplified)
+    a = Basis::from(4);
+    b = Basis::from(2);
+    println!("sqrt({}) = {}", a, b);
+    assert_eq!(a ^ (1, 2), b);
+
+    // test sqrt coefficient (un-simplified)
+    a = Basis::from(2);
+    b = SqrtBasisNode(1, &Basis::from(2));
+    println!("sqrt({}) = {}", a, b);
+    assert_eq!(a ^ (1, 2), b);
+
+    // test sqrt coefficient cancel
+    a = SqrtBasisNode(1, &Basis::from(2));
+    b = Basis::from(2);
+    println!("({})^2 = {}", a, b);
+    assert_eq!(a ^ 2, b);
+
+    // test e coefficient
+    a = Basis::from(2);
+    b = EBasisNode(&Basis::from(2));
+    println!("e^({}) = {}", a, b);
+    assert_eq!(e(&a), b);
+
+    // test e coefficient cancel
+    a = EBasisNode(&Basis::from(2));
+    b = Basis::from(2);
+    println!("log({}) = {}", a, b);
+    assert_eq!(log(&a), b);
+
+    // test log coefficient
+    a = Basis::from(2);
+    b = LogBasisNode(&Basis::from(2));
+    println!("log({}) = {}", a, b);
+    assert_eq!(log(&a), b);
+
+    // test log coefficient cancel
+    a = LogBasisNode(&Basis::from(2));
+    b = Basis::from(2);
+    println!("e^({}) = {}", a, b);
+    assert_eq!(e(&a), b);
+}
+
+#[test]
+fn test_complex_special_coefficients() {
+    let (mut a, mut b);
+
+    // // test sqrt coefficient cancel
+    // a = SqrtBasisNode(1, &Basis::from(2)) * SqrtBasisNode(1, &Basis::from(2));
+    // b = Basis::from(2);
+    // println!("{} = {}", a, b);
+    // assert_eq!(a, b);
+
+    // // test sqrt coefficient cancel (mult)
+    // a = SqrtBasisNode(1, &Basis::from(2)) * SqrtBasisNode(3, &Basis::from(2));
+    // b = Basis::from(4);
+    // println!("{} = {}", a, b);
+    // assert_eq!(a, b);
+
+    // test sqrt coefficient cancel (div)
+    a = SqrtBasisNode(3, &Basis::from(2)) / SqrtBasisNode(1, &Basis::from(2));
+    b = Basis::from(2);
+    println!("{} = {}", a, b);
+    assert_eq!(a, b);
+
+    // test sqrt coefficient (simplified)
+    a = SqrtBasisNode(1, &Basis::from(2)) * SqrtBasisNode(1, &Basis::x());
+    b = SqrtBasisNode(1, &(2 * Basis::x()));
+    println!("{} = {}", a, b);
+    assert_eq!(a, b);
+}

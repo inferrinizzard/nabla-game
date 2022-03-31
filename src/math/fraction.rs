@@ -55,6 +55,29 @@ impl Fraction {
             d: d / gcd,
         }
     }
+
+    /// tries to take fractional root, returns None if not possible with integers
+    pub fn try_fractional_root(&self, (n, d): (i32, i32)) -> Option<Self> {
+        // strips negatives
+        let out_n = (self.n.abs() as f32).powf(n.abs() as f32 / d.abs() as f32);
+        let out_d = (self.d.abs() as f32).powf(n.abs() as f32 / d.abs() as f32);
+
+        if out_n.fract() == 0.0 && out_d.fract() == 0.0 {
+            if n < 0 || d < 0 {
+                Some(Fraction {
+                    n: out_d as i32,
+                    d: out_n as i32,
+                })
+            } else {
+                Some(Fraction {
+                    n: out_n as i32,
+                    d: out_d as i32,
+                })
+            }
+        } else {
+            None
+        }
+    }
 }
 
 /// creates a new Fraction with given integer as numerator, 1 as denominator
