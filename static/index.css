@@ -46,8 +46,21 @@ body {
 	transform: translate(-50%, -50%);
 }
 
-.katex-right_corner {
+.katex-item.katex-player {
+	font-size: 1.2rem;
+}
+.katex-item.katex-player.katex-small {
+	font-size: 1.25rem;
+}
+.katex-item.katex-field {
+	font-size: 1.2rem;
+}
+
+.katex-item.katex-right_corner {
 	transform: translate(-50%, -50%) rotate(180deg);
+}
+.katex-item.katex-left_corner, .katex-item.katex-right_corner {
+	font-size: 1.25rem;
 }
 
 #menu {

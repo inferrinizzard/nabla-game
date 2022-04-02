@@ -278,7 +278,7 @@ fn draw_field(id: RenderId) {
 
     let katex_element_id = format!("katex-item_{}", id.to_string());
     if let Some(basis) = &card_data.basis {
-        draw_katex(
+        let field_katex = draw_katex(
             basis,
             katex_element_id,
             "Huge",
@@ -287,6 +287,8 @@ fn draw_field(id: RenderId) {
                 x: card.x + card.w / 2.0,
             },
         );
+
+        add_class(&field_katex, String::from("katex-field"));
     } else {
         clear_katex_element(katex_element_id);
     }

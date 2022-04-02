@@ -11,8 +11,13 @@
 			integrity="sha384-MlJdn/WNKDGXveldHDdyRP1R4CTHr3FeuDNfhsLPYrq2t0UBkUdK2jyTnXPEK1NQ"
 			crossorigin="anonymous"
 		/>
+
+		<!-- add html2canvas -->
+		<script src="http://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
 	</head>
 	<body>
+		<canvas id="textureCanvas" style="z-index: 10; position: fixed; top: 0; left: 0"></canvas>
+		<div id="staging" style="z-index: 11; position: fixed; top: 0; left: 0"></div>
 		<button class="menu-button" id="button-MENU">Main Menu</button>
 		<div id="menu">
 			<h1>Nabla Operator Game</h1>
@@ -101,5 +106,6 @@
 		<canvas id="canvas"></canvas>
 		<canvas id="hitCanvas" hidden></canvas>
 		<script src="index.js"></script>
+		<script src="katexture.js"></script>
 	</body>
 </html>

@@ -3,6 +3,7 @@ use wasm_bindgen::prelude::*;
 use web_sys::Element;
 // outer crate imports
 use crate::cards::Card;
+use crate::cards::*;
 // util imports
 use crate::util::{ToLatex, Vector2};
 
@@ -60,7 +61,17 @@ pub fn draw_player_card_katex(
     right_corner_pos: Vector2,
 ) {
     let katex_element_id = format!("katex-item_{}", &id);
-    draw_katex(card, katex_element_id.clone(), "Large", pos);
+    let player_katex = draw_katex(card, katex_element_id.clone(), "Large", pos);
+    add_class(&player_katex, String::from("katex-player"));
+    if matches!(
+        card,
+        &Card::BasisCard(BasisCard::Zero | BasisCard::One | BasisCard::X)
+            | &Card::AlgebraicCard(AlgebraicCard::Mult | AlgebraicCard::Div | AlgebraicCard::Sqrt)
+            | &Card::DerivativeCard(DerivativeCard::Laplacian | DerivativeCard::Nabla)
+    ) {
+        add_class(&player_katex, String::from("katex-small"));
+    }
+
     draw_player_card_corner_katex("left", card, katex_element_id.clone(), left_corner_pos);
     draw_player_card_corner_katex("right", card, katex_element_id.clone(), right_corner_pos);
 }
@@ -82,12 +93,19 @@ fn draw_player_card_corner_katex(corner_type: &str, card: &Card, id: String, pos
         .set_attribute("style", style_string.as_str())
         .expect(format!("Cannot set style for {:?} {} corner", corner_type, card).as_str());
 
-    let class_string = format!(
-        "{} katex-{}_corner",
-        corner.get_attribute("class").unwrap(),
-        corner_type
-    );
-    corner
+    add_class(&corner, format!("katex-{}_corner", corner_type));
+}
+
+pub fn add_class(element: &Element, class: String) -> &Element {
+    let current_class_string = element.get_attribute("class").unwrap();
+    let class_string = if current_class_string.contains(&class) {
+        current_class_string
+    } else {
+        format!("{} {}", current_class_string, class)
+    };
+    element
         .set_attribute("class", class_string.as_str())
-        .expect(format!("Cannot set class for {} corner", corner_type).as_str());
+        .expect(format!("Cannot set class for {:?}", element).as_str());
+
+    element
 }
