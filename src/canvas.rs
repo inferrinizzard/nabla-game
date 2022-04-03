@@ -8,6 +8,7 @@ use web_sys::*;
 // outer crate imports
 use crate::render::anim::{on_animation_frame, AnimController};
 use crate::render::pos::*;
+use crate::render::sprites::SpriteLookup;
 use crate::render::util::*;
 // util imports
 use crate::util::Vector2;
@@ -28,6 +29,8 @@ pub struct Canvas {
 
     pub render_constants: RenderConstants,
     pub render_items: RenderHash,
+    pub sprite_element: HtmlImageElement,
+    pub sprite_lookup: SpriteLookup,
 
     pub anim_controller: AnimController,
     // pub render_animation_frame_handle: AnimationFrame,
@@ -44,6 +47,11 @@ impl Canvas {
             .unwrap();
         let hit_canvas_element: HtmlCanvasElement = document
             .get_element_by_id("hitCanvas")
+            .unwrap()
+            .dyn_into()
+            .unwrap();
+        let sprite_element: HtmlImageElement = document
+            .get_element_by_id("spritesheet")
             .unwrap()
             .dyn_into()
             .unwrap();
@@ -87,8 +95,11 @@ impl Canvas {
                 field_sizes: Sizes::default(),
                 player_sizes: Sizes::default(),
                 button_sizes: Sizes::default(),
+                sprite_scale: 1.0,
             },
             render_items: HashMap::default(),
+            sprite_element,
+            sprite_lookup: SpriteLookup::new(),
             anim_controller: AnimController {
                 anim_items: HashMap::default(),
                 anim_chain: HashMap::default(),
@@ -163,6 +174,7 @@ impl Canvas {
                 gutter,
                 radius: radius / 2.0,
             },
+            sprite_scale: self.sprite_lookup.card_height / player_card_height,
         };
     }
 

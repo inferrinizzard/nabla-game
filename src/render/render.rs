@@ -3,11 +3,13 @@ use js_sys::Array;
 use wasm_bindgen::prelude::*;
 use web_sys::*;
 // external crate imports
+use crate::cards::Card;
 use crate::game::structs::*;
 use crate::util::*;
 use crate::{CANVAS, GAME};
 // internal crate imports
 use super::katex::*;
+use super::sprites::CornerSpriteKey;
 use super::util::*;
 
 /// main game render function, iterates through all game items to render
@@ -311,6 +313,66 @@ fn draw_hand(id: RenderId) {
     }
     if val >= hand.len() {
         set_line_dash(context, 2, 10.0) // set line dash for empty field basis
+    } else {
+        let player_card = hand[val];
+
+        let sprite_scale = &canvas.render_constants.sprite_scale;
+        let (sx, sy, sw, sh) = canvas.sprite_lookup.get_card(&player_card);
+        let (dx, dy, dw, dh) = (card.x, card.y, sw / sprite_scale, sh / sprite_scale);
+        context
+            .draw_image_with_html_image_element_and_sw_and_sh_and_dx_and_dy_and_dw_and_dh(
+                &canvas.sprite_element,
+                sx,
+                sy,
+                sw,
+                sh,
+                dx + (card.w - dw) / 2.0,
+                dy + (card.h - dh) / 2.0,
+                dw,
+                dh,
+            )
+            .expect(format!("Cannot draw katex sprite for {}", id).as_str());
+
+        let (left_corner, right_corner) = if let Card::BasisCard(_) = player_card {
+            (CornerSpriteKey::ElementLeft, CornerSpriteKey::ElementRight)
+        } else {
+            (
+                CornerSpriteKey::FunctionLeft,
+                CornerSpriteKey::FunctionRight,
+            )
+        };
+
+        let (sx, sy, sw, sh) = canvas.sprite_lookup.get_corner(left_corner);
+        let (dx, dy, dw, dh) = (card.x, card.y, sw / sprite_scale, sh / sprite_scale);
+        context
+            .draw_image_with_html_image_element_and_sw_and_sh_and_dx_and_dy_and_dw_and_dh(
+                &canvas.sprite_element,
+                sx,
+                sy,
+                sw,
+                sh,
+                dx,
+                dy,
+                dw,
+                dh,
+            )
+            .expect(format!("Cannot draw left corner sprite for {}", id).as_str());
+
+        let (sx, sy, sw, sh) = canvas.sprite_lookup.get_corner(right_corner);
+        let (dx, dy, dw, dh) = (card.x, card.y, sw / sprite_scale, sh / sprite_scale);
+        context
+            .draw_image_with_html_image_element_and_sw_and_sh_and_dx_and_dy_and_dw_and_dh(
+                &canvas.sprite_element,
+                sx,
+                sy,
+                sw,
+                sh,
+                dx + card.w - dw,
+                dy + card.h - dh,
+                dw,
+                dh,
+            )
+            .expect(format!("Cannot draw left corner sprite for {}", id).as_str());
     }
     draw_rect(card.x, card.y, card.w, card.h, card.r, id.to_string());
     if game.active.selected.contains(&id) {
