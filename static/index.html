@@ -5,65 +5,74 @@
 		<title>Nabla Game</title>
 		<link rel="stylesheet" href="index.css" />
 		<link rel="icon" href="favicon.png" />
+		<!-- Add KaTeX css -->
 		<link
 			rel="stylesheet"
 			href="https://cdn.jsdelivr.net/npm/katex@0.15.2/dist/katex.min.css"
 			integrity="sha384-MlJdn/WNKDGXveldHDdyRP1R4CTHr3FeuDNfhsLPYrq2t0UBkUdK2jyTnXPEK1NQ"
 			crossorigin="anonymous"
 		/>
+		<!-- Add Roboto Slab -->
+		<link rel="preconnect" href="https://fonts.googleapis.com" />
+		<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+		<link
+			href="https://fonts.googleapis.com/css2?family=Roboto+Slab:wght@500&display=swap"
+			rel="stylesheet"
+		/>
 	</head>
 	<body>
-		<button id="button-MENU">Main Menu</button>
+		<image id="spritesheet" src="./spritesheet.png" alt="spritesheet" hidden />
+		<button class="menu-button" id="button-MENU">Main Menu</button>
 		<div id="menu">
-			<h1>Nabla Operator Game</h1>
+			<h1 class="title">N𝚫BL𝚫 OPER𝚫TOR G𝚫ME</h1>
 			<div class="button-wrapper">
 				<div id="menu-MENU" class="menu-item">
-					<button id="button-PLAYVS">Play vs Friend</button>
-					<button id="button-PLAYAI">Play vs AI</button>
-					<button id="button-TUTORIAL">Instructions</button>
-					<button id="button-SETTINGS">Settings</button>
-					<button id="button-CREDITS">Credits</button>
+					<button class="menu-button" id="button-PLAYVS">Play vs Friend</button>
+					<button class="menu-button" id="button-PLAYAI" disabled>Play vs AI</button>
+					<button class="menu-button" id="button-TUTORIAL">Instructions</button>
+					<button class="menu-button" id="button-SETTINGS">Settings</button>
+					<button class="menu-button" id="button-CREDITS">Credits</button>
 				</div>
 				<div id="menu-SETTINGS" class="menu-item" hidden>
-					<div>
-						<label for="checkbox-DISPLAY_LN_FOR_LOG">Display Ln instead of Log ?</label>
+					<label class="setting-menu" for="checkbox-DISPLAY_LN_FOR_LOG">
+						<h3>Display Ln instead of Log ?</h3>
 						<input id="checkbox-DISPLAY_LN_FOR_LOG" type="checkbox" />
-					</div>
-					<div>
-						<label for="checkbox-ALLOW_LINEAR_DEPENDENCE"
-							>Allow linearly dependent bases ? (ie. x and 2x)</label
-						>
+						<span class="checkbox"></span>
+					</label>
+					<label class="setting-menu" for="checkbox-ALLOW_LINEAR_DEPENDENCE">
+						<h3>Allow linearly dependent bases ? (ie. x and 2x)</h3>
 						<input id="checkbox-ALLOW_LINEAR_DEPENDENCE" type="checkbox" checked />
-					</div>
-					<div>
-						<label for="checkbox-ALLOW_LIMITS_BEYOND_BOUNDS"
-							>Allow limits beyond function bounds ? (ie. arccos(INF))</label
-						>
+						<span class="checkbox"></span>
+					</label>
+					<label class="setting-menu" for="checkbox-ALLOW_LIMITS_BEYOND_BOUNDS">
+						<h3>Allow limits beyond function bounds ? (ie. arccos(INF))</h3>
 						<input id="checkbox-ALLOW_LIMITS_BEYOND_BOUNDS" type="checkbox" checked />
-					</div>
-					<div>
-						<label for="checkbox-FULL_COMPUTE">Perform all computations ?</label>
+						<span class="checkbox"></span>
+					</label>
+					<label class="setting-menu" for="checkbox-FULL_COMPUTE">
+						<h3>Perform all computations ?</h3>
 						<input id="checkbox-FULL_COMPUTE" type="checkbox" />
-					</div>
-					<div>
-						<label for="checkbox-USE_FRACTIONAL_EXPONENTS"
-							>Display roots as x^(1/2) instead of √x</label
-						>
+						<span class="checkbox"></span>
+					</label>
+					<label class="setting-menu" for="checkbox-USE_FRACTIONAL_EXPONENTS">
+						<h3>Display roots as x^(1/2) instead of √x</h3>
 						<input id="checkbox-USE_FRACTIONAL_EXPONENTS" type="checkbox" checked />
-					</div>
-					<div>
-						<label for="checkbox-LIMIT_FIELD_BASIS">Only allow max 3 field basis ?</label>
+						<span class="checkbox"></span>
+					</label>
+					<label class="setting-menu" for="checkbox-LIMIT_FIELD_BASIS">
+						<h3>Only allow max 3 field basis ?</h3>
 						<input id="checkbox-LIMIT_FIELD_BASIS" type="checkbox" checked />
-					</div>
+						<span class="checkbox"></span>
+					</label>
 
-					<div>
-						<label for="colour-PLAYER_1">Player 1 Colour</label>
+					<label class="setting-menu" for="colour-PLAYER_1">
+						<h3>Player 1 Colour</h3>
 						<input id="colour-PLAYER_1" type="color" value="#FF0000" />
-					</div>
-					<div>
-						<label for="colour-PLAYER_2">Player 2 Colour</label>
+					</label>
+					<label class="setting-menu" for="colour-PLAYER_2">
+						<h3>Player 2 Colour</h3>
 						<input id="colour-PLAYER_2" type="color" value="#0000FF" />
-					</div>
+					</label>
 				</div>
 				<div id="menu-TUTORIAL" class="menu-item" hidden>
 					<h3>Japanese Instructional Video:</h3>

@@ -115,3 +115,32 @@ fn test_inverse_derivatives() {
     println!("d/dx({}) = {}\n", a, derivative(&a));
     assert_eq!(derivative(&a), b);
 }
+
+#[test]
+fn test_inverse_complex_coefficient() {
+    let (mut a, mut b);
+
+    // test coefficient inverse order
+    a = 4 * (Basis::x() ^ 2);
+    b = (Basis::x() ^ (1, 2)) / 2;
+    println!("f-1({}) = {}", a, b);
+    assert_eq!(inverse(&a), b);
+
+    // test coefficient with sqrt
+    a = SqrtBasisNode(1, &Basis::from(2)) * (Basis::x() ^ (1, 2));
+    b = (Basis::x() ^ 2) / 2;
+    println!("f-1({}) = {}", a, b);
+    assert_eq!(inverse(&a), b);
+
+    // test log coefficient
+    a = LogBasisNode(&Basis::from(2)) * (Basis::x() + Basis::from(1));
+    b = Basis::x() / LogBasisNode(&Basis::from(2)) - Basis::from(1);
+    println!("f-1({}) = {}", a, b);
+    assert_eq!(inverse(&a), b);
+
+    // test e coefficient
+    a = EBasisNode(&Basis::from(2)) * (Basis::x() ^ 2);
+    b = SqrtBasisNode(1, &Basis::x()) / EBasisNode(&Basis::from(1));
+    println!("f-1({}) = {}", a, b);
+    assert_eq!(inverse(&a), b);
+}

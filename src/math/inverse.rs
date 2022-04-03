@@ -27,9 +27,9 @@ pub fn inverse(basis: &Basis) -> Basis {
         return basis.clone();
     }
 
-    let mut operator_stack: Vec<(Fraction, BasisOperator)> = vec![];
+    // stack of coefficient, basis (for polyary ops), operator
+    let mut operator_stack: Vec<(Fraction, Option<Basis>, BasisOperator)> = vec![];
     let mut ptr = basis;
-    let mut add_ops = vec![];
     // drill down to base leaf
     while let Basis::BasisNode(BasisNode {
         operator,
@@ -40,53 +40,105 @@ pub fn inverse(basis: &Basis) -> Basis {
         match operator {
             // only matches f(x) + integers
             BasisOperator::Add | BasisOperator::Minus
-                if operands.len() == 2
-                    && operands.iter().any(|op| op.is_frac(op.coefficient())) =>
+                if operands.len() == 2 && operands.iter().any(|op| op.is_numeric()) =>
             {
+                let add_op;
                 // n + f(x)
-                if operands[0].is_frac(operands[0].coefficient()) {
+                if operands[0].is_numeric() {
                     ptr = &operands[1];
-                    add_ops.push(operands[0].clone());
+                    add_op = operands[0].clone();
                 }
                 // f(x) + n
                 else {
                     ptr = &operands[0];
-                    add_ops.push(operands[1].clone());
+                    add_op = operands[1].clone();
                 }
-                operator_stack.push((Fraction::from(1), *operator));
+                operator_stack.push((Fraction::from(1), Some(add_op), *operator));
             }
-            BasisOperator::Inv => operator_stack.push((*coefficient, *operator)),
+            BasisOperator::Inv => {
+                operator_stack.push((*coefficient, None, *operator));
+                ptr = &operands[0];
+            }
+            BasisOperator::Mult
+                if operands.iter().any(|op| op.is_numeric())
+                    && operands.iter().filter(|op| !op.is_numeric()).count() == 1 =>
+            {
+                operator_stack.push((
+                    Fraction::from(1),
+                    Some(MultBasisNode(
+                        operands
+                            .iter()
+                            .filter(|op| op.is_numeric())
+                            .map(|op| op.clone())
+                            .collect(),
+                    )),
+                    BasisOperator::Div,
+                ));
+                ptr = operands.iter().find(|op| !op.is_numeric()).unwrap();
+            }
+            BasisOperator::Div if operands.iter().any(|op| op.is_numeric()) => {
+                if operands[1].is_numeric() {
+                    operator_stack.push((
+                        Fraction::from(1),
+                        Some(operands[1].clone()),
+                        BasisOperator::Mult,
+                    ));
+                    ptr = &operands[0];
+                } else {
+                    operator_stack.push((
+                        Fraction::from(1),
+                        None,
+                        BasisOperator::Pow(Fraction::from(-1)),
+                    ));
+                    operator_stack.push((
+                        Fraction::from(1),
+                        Some(operands[0].clone()),
+                        BasisOperator::Mult,
+                    ));
+                    ptr = &operands[1];
+                }
+            }
             _ => {
                 let try_operator_inverse = operator_inverse(*operator);
                 // all other operators are non-invertible
                 if try_operator_inverse.is_none() {
                     return InvBasisNode(basis);
                 }
-                operator_stack.push((*coefficient, *operator));
+                operator_stack.push((*coefficient, None, *operator));
                 ptr = &operands[0];
             }
         }
     }
-    add_ops.reverse();
 
     // apply operands in reverse order, inverted
     let mut out = Basis::x();
     for i in 0..operator_stack.len() {
-        let (coefficient, op) = operator_stack[i];
-        out = out / coefficient;
-        match op {
+        let (coefficient, basis, op) = &operator_stack[i];
+        out = out / *coefficient;
+        match *op {
             BasisOperator::Inv => out = inverse(&out),
             BasisOperator::Add | BasisOperator::Minus => {
-                out = Basis::BasisNode(BasisNode {
-                    coefficient: Fraction::from(1),
-                    operator: BasisOperator::Add,
-                    operands: vec![out, -add_ops.pop().unwrap()],
-                })
+                out = AddBasisNode(vec![out, -basis.as_ref().unwrap().clone()])
+            }
+            BasisOperator::Div => {
+                out = out / basis.as_ref().unwrap().clone();
+            }
+            BasisOperator::Mult => {
+                out = out * basis.as_ref().unwrap().clone();
+            }
+            BasisOperator::Pow(Fraction { n, d }) => {
+                out = PowBasisNode(d, n, &out);
+            }
+            BasisOperator::Log => {
+                out = EBasisNode(&out);
+            }
+            BasisOperator::E => {
+                out = LogBasisNode(&out);
             }
             _ => {
                 out = Basis::BasisNode(BasisNode {
                     coefficient: Fraction::from(1),
-                    operator: operator_inverse(op).unwrap(),
+                    operator: operator_inverse(*op).unwrap(),
                     operands: vec![out],
                 })
             }

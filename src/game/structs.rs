@@ -4,6 +4,8 @@ use rand::thread_rng;
 // outer crate imports
 use crate::cards::*;
 use crate::render::render;
+use crate::render::util::RenderId;
+// root imports
 use crate::MENU;
 // local imports
 use super::field::*;
@@ -114,8 +116,19 @@ impl Game {
 
     /// set new game state
     pub fn set_state(&mut self, state: GameState) {
+        let menu = unsafe { MENU.as_ref().unwrap() };
+
         self.state = state;
-        render::draw();
+        match self.state {
+            GameState::PLAYAI | GameState::PLAYVS => {
+                menu.close();
+                render::draw();
+            }
+            GameState::MENU => {
+                menu.open();
+            }
+            _ => {}
+        }
     }
 
     /// handle losing state
@@ -152,8 +165,8 @@ pub enum TurnPhase {
 /// struct to store currently selected cards
 #[derive(Debug)]
 pub struct ActiveCards {
-    pub selected: Vec<String>,
-    pub hover: Option<String>,
+    pub selected: Vec<RenderId>,
+    pub hover: Option<RenderId>,
 }
 
 impl ActiveCards {
