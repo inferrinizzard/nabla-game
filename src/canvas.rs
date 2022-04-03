@@ -10,7 +10,7 @@ use crate::render::anim::{on_animation_frame, AnimController};
 use crate::render::pos::*;
 use crate::render::util::*;
 // util imports
-use crate::util::Vector2;
+use crate::util::{min, Vector2};
 
 /// Controller for canvas elements, related contexts, and event listeners
 pub struct Canvas {
@@ -138,9 +138,11 @@ impl Canvas {
 
         // TODO: add balancing and min sizes for smaller screens
         let field_gutter = gutter * 2.0;
-        let field_basis_height =
+        let field_basis_height = min(
             (self.canvas_bounds.y - player_card_height * 2.0 - gutter * 2.0 - field_gutter * 3.0)
-                / 2.0;
+                / 2.0, // distance from edge of player to center
+            player_card_height * 2.0,
+        );
         let field_basis_width = field_basis_height * 0.75;
         let field_radius = field_gutter / 4.0;
 
