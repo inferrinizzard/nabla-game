@@ -1,10 +1,12 @@
 // wasm-bindgen imports
 use wasm_bindgen::prelude::*;
 use web_sys::Element;
-// outer crate imports
-use crate::cards::Card;
+// root imports
+use crate::CANVAS;
 // util imports
 use crate::util::{ToLatex, Vector2};
+// local imports
+use super::util::RenderItem;
 
 #[wasm_bindgen(module = "/js/katex.js")]
 extern "C" {
@@ -52,42 +54,30 @@ where
     element
 }
 
-pub fn draw_player_card_katex(
-    card: &Card,
-    id: String,
-    pos: Vector2,
-    left_corner_pos: Vector2,
-    right_corner_pos: Vector2,
+/// renders katex sprite with source dimensions from spritesheet and closure to generate dest dimensions
+pub fn render_katex_sprite(
+    (sx, sy, sw, sh): (f64, f64, f64, f64),
+    card: RenderItem,
+    pos_f: fn(RenderItem, (f64, f64)) -> Vector2,
+    expect_str: &str,
 ) {
-    let katex_element_id = format!("katex-item_{}", &id);
-    draw_katex(card, katex_element_id.clone(), "Large", pos);
-    draw_player_card_corner_katex("left", card, katex_element_id.clone(), left_corner_pos);
-    draw_player_card_corner_katex("right", card, katex_element_id.clone(), right_corner_pos);
-}
+    let canvas = unsafe { CANVAS.as_ref().unwrap() };
+    let sprite_scale = &canvas.render_constants.sprite_scale;
 
-fn draw_player_card_corner_katex(corner_type: &str, card: &Card, id: String, pos: Vector2) {
-    let katex_string = if card.card_type() == "BASIS_CARD" {
-        "\\boldsymbol{\\in}"
-    } else {
-        "\\Bbb{F}"
-    };
-    let corner = render_katex_string(
-        katex_string.to_string(),
-        format!("{}-corner_{}", id, corner_type),
-        "small",
-    );
-
-    let style_string = format!("position: absolute; top: {}px; left: {}px;", pos.y, pos.x);
-    corner
-        .set_attribute("style", style_string.as_str())
-        .expect(format!("Cannot set style for {:?} {} corner", corner_type, card).as_str());
-
-    let class_string = format!(
-        "{} katex-{}_corner",
-        corner.get_attribute("class").unwrap(),
-        corner_type
-    );
-    corner
-        .set_attribute("class", class_string.as_str())
-        .expect(format!("Cannot set class for {} corner", corner_type).as_str());
+    let (dw, dh) = (sw / sprite_scale, sh / sprite_scale);
+    let pos = pos_f(card, (dw, dh));
+    canvas
+        .context
+        .draw_image_with_html_image_element_and_sw_and_sh_and_dx_and_dy_and_dw_and_dh(
+            &canvas.sprite_element,
+            sx,
+            sy,
+            sw,
+            sh,
+            pos.x,
+            pos.y,
+            dw,
+            dh,
+        )
+        .expect(expect_str);
 }

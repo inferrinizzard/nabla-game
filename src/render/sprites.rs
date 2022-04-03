@@ -4,6 +4,7 @@ use std::collections::HashMap;
 use crate::cards::*;
 use crate::game::flags::DISPLAY_LN_FOR_LOG;
 
+/// hash key enum to store player card corners
 #[derive(Hash, Eq, PartialEq, Debug, Clone, Copy)]
 pub enum CornerSpriteKey {
     ElementLeft,
@@ -12,6 +13,7 @@ pub enum CornerSpriteKey {
     FunctionRight,
 }
 
+/// struct to hold sprite data for player cards
 pub struct SpriteLookup {
     map: HashMap<Card, (i32, i32)>,
     other: HashMap<CornerSpriteKey, (i32, i32)>,
@@ -57,6 +59,7 @@ impl SpriteLookup {
         }
     }
 
+    /// fetches sprite dimensions for corresponding card
     pub fn get_card(&self, card: &Card) -> (f64, f64, f64, f64) {
         let flag = unsafe { DISPLAY_LN_FOR_LOG };
 
@@ -73,6 +76,7 @@ impl SpriteLookup {
         )
     }
 
+    /// fetches sprite dimensions for corresponding corner item
     pub fn get_corner(&self, corner: CornerSpriteKey) -> (f64, f64, f64, f64) {
         let (x, y) = *self.other.get(&corner).unwrap_or(&(0, 0));
         let gutter = self.card_width / 4.0;

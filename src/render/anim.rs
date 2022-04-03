@@ -40,7 +40,6 @@ pub fn on_animation_frame(time: f64) {
 
         canvas.render_items.insert(*id, current);
         render::draw();
-        // render::render_player_katex();
     }
 
     for id in finished {
@@ -150,7 +149,6 @@ pub fn animate_deal(id: RenderId) -> (RenderId, AnimItem) {
                 };
                 player.push(game.deck.pop().unwrap());
                 render::draw();
-                render::render_player_katex();
             }],
         },
     )
