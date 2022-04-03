@@ -1,48 +1,35 @@
-## How to install
+# Nabla Operator Game ナブラ演算子ゲーム
 
-```sh
-yarn install
-```
+This project is a web version of the physical card game created by UTokyo students here: https://nablagame.com/.
 
-## How to run in debug mode
+The live version of the game is available here: https://nabla-game.netlify.app.
 
-```sh
-# Builds the project and opens it in a new browser tab. Auto-reloads when the project changes.
-yarn start
-```
+The source code is written is Rust + WASM, bootstrapped from here: https://github.com/rustwasm/rust-webpack-template.
 
-## How to build in release mode
+Additionally, the math engine implements a custom Computer Algebra System (CAS) to calculate arbitrary Derivatives and Integrals, in additional to other algebraic functions such as Mult, Div, Sqrt, Log, etc.
 
-```sh
-# Builds the project and places it into the `dist` folder.
-yarn run build
-```
+### Future Plans
 
-## How to run unit tests
+- Adding a Japanese language mode
+- Adding WebAudio for browser sounds
+- Improving responsiveness, currently only mostly supports landscape browsers
+- Using WebGL + custom models for the game scene
+- Polishing the Menu UI
+- Fleshing out the tutorial section
+- Eventually improving the custom CAS
+- Adding an min-max AI that the user can play against
 
-```sh
-# Runs tests in Firefox
-yarn test -- --firefox
+### Known Issues / Incomplete:
 
-# Runs tests in Chrome
-yarn test -- --chrome
+- Integration
+  - Integrals don't have full support yet for Complexe Coefficients (log(n), n^(a/b), e^n)
+  - Log, Limit operators don't have full support for Integrals
+- Inverses
+  - Inverses don't support complex integrals
+  - Limit operators don't have full support for complex Inverse functions
+- Distributive Property (FOIL) is not fully implemented for polynomial x polynomial calculations
 
-# Runs tests in Safari
-yarn test -- --safari
-```
-
-## What does each file do?
-
-- `Cargo.toml` contains the standard Rust metadata. You put your Rust dependencies in here. You must change this file with your details (name, description, version, authors, categories)
-- `package.json` contains the standard npm metadata. You put your JavaScript dependencies in here. You must change this file with your details (author, name, version)
-- `webpack.config.js` contains the Webpack configuration. You shouldn't need to change this, unless you have very special needs.
-
-- The `js` folder contains your JavaScript code (`index.js` is used to hook everything into Webpack, you don't need to change it).
-- The `src` folder contains your Rust code.
-- The `static` folder contains any files that you want copied as-is into the final build. It contains an `index.html` file which loads the `index.js` file.
-- The `tests` folder contains your Rust unit tests.
-
-## References
+### References
 
 - Nabla Operator Game: https://nablagame.com/
 - Play Guide: https://www.youtube.com/watch?v=kf0DAygsXAU
