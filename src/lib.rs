@@ -60,13 +60,11 @@ pub fn main_js() -> Result<(), JsValue> {
 
     canvas.resize();
     render::render::draw();
-    render::render::render_player_katex();
 
     EventListener::new(&window, "resize", |_e| {
         let canvas = unsafe { CANVAS.as_mut().unwrap() };
         canvas.resize();
         render::render::draw();
-        render::render::render_player_katex();
     })
     .forget();
 

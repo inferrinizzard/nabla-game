@@ -44,6 +44,7 @@ pub struct RenderConstants {
     pub field_sizes: Sizes,
     pub player_sizes: Sizes,
     pub button_sizes: Sizes,
+    pub sprite_scale: f64,
 }
 
 /// stores calculated render item sizes based on canvas size + rem

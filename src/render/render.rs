@@ -3,11 +3,14 @@ use js_sys::Array;
 use wasm_bindgen::prelude::*;
 use web_sys::*;
 // external crate imports
+use crate::cards::Card;
 use crate::game::structs::*;
 use crate::util::*;
+// root imports
 use crate::{CANVAS, GAME};
 // internal crate imports
 use super::katex::*;
+use super::sprites::CornerSpriteKey;
 use super::util::*;
 
 /// main game render function, iterates through all game items to render
@@ -311,56 +314,55 @@ fn draw_hand(id: RenderId) {
     }
     if val >= hand.len() {
         set_line_dash(context, 2, 10.0) // set line dash for empty field basis
+    } else {
+        let player_card = hand[val]; // get Card from hand
+
+        // draw main center sprite
+        let center_sprite_dims = canvas.sprite_lookup.get_card(&player_card);
+        render_katex_sprite(
+            center_sprite_dims,
+            *card,
+            |card, (dw, dh)| Vector2 {
+                x: card.x + (card.w - dw) / 2.0, // centered based on sprite dimensions
+                y: card.y + (card.h - dh) / 2.0, // centered based on sprite dimensions
+            },
+            format!("Cannot draw katex sprite for {}", id).as_str(),
+        );
+
+        // get corner icon
+        let (left_corner, right_corner) = if let Card::BasisCard(_) = player_card {
+            (CornerSpriteKey::ElementLeft, CornerSpriteKey::ElementRight)
+        } else {
+            (
+                CornerSpriteKey::FunctionLeft,
+                CornerSpriteKey::FunctionRight,
+            )
+        };
+
+        let left_corner_dims = canvas.sprite_lookup.get_corner(left_corner);
+        render_katex_sprite(
+            left_corner_dims,
+            *card,
+            |card, _| Vector2 {
+                x: card.x, // aligned to top left
+                y: card.y, // aligned to top left
+            },
+            format!("Cannot draw left corner sprite for {}", id).as_str(),
+        );
+        let right_corner_dims = canvas.sprite_lookup.get_corner(right_corner);
+        render_katex_sprite(
+            right_corner_dims,
+            *card,
+            |card, (dw, dh)| Vector2 {
+                x: card.x + card.w - dw, // aligned to bottom right
+                y: card.y + card.h - dh, // aligned to bottom right
+            },
+            format!("Cannot draw right corner sprite for {}", id).as_str(),
+        );
     }
     draw_rect(card.x, card.y, card.w, card.h, card.r, id.to_string());
     if game.active.selected.contains(&id) {
         canvas.context.set_line_width(2.0);
     }
     set_line_dash(context, 0, 0.0);
-}
-
-pub fn render_player_katex() {
-    for i in 1..=2 {
-        for j in 0..7 {
-            render_player_katex_item(i, j, RenderId::from(format!("p{}={}", i, j)));
-        }
-    }
-}
-
-fn render_player_katex_item(player_num: u32, val: usize, id: RenderId) {
-    let (canvas, game) = unsafe { (CANVAS.as_ref().unwrap(), GAME.as_ref().unwrap()) };
-    let gutter = canvas.render_constants.player_sizes.gutter;
-    let card = &canvas.render_items[&id];
-    let hand = if player_num == 1 {
-        &game.player_1
-    } else {
-        &game.player_2
-    };
-
-    if val >= hand.len() {
-        clear_katex_element(format!("katex-item_{}", id));
-        clear_katex_element(format!("katex-item_{}-corner_left", id));
-        clear_katex_element(format!("katex-item_{}-corner_right", id));
-        return;
-    }
-
-    draw_player_card_katex(
-        &hand[val],
-        id.to_string(),
-        // middle of card
-        Vector2 {
-            x: card.x + card.w / 2.0,
-            y: card.y + card.h / 2.0,
-        },
-        // top left of card
-        Vector2 {
-            x: card.x + gutter * 0.75,
-            y: card.y + gutter * 0.75,
-        },
-        // bottom right of card
-        Vector2 {
-            x: card.x + card.w - gutter * 0.75,
-            y: card.y + card.h - gutter * 0.75,
-        },
-    )
 }
