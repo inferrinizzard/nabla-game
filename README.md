@@ -11,10 +11,18 @@ The source code is written is Rust + WASM, bootstrapped from here: https://githu
 
 Additionally, the math engine implements a custom Computer Algebra System (CAS) to calculate arbitrary Derivatives and Integrals, in additional to other algebraic functions such as Mult, Div, Sqrt, Log, etc.
 
+### Packages used:
+- [KaTeX](https://katex.org/) for LaTeX typesetting
+- [web-sys](https://rustwasm.github.io/wasm-bindgen/web-sys/index.html) for js DOM structs in Rust
+- [wasm-bindgen](https://github.com/rustwasm/wasm-bindgen) for Rust ↔ js ABI communication and build tools
+- [gloo](https://github.com/rustwasm/gloo) for better js Event Listener ABIs in Rust
+
+
 ### Future Plans
 
 - Adding a Japanese language mode
 - Adding WebAudio for browser sounds
+- Size optimisation of the final WASM bundle
 - Improving responsiveness, currently only mostly supports landscape browsers
 - Using WebGL + custom models for the game scene
 - Polishing the Menu UI
