@@ -2,7 +2,7 @@
 use std::cmp::min;
 // outer crate imports
 use crate::basis::structs::*;
-use crate::cards::*;
+use crate::game::cards::*;
 use crate::game::{field::FieldBasis, flags::ALLOW_LINEAR_DEPENDENCE, structs::*};
 use crate::render::anim;
 use crate::render::render;

@@ -2,8 +2,7 @@ use gloo::events::EventListener;
 use wasm_bindgen::prelude::*;
 
 pub mod basis;
-pub mod cards;
-mod game;
+pub mod game;
 use game::structs::Game;
 pub mod math;
 mod menu;

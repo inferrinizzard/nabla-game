@@ -2,12 +2,12 @@
 use rand::seq::SliceRandom;
 use rand::thread_rng;
 // outer crate imports
-use crate::cards::*;
 use crate::render::render;
 use crate::render::util::RenderId;
 // root imports
 use crate::MENU;
 // local imports
+use super::cards::*;
 use super::field::*;
 
 /// helper function to create new deck Vec

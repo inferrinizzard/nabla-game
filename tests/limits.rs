@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use nabla_game;
 use nabla_game::basis::structs::Basis;
-use nabla_game::cards::LimitCard;
+use nabla_game::game::cards::LimitCard;
 use nabla_game::math::limits::limit;
 
 pub mod util;

@@ -4,7 +4,8 @@ use std::ops::{Index, IndexMut};
 use std::slice::SliceIndex;
 // outer crate imports
 use crate::basis::structs::*;
-use crate::cards::*;
+// local imports
+use super::cards::*;
 
 /// Controller for Game Field
 #[derive(Debug)]

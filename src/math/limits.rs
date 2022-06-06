@@ -1,6 +1,6 @@
 // outer crate imports
 use crate::basis::{builders::*, structs::*};
-use crate::cards::LimitCard;
+use crate::game::cards::LimitCard;
 use crate::game::flags::ALLOW_LIMITS_BEYOND_BOUNDS;
 use crate::math::logarithm::logarithm;
 
