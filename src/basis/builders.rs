@@ -52,26 +52,20 @@ pub fn AddBasisNode(operands: Vec<Basis>) -> Basis {
         *entry.or_insert(Fraction::from(0)) += addend.coefficient();
     });
 
+    // recombine <base, coefficient> hash back into polynomial
     let final_operands = operand_hash.iter().fold(vec![], |mut acc, (k, v)| {
         if k.is_num(0) || *v == 0 {
             return acc;
         }
-        match k.clone() {
-            Basis::BasisLeaf(basis_leaf) => acc.push(Basis::BasisLeaf(BasisLeaf {
-                coefficient: *v,
-                ..basis_leaf
-            })),
-            Basis::BasisNode(basis_node) => acc.push(Basis::BasisNode(BasisNode {
-                coefficient: *v,
-                ..basis_node
-            })),
-        }
+        acc.push(k.with_frac(*v));
         acc
     });
 
+    // x + -x = 0
     if final_operands.len() == 0 {
         return Basis::from(0);
     }
+    // 2x + x = 3x
     if final_operands.len() == 1 {
         return final_operands[0].clone();
     }
@@ -94,12 +88,13 @@ pub fn MinusBasisNode(operands: Vec<Basis>) -> Basis {
 /// gets the inner base of an exponential expression if possible, returning the base and the exponent (as fraction tuple)
 fn get_base(basis: &Basis) -> Option<(Basis, i32, i32)> {
     match basis {
-        Basis::BasisLeaf(_) => Some((basis.clone(), 1, 1)),
+        Basis::BasisLeaf(_) => Some((basis.clone(), 1, 1)), // exponent is 1
         Basis::BasisNode(BasisNode {
             operator: BasisOperator::Pow(Fraction { n, d }),
             operands,
             ..
         }) => {
+            // check if base of pow also has exponent
             let inner_base = get_base(&operands[0]);
             if inner_base.is_some() {
                 let (i_base, i_n, i_d) = inner_base.unwrap();
@@ -135,6 +130,7 @@ fn build_numerator_denominator(
     let mut numerator = in_numerator
         .iter()
         .fold(Vec::new(), |mut acc: Vec<Basis>, op| {
+            // if numerator has Mult nodes
             if let Basis::BasisNode(BasisNode {
                 coefficient: mult_coefficient,
                 operator: BasisOperator::Mult,
@@ -143,12 +139,15 @@ fn build_numerator_denominator(
             {
                 final_coefficient *= *mult_coefficient;
                 acc.extend(mult_operands.clone());
-            } else if let Basis::BasisNode(BasisNode {
+            }
+            // if numerator has Div nodes
+            else if let Basis::BasisNode(BasisNode {
                 operator: BasisOperator::Div,
                 operands: div_operands,
                 ..
             }) = op
             {
+                // if numerator of Div node is a Mult node
                 if let Basis::BasisNode(BasisNode {
                     coefficient: div_numerator_coefficient,
                     operator: BasisOperator::Mult,
@@ -160,6 +159,7 @@ fn build_numerator_denominator(
                 } else {
                     acc.push(div_operands[0].clone());
                 }
+                // if denominator of Div node is a Mult node
                 if let Basis::BasisNode(BasisNode {
                     coefficient: div_denominator_coefficient,
                     operator: BasisOperator::Mult,
@@ -186,6 +186,7 @@ fn build_numerator_denominator(
         });
 
     in_denominator.iter().for_each(|op| {
+        // if denominator has Mult nodes
         if let Basis::BasisNode(BasisNode {
             coefficient: mult_coefficient,
             operator: BasisOperator::Mult,
@@ -194,12 +195,15 @@ fn build_numerator_denominator(
         {
             final_coefficient /= *mult_coefficient;
             denominator.extend(mult_operands.clone());
-        } else if let Basis::BasisNode(BasisNode {
+        }
+        // if denominator has Div nodes
+        else if let Basis::BasisNode(BasisNode {
             operator: BasisOperator::Div,
             operands: div_operands,
             ..
         }) = op
         {
+            // if denominator of Div node is a Mult node
             if let Basis::BasisNode(BasisNode {
                 coefficient: div_numerator_coefficient,
                 operator: BasisOperator::Mult,
@@ -211,6 +215,7 @@ fn build_numerator_denominator(
             } else {
                 denominator.push(div_operands[0].clone());
             }
+            // if denominator of Div node is a Mult node
             if let Basis::BasisNode(BasisNode {
                 coefficient: div_denominator_coefficient,
                 operator: BasisOperator::Mult,
@@ -300,6 +305,7 @@ fn assemble_mult(coefficient: Fraction, numerator: Vec<Basis>, denominator: Vec<
             }
             return;
         }
+        // add base, exponent to numerator hash
         let element = get_base(factor);
         if element.is_some() {
             let (base, n, d) = element.unwrap();
@@ -341,6 +347,7 @@ fn assemble_mult(coefficient: Fraction, numerator: Vec<Basis>, denominator: Vec<
             }
             return;
         }
+        // add base, exponent to denominator hash
         let element = get_base(factor);
         if element.is_some() {
             let (base, n, d) = element.unwrap();
@@ -447,42 +454,54 @@ fn assemble_mult(coefficient: Fraction, numerator: Vec<Basis>, denominator: Vec<
             acc
         });
 
+    // [x] / 1
     if final_numerator.len() == 1 && final_denominator.len() == 0 {
         return final_numerator[0].clone() * final_coefficient;
     }
+    // 1 / [x]
     if final_denominator.len() == 1 && final_numerator.len() == 0 {
         return (final_denominator[0].clone() ^ -1) * final_coefficient;
     }
 
+    // return Div node if denominator is not empty
     if final_denominator.len() > 0 {
         return Basis::BasisNode(BasisNode {
             coefficient: Fraction::from(1),
             operator: BasisOperator::Div,
             operands: vec![
+                // [x] / [y]
                 if final_numerator.len() > 1 {
                     Basis::BasisNode(BasisNode {
                         coefficient: Fraction::from(final_coefficient.n),
                         operator: BasisOperator::Mult,
                         operands: final_numerator,
                     })
-                } else if final_numerator.len() == 1 {
+                }
+                // [x] / [y]
+                else if final_numerator.len() == 1 {
                     final_numerator[0].clone() * final_coefficient.n
-                } else {
+                }
+                // n / [x]
+                else {
                     Basis::from(final_coefficient.n)
                 },
+                // [x] / [y]
                 if final_denominator.len() > 1 {
                     Basis::BasisNode(BasisNode {
                         coefficient: Fraction::from(final_coefficient.d),
                         operator: BasisOperator::Mult,
                         operands: final_denominator,
                     })
-                } else {
+                }
+                // [x] / n
+                else {
                     final_denominator[0].clone() * final_coefficient.d
                 },
             ],
         });
     }
 
+    // no denominator, no numerator
     if final_numerator.len() == 0 {
         return Basis::from(final_coefficient);
     }
@@ -532,6 +551,7 @@ pub fn DivBasisNode(numerator: &Basis, denominator: &Basis) -> Basis {
     let mut numerator_list = vec![];
     let mut denominator_list = vec![];
 
+    // collect all Mult and Div nodes from numerator
     match numerator {
         Basis::BasisNode(BasisNode {
             operator, operands, ..
@@ -548,6 +568,7 @@ pub fn DivBasisNode(numerator: &Basis, denominator: &Basis) -> Basis {
         },
         _ => numerator_list.push(numerator.clone()),
     };
+    // collect all Mult and Div nodes from denominator
     match denominator {
         Basis::BasisNode(BasisNode {
             operator, operands, ..
@@ -609,16 +630,20 @@ pub fn PowBasisNode(n: i32, d: i32, base: &Basis) -> Basis {
             // if base inside Pow is also a x^(n/d), then result is x^((n/d)*(i_n/i_d))
             BasisOperator::Pow(inner_pow) if inner_operands[0].is_x() => {
                 pow *= *inner_pow;
+                // x^(1/n)^n = x^(n/n)
                 if pow == 1 {
                     return Basis::x();
                 }
+                // x^(n/1)^i_n = x^(n*i_n)
                 if pow.d == 1 || *inner_coefficient == 1 {
                     return Basis::BasisNode(BasisNode {
                         coefficient: *inner_coefficient ^ pow.n,
                         operator: BasisOperator::Pow(pow),
                         operands: vec![Basis::x()],
                     });
-                } else {
+                }
+                // x^(n/d)^(i_n/i_d) = x^(n*i_n/d*i_d)
+                else {
                     return Basis::BasisNode(BasisNode {
                         coefficient: Fraction::from(1),
                         operator: BasisOperator::Mult,
@@ -637,6 +662,7 @@ pub fn PowBasisNode(n: i32, d: i32, base: &Basis) -> Basis {
                     });
                 }
             }
+            // f(x)^(n/d)^(d/n) = f(x)^(1)
             BasisOperator::Pow(inner_pow) if pow * *inner_pow == 1 => {
                 return inner_operands[0].clone();
             }

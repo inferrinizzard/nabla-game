@@ -3,8 +3,7 @@ use js_sys::Array;
 use wasm_bindgen::prelude::*;
 use web_sys::*;
 // external crate imports
-use crate::cards::Card;
-use crate::game::structs::*;
+use crate::game::{cards::Card, structs::*};
 use crate::util::*;
 // root imports
 use crate::{CANVAS, GAME};

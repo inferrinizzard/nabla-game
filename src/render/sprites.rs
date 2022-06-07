@@ -1,7 +1,7 @@
 // std imports
 use std::collections::HashMap;
 // external crate imports
-use crate::cards::*;
+use crate::game::cards::*;
 use crate::game::flags::DISPLAY_LN_FOR_LOG;
 
 /// hash key enum to store player card corners
