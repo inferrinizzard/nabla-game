@@ -15,8 +15,8 @@ pub fn get_hit_region_id(e: &MouseEvent) -> String {
         .get_image_data(e.client_x().into(), e.client_y().into(), 1.0, 1.0)
         .unwrap()
         .data();
+    // convert [r,g,b,a] int array into #RRGGBB hex string
     let hit_colour = format!(
-        // convert [r,g,b,a] int array into #RRGGBB hex string
         "#{}",
         pixel[0..3]
             .iter()

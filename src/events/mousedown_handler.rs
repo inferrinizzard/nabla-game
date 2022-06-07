@@ -41,6 +41,7 @@ pub fn branch_turn_phase(id: RenderId, player_num: u32) {
 
     let (id_key, id_val) = id.key_val();
 
+    // cancel button
     if id_key == "x" && id_val == 0 {
         game.active.clear();
         next_phase(TurnPhase::IDLE);
@@ -91,14 +92,14 @@ fn idle_turn_phase(card: Card) {
                 )));
             }
         }
+        // multiselect
         Card::AlgebraicCard(algebraic_card)
             if matches!(algebraic_card, AlgebraicCard::Div | AlgebraicCard::Mult) =>
         {
-            // multiselect
             next_phase(TurnPhase::MULTISELECT(Card::AlgebraicCard(algebraic_card)));
         }
+        // select
         card => {
-            // select
             next_phase(TurnPhase::SELECT(card));
         }
     }
@@ -109,6 +110,7 @@ fn select_turn_phase(select_operator: Card, (id_key, id_val): (String, usize)) {
     let game = unsafe { GAME.as_mut().unwrap() };
 
     match select_operator {
+        // play basis from hand if empty slot
         Card::BasisCard(basis_card) => {
             if id_key == "f"
                 && game.field[id_val].basis.is_none()
@@ -118,6 +120,7 @@ fn select_turn_phase(select_operator: Card, (id_key, id_val): (String, usize)) {
                 end_turn();
             }
         }
+        // play function from hand onto field
         operator_card => {
             if id_key == "f" {
                 if matches!(
@@ -182,6 +185,7 @@ fn handle_derivative_card(card: Card, i: usize) {
             game.field.derivative(i, None);
         }
     } else {
+        // calculate derivative/integral
         let result_basis = apply_card(&card)(selected_field_basis.basis.as_ref().unwrap());
         if result_basis.is_num(0) {
             game.field[i] = FieldBasis::none();
@@ -193,6 +197,7 @@ fn handle_derivative_card(card: Card, i: usize) {
                 game.field.integral(i, Some(result_basis.clone()));
             }
         }
+        // calculate second derivative if laplacian
         if is_laplacian {
             let second_derivative = apply_card(&card)(&result_basis);
             if second_derivative.is_num(0) {
@@ -215,6 +220,8 @@ fn multi_select_phase(multi_operator: Card, id: RenderId, player_num: u32) {
     let field = &mut game.field;
     let selected = &mut game.active.selected;
     let (id_key, id_val) = id.key_val();
+
+    // add selected field Basis to list of active selections
     if id_key == "f"
         || (id_key == format!("p{}", player_num) && matches!(player[id_val], Card::BasisCard(_)))
     {
@@ -263,6 +270,7 @@ fn multi_select_phase(multi_operator: Card, id: RenderId, player_num: u32) {
                 })
                 .collect::<Vec<Basis>>(),
         );
+        // get references to all selected cards
         let used_field_bases = selected
             .iter()
             .filter_map(|sel_id| {
@@ -324,15 +332,6 @@ fn end_turn() {
             })
             .collect::<Vec<RenderId>>(),
     );
-
-    // for i in player.len()..min(deck.len(), 7) {
-    //     anim::animate_deal(RenderId::from(format!(
-    //         "p{player_num}={val}",
-    //         player_num = player_num,
-    //         val = i
-    //     )));
-    //     // player.push(deck.pop().unwrap());
-    // }
 
     let flag = unsafe { ALLOW_LINEAR_DEPENDENCE };
     if !flag {
